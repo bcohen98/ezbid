@@ -13,20 +13,33 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const prompt = `You are a professional proposal writer for contractors. A user has a proposal and wants the following revision:
+    const prompt = `You are a professional proposal editor for contractors. A user has a proposal and wants the following revision. You can change BOTH text content AND visual/layout aspects.
 
 REVISION REQUEST: "${revisionNote}"
 
 CURRENT PROPOSAL:
 - Title: ${proposal.title || "Untitled"}
+- Template style: ${proposal.template || "classic"} (options: classic, modern, minimal, bold, executive)
 - Job Description: ${proposal.job_description || "N/A"}
 - Scope of Work: ${proposal.scope_of_work || "N/A"}
 - Materials Included: ${proposal.materials_included || "N/A"}
+- Materials Excluded: ${proposal.materials_excluded || "N/A"}
 - Warranty Terms: ${proposal.warranty_terms || "N/A"}
+- Payment Terms: ${proposal.payment_terms || "N/A"}
 - Disclosures: ${proposal.disclosures || "N/A"}
 - Special Conditions: ${proposal.special_conditions || "N/A"}
+- Estimated Duration: ${proposal.estimated_duration || "N/A"}
+- Deposit Mode: ${proposal.deposit_mode || "percentage"} (options: percentage, flat)
+- Deposit Value: ${proposal.deposit_value || 0}
+- Tax Rate: ${proposal.tax_rate || 0}
 
-Apply the requested revision to the relevant fields. Keep fields unchanged if the revision doesn't apply to them. Return the revised fields.`;
+Apply the requested revision. You can change:
+- Text fields (title, descriptions, terms, etc.)
+- Template style (classic/modern/minimal/bold/executive)
+- Financial terms (deposit_mode, deposit_value, tax_rate)
+- Timeline (estimated_duration)
+
+Only return the fields that need to change. Keep unchanged fields out of the response.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -37,7 +50,7 @@ Apply the requested revision to the relevant fields. Keep fields unchanged if th
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
-          { role: "system", content: "You revise contractor proposals based on user instructions. Return only the revised fields as JSON." },
+          { role: "system", content: "You revise contractor proposals based on user instructions. You can change text, visual template style, and financial terms. Return only the changed fields as JSON." },
           { role: "user", content: prompt },
         ],
         tools: [
@@ -45,17 +58,24 @@ Apply the requested revision to the relevant fields. Keep fields unchanged if th
             type: "function",
             function: {
               name: "return_revised_proposal",
-              description: "Return the revised proposal fields",
+              description: "Return the revised proposal fields. Only include fields that changed.",
               parameters: {
                 type: "object",
                 properties: {
-                  title: { type: "string" },
+                  title: { type: "string", description: "Proposal title" },
+                  template: { type: "string", enum: ["classic", "modern", "minimal", "bold", "executive"], description: "Visual template style" },
                   job_description: { type: "string" },
                   scope_of_work: { type: "string" },
                   materials_included: { type: "string" },
+                  materials_excluded: { type: "string" },
                   warranty_terms: { type: "string" },
+                  payment_terms: { type: "string" },
                   disclosures: { type: "string" },
                   special_conditions: { type: "string" },
+                  estimated_duration: { type: "string" },
+                  deposit_mode: { type: "string", enum: ["percentage", "flat"] },
+                  deposit_value: { type: "number" },
+                  tax_rate: { type: "number" },
                 },
               },
             },

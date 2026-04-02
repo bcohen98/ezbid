@@ -146,7 +146,7 @@ export default function ProposalPreview() {
               <Textarea
                 value={revisionNote}
                 onChange={(e) => setRevisionNote(e.target.value)}
-                placeholder="e.g. Make the scope of work more detailed, add a note about cleanup being included..."
+                placeholder="e.g. Switch to the bold template, make scope more detailed, change deposit to 50% flat, add cleanup note, set tax to 8.5%..."
                 rows={4}
               />
               <Button
