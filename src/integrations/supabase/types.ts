@@ -14,16 +14,317 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      company_profiles: {
+        Row: {
+          brand_color: string | null
+          city: string | null
+          company_name: string | null
+          created_at: string
+          default_deposit_percentage: number | null
+          default_disclosures: string | null
+          default_payment_terms: string | null
+          default_warranty: string | null
+          email: string | null
+          id: string
+          insurance_info: string | null
+          license_numbers: string[] | null
+          logo_url: string | null
+          owner_name: string | null
+          phone: string | null
+          state: string | null
+          street_address: string | null
+          trade_type: Database["public"]["Enums"]["trade_type"] | null
+          updated_at: string
+          user_id: string
+          website: string | null
+          zip: string | null
+        }
+        Insert: {
+          brand_color?: string | null
+          city?: string | null
+          company_name?: string | null
+          created_at?: string
+          default_deposit_percentage?: number | null
+          default_disclosures?: string | null
+          default_payment_terms?: string | null
+          default_warranty?: string | null
+          email?: string | null
+          id?: string
+          insurance_info?: string | null
+          license_numbers?: string[] | null
+          logo_url?: string | null
+          owner_name?: string | null
+          phone?: string | null
+          state?: string | null
+          street_address?: string | null
+          trade_type?: Database["public"]["Enums"]["trade_type"] | null
+          updated_at?: string
+          user_id: string
+          website?: string | null
+          zip?: string | null
+        }
+        Update: {
+          brand_color?: string | null
+          city?: string | null
+          company_name?: string | null
+          created_at?: string
+          default_deposit_percentage?: number | null
+          default_disclosures?: string | null
+          default_payment_terms?: string | null
+          default_warranty?: string | null
+          email?: string | null
+          id?: string
+          insurance_info?: string | null
+          license_numbers?: string[] | null
+          logo_url?: string | null
+          owner_name?: string | null
+          phone?: string | null
+          state?: string | null
+          street_address?: string | null
+          trade_type?: Database["public"]["Enums"]["trade_type"] | null
+          updated_at?: string
+          user_id?: string
+          website?: string | null
+          zip?: string | null
+        }
+        Relationships: []
+      }
+      proposal_line_items: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          proposal_id: string
+          quantity: number
+          sort_order: number
+          subtotal: number
+          unit: string | null
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          proposal_id: string
+          quantity?: number
+          sort_order?: number
+          subtotal?: number
+          unit?: string | null
+          unit_price?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          proposal_id?: string
+          quantity?: number
+          sort_order?: number
+          subtotal?: number
+          unit?: string | null
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_line_items_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proposals: {
+        Row: {
+          accepted_payment_methods: string[] | null
+          balance_due: number | null
+          client_email: string | null
+          client_name: string | null
+          client_phone: string | null
+          client_signature_url: string | null
+          client_signed_at: string | null
+          created_at: string
+          delivery_method: string | null
+          deposit_amount: number | null
+          deposit_mode: Database["public"]["Enums"]["deposit_mode"] | null
+          deposit_value: number | null
+          disclosures: string | null
+          enhanced_job_description: string | null
+          enhanced_scope_of_work: string | null
+          estimated_duration: string | null
+          estimated_start_date: string | null
+          id: string
+          job_description: string | null
+          job_site_city: string | null
+          job_site_state: string | null
+          job_site_street: string | null
+          job_site_zip: string | null
+          materials_excluded: string | null
+          materials_included: string | null
+          payment_terms: string | null
+          pdf_url: string | null
+          proposal_date: string | null
+          proposal_number: number
+          scope_of_work: string | null
+          special_conditions: string | null
+          status: Database["public"]["Enums"]["proposal_status"]
+          subtotal: number | null
+          tax_amount: number | null
+          tax_rate: number | null
+          template: Database["public"]["Enums"]["proposal_template"]
+          title: string | null
+          total: number | null
+          updated_at: string
+          user_id: string
+          valid_until: string | null
+          warranty_terms: string | null
+        }
+        Insert: {
+          accepted_payment_methods?: string[] | null
+          balance_due?: number | null
+          client_email?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          client_signature_url?: string | null
+          client_signed_at?: string | null
+          created_at?: string
+          delivery_method?: string | null
+          deposit_amount?: number | null
+          deposit_mode?: Database["public"]["Enums"]["deposit_mode"] | null
+          deposit_value?: number | null
+          disclosures?: string | null
+          enhanced_job_description?: string | null
+          enhanced_scope_of_work?: string | null
+          estimated_duration?: string | null
+          estimated_start_date?: string | null
+          id?: string
+          job_description?: string | null
+          job_site_city?: string | null
+          job_site_state?: string | null
+          job_site_street?: string | null
+          job_site_zip?: string | null
+          materials_excluded?: string | null
+          materials_included?: string | null
+          payment_terms?: string | null
+          pdf_url?: string | null
+          proposal_date?: string | null
+          proposal_number: number
+          scope_of_work?: string | null
+          special_conditions?: string | null
+          status?: Database["public"]["Enums"]["proposal_status"]
+          subtotal?: number | null
+          tax_amount?: number | null
+          tax_rate?: number | null
+          template?: Database["public"]["Enums"]["proposal_template"]
+          title?: string | null
+          total?: number | null
+          updated_at?: string
+          user_id: string
+          valid_until?: string | null
+          warranty_terms?: string | null
+        }
+        Update: {
+          accepted_payment_methods?: string[] | null
+          balance_due?: number | null
+          client_email?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          client_signature_url?: string | null
+          client_signed_at?: string | null
+          created_at?: string
+          delivery_method?: string | null
+          deposit_amount?: number | null
+          deposit_mode?: Database["public"]["Enums"]["deposit_mode"] | null
+          deposit_value?: number | null
+          disclosures?: string | null
+          enhanced_job_description?: string | null
+          enhanced_scope_of_work?: string | null
+          estimated_duration?: string | null
+          estimated_start_date?: string | null
+          id?: string
+          job_description?: string | null
+          job_site_city?: string | null
+          job_site_state?: string | null
+          job_site_street?: string | null
+          job_site_zip?: string | null
+          materials_excluded?: string | null
+          materials_included?: string | null
+          payment_terms?: string | null
+          pdf_url?: string | null
+          proposal_date?: string | null
+          proposal_number?: number
+          scope_of_work?: string | null
+          special_conditions?: string | null
+          status?: Database["public"]["Enums"]["proposal_status"]
+          subtotal?: number | null
+          tax_amount?: number | null
+          tax_rate?: number | null
+          template?: Database["public"]["Enums"]["proposal_template"]
+          title?: string | null
+          total?: number | null
+          updated_at?: string
+          user_id?: string
+          valid_until?: string | null
+          warranty_terms?: string | null
+        }
+        Relationships: []
+      }
+      user_subscriptions: {
+        Row: {
+          created_at: string
+          current_period_end: string | null
+          id: string
+          proposals_used: number
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          proposals_used?: number
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          proposals_used?: number
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_next_proposal_number: { Args: { p_user_id: string }; Returns: number }
     }
     Enums: {
-      [_ in never]: never
+      deposit_mode: "percentage" | "flat"
+      proposal_status: "draft" | "sent" | "signed" | "expired"
+      proposal_template: "classic" | "modern" | "minimal"
+      trade_type:
+        | "general_contractor"
+        | "roofing"
+        | "plumbing"
+        | "hvac"
+        | "electrical"
+        | "landscaping"
+        | "painting"
+        | "flooring"
+        | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +451,21 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      deposit_mode: ["percentage", "flat"],
+      proposal_status: ["draft", "sent", "signed", "expired"],
+      proposal_template: ["classic", "modern", "minimal"],
+      trade_type: [
+        "general_contractor",
+        "roofing",
+        "plumbing",
+        "hvac",
+        "electrical",
+        "landscaping",
+        "painting",
+        "flooring",
+        "other",
+      ],
+    },
   },
 } as const
