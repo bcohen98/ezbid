@@ -96,13 +96,18 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6 pb-20">
       <div className="flex items-center gap-3 mb-2">
-        <Button type="button" variant="ghost" size="sm" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4 mr-1" /> Back
-        </Button>
         <h1 className="text-2xl font-semibold">New Proposal</h1>
       </div>
+
+      <ProposalToolbar
+        onBack={onBack}
+        onSave={() => onSubmit(form)}
+        onPreview={() => onSubmit(form)}
+        onDuplicate={() => {}}
+        isSaving={isSubmitting}
+      />
 
       {/* Client Info */}
       <Card>
