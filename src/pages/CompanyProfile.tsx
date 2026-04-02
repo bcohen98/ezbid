@@ -113,6 +113,7 @@ export default function CompanyProfile() {
         default_warranty: profile.default_warranty || '',
         default_disclosures: profile.default_disclosures || '',
         brand_color: profile.brand_color || '#000000',
+        stripe_enabled: (profile as any).stripe_enabled ?? false,
       });
       setLogoUrl(profile.logo_url);
     }
