@@ -1,4 +1,5 @@
 import type { Database } from '@/integrations/supabase/types';
+import { formatCurrency } from '@/lib/formatCurrency';
 
 type Proposal = Database['public']['Tables']['proposals']['Row'];
 type LineItem = Database['public']['Tables']['proposal_line_items']['Row'];
@@ -71,6 +72,44 @@ export default function ProposalDocument({ proposal, lineItems, profile }: Props
             <div className="text-right">
               <div className="text-xs text-muted-foreground uppercase tracking-wider">Proposal</div>
               <div className="text-xs text-muted-foreground">PRO-{String(proposal.proposal_number).padStart(4, '0')}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {template === 'bold' && (
+        <div className="mb-6">
+          <div className="border-l-4 pl-4 py-2" style={{ borderColor: brandColor }}>
+            {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className="h-10 mb-2" />}
+            <div className="text-xl font-bold uppercase tracking-wide">{profile?.company_name || 'Company Name'}</div>
+            <div className="text-xs text-muted-foreground mt-1">
+              {[profile?.street_address, profile?.city, profile?.state, profile?.zip].filter(Boolean).join(', ')}
+            </div>
+            {profile?.phone && <div className="text-xs text-muted-foreground">{profile.phone}</div>}
+          </div>
+          <div className="flex justify-between items-end mt-4">
+            <div className="text-3xl font-black uppercase tracking-tighter" style={{ color: brandColor }}>Proposal</div>
+            <div className="text-xs text-muted-foreground">PRO-{String(proposal.proposal_number).padStart(4, '0')}</div>
+          </div>
+        </div>
+      )}
+
+      {template === 'executive' && (
+        <div className="mb-6">
+          <div className="flex items-start justify-between border-b-2 pb-4" style={{ borderColor: brandColor }}>
+            <div>
+              {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className="h-12 mb-2" />}
+              <div className="text-lg font-semibold">{profile?.company_name || 'Company Name'}</div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                {[profile?.street_address, profile?.city, profile?.state, profile?.zip].filter(Boolean).join(', ')}
+              </div>
+              {profile?.phone && <div className="text-xs text-muted-foreground">{profile.phone}</div>}
+              {profile?.email && <div className="text-xs text-muted-foreground">{profile.email}</div>}
+              {profile?.license_numbers?.length ? <div className="text-xs text-muted-foreground mt-1">License: {profile.license_numbers.join(', ')}</div> : null}
+            </div>
+            <div className="text-right">
+              <div className="text-sm uppercase tracking-widest text-muted-foreground">Professional Proposal</div>
+              <div className="text-xs text-muted-foreground mt-1">No. PRO-{String(proposal.proposal_number).padStart(4, '0')}</div>
             </div>
           </div>
         </div>
@@ -159,22 +198,22 @@ export default function ProposalDocument({ proposal, lineItems, profile }: Props
                   <td className="py-2">{item.description}</td>
                   <td className="text-right py-2">{item.quantity}</td>
                   <td className="text-right py-2">{item.unit}</td>
-                  <td className="text-right py-2">${Number(item.unit_price).toFixed(2)}</td>
-                  <td className="text-right py-2">${Number(item.subtotal).toFixed(2)}</td>
+                  <td className="text-right py-2">${formatCurrency(item.unit_price)}</td>
+                  <td className="text-right py-2">${formatCurrency(item.subtotal)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
           <div className="border-t pt-2 mt-0 space-y-1 text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>${Number(proposal.subtotal || 0).toFixed(2)}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>${formatCurrency(proposal.subtotal)}</span></div>
             {Number(proposal.tax_rate) > 0 && (
-              <div className="flex justify-between"><span className="text-muted-foreground">Tax ({proposal.tax_rate}%)</span><span>${Number(proposal.tax_amount || 0).toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Tax ({proposal.tax_rate}%)</span><span>${formatCurrency(proposal.tax_amount)}</span></div>
             )}
-            <div className="flex justify-between font-semibold text-base border-t pt-1"><span>Total</span><span>${Number(proposal.total || 0).toFixed(2)}</span></div>
+            <div className="flex justify-between font-semibold text-base border-t pt-1"><span>Total</span><span>${formatCurrency(proposal.total)}</span></div>
             {Number(proposal.deposit_amount) > 0 && (
               <>
-                <div className="flex justify-between text-muted-foreground"><span>Deposit required</span><span>${Number(proposal.deposit_amount || 0).toFixed(2)}</span></div>
-                <div className="flex justify-between font-medium"><span>Balance due</span><span>${Number(proposal.balance_due || 0).toFixed(2)}</span></div>
+                <div className="flex justify-between text-muted-foreground"><span>Deposit required</span><span>${formatCurrency(proposal.deposit_amount)}</span></div>
+                <div className="flex justify-between font-medium"><span>Balance due</span><span>${formatCurrency(proposal.balance_due)}</span></div>
               </>
             )}
           </div>
@@ -244,6 +283,12 @@ function SectionHeading({ template, color, children }: { template: string; color
   }
   if (template === 'minimal') {
     return <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{children}</h3>;
+  }
+  if (template === 'bold') {
+    return <h3 className="text-sm font-bold uppercase tracking-wide border-b pb-1 mb-1" style={{ borderColor: color, color }}>{children}</h3>;
+  }
+  if (template === 'executive') {
+    return <h3 className="text-sm font-semibold tracking-tight border-b pb-1 mb-1">{children}</h3>;
   }
   // Classic
   return <h3 className="text-sm font-semibold">{children}</h3>;

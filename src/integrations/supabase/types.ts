@@ -314,7 +314,7 @@ export type Database = {
     Enums: {
       deposit_mode: "percentage" | "flat"
       proposal_status: "draft" | "sent" | "signed" | "expired"
-      proposal_template: "classic" | "modern" | "minimal"
+      proposal_template: "classic" | "modern" | "minimal" | "bold" | "executive"
       trade_type:
         | "general_contractor"
         | "roofing"
@@ -454,7 +454,7 @@ export const Constants = {
     Enums: {
       deposit_mode: ["percentage", "flat"],
       proposal_status: ["draft", "sent", "signed", "expired"],
-      proposal_template: ["classic", "modern", "minimal"],
+      proposal_template: ["classic", "modern", "minimal", "bold", "executive"],
       trade_type: [
         "general_contractor",
         "roofing",

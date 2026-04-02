@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import type { ProposalFormData, ProposalTemplate, LineItemData } from '@/pages/NewProposal';
 import type { Database } from '@/integrations/supabase/types';
+import { formatCurrency } from '@/lib/formatCurrency';
 
 type CompanyProfile = Database['public']['Tables']['company_profiles']['Row'];
 
@@ -195,15 +196,15 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
 
           {/* Totals */}
           <div className="border rounded-lg p-4 space-y-2 text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span className="font-medium">${subtotal.toFixed(2)}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span className="font-medium">${formatCurrency(subtotal)}</span></div>
             <div className="flex justify-between items-center">
               <span className="text-muted-foreground flex items-center gap-2">
                 Tax rate
                 <Input type="number" value={form.tax_rate} onChange={(e) => handleChange('tax_rate', parseFloat(e.target.value) || 0)} className="h-7 w-16 text-sm" min={0} step="0.1" />%
               </span>
-              <span className="font-medium">${taxAmount.toFixed(2)}</span>
+              <span className="font-medium">${formatCurrency(taxAmount)}</span>
             </div>
-            <div className="flex justify-between border-t pt-2"><span className="font-medium">Total</span><span className="font-semibold text-base">${total.toFixed(2)}</span></div>
+            <div className="flex justify-between border-t pt-2"><span className="font-medium">Total</span><span className="font-semibold text-base">${formatCurrency(total)}</span></div>
             <div className="flex justify-between items-center">
               <span className="text-muted-foreground flex items-center gap-2">
                 Deposit
@@ -217,9 +218,9 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
                 </select>
                 <Input type="number" value={form.deposit_value} onChange={(e) => handleChange('deposit_value', parseFloat(e.target.value) || 0)} className="h-7 w-20 text-sm" min={0} step="0.01" />
               </span>
-              <span className="font-medium">${depositAmount.toFixed(2)}</span>
+              <span className="font-medium">${formatCurrency(depositAmount)}</span>
             </div>
-            <div className="flex justify-between border-t pt-2"><span className="font-medium">Balance due</span><span className="font-semibold">${balanceDue.toFixed(2)}</span></div>
+            <div className="flex justify-between border-t pt-2"><span className="font-medium">Balance due</span><span className="font-semibold">${formatCurrency(balanceDue)}</span></div>
           </div>
 
           <div className="space-y-2">

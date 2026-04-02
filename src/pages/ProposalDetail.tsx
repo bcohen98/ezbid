@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowLeft, Eye, Copy, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { formatCurrency } from '@/lib/formatCurrency';
 
 export default function ProposalDetail() {
   const { id } = useParams();
@@ -61,7 +62,7 @@ export default function ProposalDetail() {
             </p>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-semibold">${Number(proposal.total || 0).toLocaleString()}</div>
+            <div className="text-2xl font-semibold">${formatCurrency(proposal.total)}</div>
           </div>
         </div>
 
@@ -94,12 +95,12 @@ export default function ProposalDetail() {
                 {lineItems.map((item) => (
                   <div key={item.id} className="flex justify-between py-1">
                     <span>{item.description} ({item.quantity} {item.unit})</span>
-                    <span>${Number(item.subtotal).toFixed(2)}</span>
+                    <span>${formatCurrency(item.subtotal)}</span>
                   </div>
                 ))}
                 <div className="flex justify-between font-semibold border-t pt-2 mt-2">
                   <span>Total</span>
-                  <span>${Number(proposal.total || 0).toFixed(2)}</span>
+                  <span>${formatCurrency(proposal.total)}</span>
                 </div>
               </div>
             )}
