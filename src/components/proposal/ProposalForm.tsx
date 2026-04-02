@@ -308,11 +308,6 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
         </CardContent>
       </Card>
 
-      <div className="flex justify-end gap-3">
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Creating...' : 'Create Proposal & Preview'}
-        </Button>
-      </div>
     </form>
   );
 }
