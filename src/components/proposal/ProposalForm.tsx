@@ -120,7 +120,7 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
           </div>
           <div className="space-y-2">
             <Label>Client phone</Label>
-            <Input value={form.client_phone} onChange={(e) => handleChange('client_phone', e.target.value)} />
+            <PhoneInput value={form.client_phone} onChange={(v) => handleChange('client_phone', v)} />
           </div>
           <div className="space-y-2"><Label>Job site address</Label></div>
           <Input placeholder="Street" value={form.job_site_street} onChange={(e) => handleChange('job_site_street', e.target.value)} />
