@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import type { ProposalFormData, ProposalTemplate, LineItemData } from '@/pages/NewProposal';
 import type { Database } from '@/integrations/supabase/types';
+import { formatCurrency } from '@/lib/formatCurrency';
 
 type CompanyProfile = Database['public']['Tables']['company_profiles']['Row'];
 
