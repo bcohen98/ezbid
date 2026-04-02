@@ -178,7 +178,8 @@ export default function CompanyProfile() {
         default_warranty: form.default_warranty || null,
         default_disclosures: form.default_disclosures || null,
         brand_color: form.brand_color,
-      });
+        stripe_enabled: form.stripe_enabled,
+      } as any);
       toast({ title: 'Profile saved' });
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
