@@ -39,7 +39,7 @@ export default function AuthPage() {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm animate-fade-in">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">ProposalCraft</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">EZ-Bid</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {isSignUp ? 'Create your account' : 'Sign in to your account'}
           </p>
