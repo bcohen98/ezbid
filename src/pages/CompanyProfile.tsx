@@ -247,7 +247,7 @@ export default function CompanyProfile() {
               <div className="space-y-2"><Label>ZIP</Label><Input value={form.zip} onChange={(e) => handleChange('zip', e.target.value)} /></div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>Phone</Label><Input value={form.phone} onChange={(e) => handleChange('phone', e.target.value)} /></div>
+              <div className="space-y-2"><Label>Phone</Label><PhoneInput value={form.phone} onChange={(v) => setForm(prev => ({ ...prev, phone: v }))} /></div>
               <div className="space-y-2"><Label>Email</Label><Input value={form.email} onChange={(e) => handleChange('email', e.target.value)} /></div>
             </div>
             <div className="space-y-2"><Label>Website (optional)</Label><Input value={form.website} onChange={(e) => handleChange('website', e.target.value)} placeholder="https://" /></div>
