@@ -320,7 +320,11 @@ export default function CompanyProfile() {
           </CardContent>
         </Card>
 
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-3">
+          <Button variant="outline" onClick={handleRefineWithAI} disabled={refining} className="gap-2">
+            {refining ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            {refining ? 'Refining...' : 'Refine with AI'}
+          </Button>
           <Button onClick={handleSave} disabled={isUpdating}>
             {isUpdating ? 'Saving...' : 'Save changes'}
           </Button>
