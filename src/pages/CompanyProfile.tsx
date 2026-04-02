@@ -50,6 +50,7 @@ export default function CompanyProfile() {
     default_warranty: '',
     default_disclosures: '',
     brand_color: '#000000',
+    stripe_enabled: false,
   });
 
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
