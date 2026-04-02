@@ -10,7 +10,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, X } from 'lucide-react';
+import { Upload, X, Sparkles, Loader2 } from 'lucide-react';
+import PhoneInput from '@/components/PhoneInput';
+import { supabase as supabaseClient } from '@/integrations/supabase/client';
 
 const tradeTypes = [
   { value: 'general_contractor', label: 'General Contractor' },
