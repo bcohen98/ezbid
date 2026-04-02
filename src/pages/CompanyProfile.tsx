@@ -10,7 +10,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, X, Sparkles, Loader2 } from 'lucide-react';
+import { Upload, X, Sparkles, Loader2, CreditCard } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import PhoneInput from '@/components/PhoneInput';
 import { supabase as supabaseClient } from '@/integrations/supabase/client';
 
@@ -49,6 +50,7 @@ export default function CompanyProfile() {
     default_warranty: '',
     default_disclosures: '',
     brand_color: '#000000',
+    stripe_enabled: false,
   });
 
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -111,6 +113,7 @@ export default function CompanyProfile() {
         default_warranty: profile.default_warranty || '',
         default_disclosures: profile.default_disclosures || '',
         brand_color: profile.brand_color || '#000000',
+        stripe_enabled: (profile as any).stripe_enabled ?? false,
       });
       setLogoUrl(profile.logo_url);
     }
@@ -175,7 +178,8 @@ export default function CompanyProfile() {
         default_warranty: form.default_warranty || null,
         default_disclosures: form.default_disclosures || null,
         brand_color: form.brand_color,
-      });
+        stripe_enabled: form.stripe_enabled,
+      } as any);
       toast({ title: 'Profile saved' });
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
@@ -317,6 +321,31 @@ export default function CompanyProfile() {
               <Label>Default disclosures</Label>
               <Textarea value={form.default_disclosures} onChange={(e) => handleChange('default_disclosures', e.target.value)} placeholder="Legal boilerplate included on every proposal" rows={4} />
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Payment */}
+        <Card>
+          <CardHeader><CardTitle className="text-base flex items-center gap-2"><CreditCard className="h-4 w-4" /> Payment Settings</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Accept online payments</p>
+                <p className="text-xs text-muted-foreground">Allow clients to pay invoices via credit card or bank transfer (ACH) through Stripe.</p>
+              </div>
+              <Switch
+                checked={form.stripe_enabled}
+                onCheckedChange={(checked) => setForm(prev => ({ ...prev, stripe_enabled: checked }))}
+              />
+            </div>
+            {form.stripe_enabled && (
+              <div className="rounded-lg border border-success/30 bg-success/5 p-3">
+                <p className="text-sm font-medium text-success">Stripe connected ✓</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Clients will be able to pay via credit card and bank ACH when you send proposals.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
