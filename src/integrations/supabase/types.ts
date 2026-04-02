@@ -33,6 +33,8 @@ export type Database = {
           phone: string | null
           state: string | null
           street_address: string | null
+          stripe_account_id: string | null
+          stripe_enabled: boolean
           trade_type: Database["public"]["Enums"]["trade_type"] | null
           updated_at: string
           user_id: string
@@ -57,6 +59,8 @@ export type Database = {
           phone?: string | null
           state?: string | null
           street_address?: string | null
+          stripe_account_id?: string | null
+          stripe_enabled?: boolean
           trade_type?: Database["public"]["Enums"]["trade_type"] | null
           updated_at?: string
           user_id: string
@@ -81,6 +85,8 @@ export type Database = {
           phone?: string | null
           state?: string | null
           street_address?: string | null
+          stripe_account_id?: string | null
+          stripe_enabled?: boolean
           trade_type?: Database["public"]["Enums"]["trade_type"] | null
           updated_at?: string
           user_id?: string
