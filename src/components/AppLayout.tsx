@@ -1,0 +1,72 @@
+import { ReactNode, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/button';
+import { FileText, Settings, LogOut, Plus } from 'lucide-react';
+
+export default function AppLayout({ children }: { children: ReactNode }) {
+  const { user, loading, signOut } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth');
+    }
+  }, [user, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted-foreground text-sm">Loading...</p>
+      </div>
+    );
+  }
+
+  if (!user) return null;
+
+  const navItems = [
+    { href: '/dashboard', label: 'Proposals', icon: FileText },
+    { href: '/company-profile', label: 'My Company', icon: Settings },
+  ];
+
+  return (
+    <div className="min-h-screen bg-background">
+      <header className="border-b">
+        <div className="container flex h-14 items-center justify-between">
+          <div className="flex items-center gap-6">
+            <Link to="/dashboard" className="font-semibold text-sm tracking-tight">
+              ProposalCraft
+            </Link>
+            <nav className="flex items-center gap-1">
+              {navItems.map((item) => (
+                <Link key={item.href} to={item.href}>
+                  <Button
+                    variant={location.pathname === item.href ? 'secondary' : 'ghost'}
+                    size="sm"
+                    className="gap-2 text-sm"
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {item.label}
+                  </Button>
+                </Link>
+              ))}
+            </nav>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link to="/proposals/new">
+              <Button size="sm" className="gap-2">
+                <Plus className="h-4 w-4" />
+                New Proposal
+              </Button>
+            </Link>
+            <Button variant="ghost" size="sm" onClick={() => signOut()}>
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </header>
+      <main>{children}</main>
+    </div>
+  );
+}
