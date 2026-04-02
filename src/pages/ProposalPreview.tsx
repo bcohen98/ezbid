@@ -5,7 +5,7 @@ import AppLayout from '@/components/AppLayout';
 import ProposalDocument from '@/components/proposal/ProposalDocument';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Send, Mail, Sparkles, Loader2 } from 'lucide-react';
+import { ArrowLeft, Send, Mail, Sparkles, Loader2, Download, FileText } from 'lucide-react';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,6 +20,9 @@ export default function ProposalPreview() {
   const { updateProposal } = useProposals();
   const [revisionNote, setRevisionNote] = useState('');
   const [isRevising, setIsRevising] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isSendingSelf, setIsSendingSelf] = useState(false);
+  const [isSendingClient, setIsSendingClient] = useState(false);
 
   if (isLoading) {
     return <AppLayout><div className="container py-8"><p className="text-sm text-muted-foreground">Loading preview...</p></div></AppLayout>;
@@ -50,12 +53,71 @@ export default function ProposalPreview() {
     }
   };
 
-  const handleSendSelf = () => {
-    toast({ title: 'Coming soon', description: 'PDF generation and email sending will be enabled in Phase 2.' });
+  const handleDownloadPdf = async () => {
+    setIsGeneratingPdf(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-pdf', {
+        body: { proposal_id: proposal.id },
+      });
+      if (error) throw error;
+      if (data?.html) {
+        // Open HTML in new window for printing as PDF
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+          printWindow.document.write(data.html);
+          printWindow.document.close();
+          // Auto-trigger print dialog after a short delay for rendering
+          setTimeout(() => {
+            printWindow.print();
+          }, 500);
+        }
+        toast({ title: 'PDF ready', description: 'Use the print dialog to save as PDF.' });
+      }
+    } catch (err: any) {
+      toast({ title: 'PDF generation failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
 
-  const handleSendClient = () => {
-    toast({ title: 'Coming soon', description: 'E-signature flow will be enabled in Phase 3.' });
+  const handleSendSelf = async () => {
+    setIsSendingSelf(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-proposal-email', {
+        body: { proposal_id: proposal.id, send_to_self: true },
+      });
+      if (error) throw error;
+      toast({ title: 'Email sent!', description: data?.message || 'Check your inbox.' });
+    } catch (err: any) {
+      toast({ title: 'Send failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsSendingSelf(false);
+    }
+  };
+
+  const handleSendClient = async () => {
+    if (!proposal.client_email) {
+      toast({ title: 'Missing client email', description: 'Please add a client email address in the proposal form.', variant: 'destructive' });
+      return;
+    }
+    setIsSendingClient(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-proposal-email', {
+        body: {
+          proposal_id: proposal.id,
+          recipient_email: proposal.client_email,
+          recipient_name: proposal.client_name,
+          send_to_self: false,
+        },
+      });
+      if (error) throw error;
+      refetch(); // Status will be updated to "sent"
+      toast({ title: 'Proposal sent!', description: data?.message || `Sent to ${proposal.client_email}` });
+    } catch (err: any) {
+      toast({ title: 'Send failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsSendingClient(false);
+    }
   };
 
   return (
@@ -74,8 +136,9 @@ export default function ProposalPreview() {
             <ProposalDocument proposal={proposal} lineItems={lineItems} profile={profile} />
           </div>
 
-          {/* Edit panel */}
+          {/* Side panel */}
           <div className="space-y-4">
+            {/* AI Revision */}
             <div className="border rounded-lg p-4 space-y-3">
               <h3 className="text-sm font-medium flex items-center gap-2">
                 <Sparkles className="h-4 w-4" /> AI Revision
@@ -83,7 +146,7 @@ export default function ProposalPreview() {
               <Textarea
                 value={revisionNote}
                 onChange={(e) => setRevisionNote(e.target.value)}
-                placeholder="e.g. Make the scope of work more detailed, add a note about cleanup being included, change the payment terms to Net 30."
+                placeholder="e.g. Make the scope of work more detailed, add a note about cleanup being included..."
                 rows={4}
               />
               <Button
@@ -98,13 +161,44 @@ export default function ProposalPreview() {
               </Button>
             </div>
 
-            <div className="space-y-2">
-              <Button className="w-full gap-2" onClick={handleSendSelf}>
-                <Mail className="h-4 w-4" /> Send to my email
+            {/* Download & Send */}
+            <div className="border rounded-lg p-4 space-y-3">
+              <h3 className="text-sm font-medium flex items-center gap-2">
+                <FileText className="h-4 w-4" /> Download & Send
+              </h3>
+              
+              <Button
+                variant="outline"
+                className="w-full gap-2"
+                onClick={handleDownloadPdf}
+                disabled={isGeneratingPdf}
+              >
+                {isGeneratingPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                {isGeneratingPdf ? 'Generating...' : 'Download as PDF'}
               </Button>
-              <Button variant="outline" className="w-full gap-2" onClick={handleSendClient}>
-                <Send className="h-4 w-4" /> Send to client for e-signature
+
+              <Button
+                variant="outline"
+                className="w-full gap-2"
+                onClick={handleSendSelf}
+                disabled={isSendingSelf}
+              >
+                {isSendingSelf ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                {isSendingSelf ? 'Sending...' : 'Send to my email'}
               </Button>
+
+              <Button
+                className="w-full gap-2"
+                onClick={handleSendClient}
+                disabled={isSendingClient || !proposal.client_email}
+              >
+                {isSendingClient ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                {isSendingClient ? 'Sending...' : 'Send to client'}
+              </Button>
+
+              {!proposal.client_email && (
+                <p className="text-xs text-muted-foreground">Add a client email in the proposal form to enable sending.</p>
+              )}
             </div>
           </div>
         </div>
