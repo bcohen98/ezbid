@@ -36,7 +36,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <div className="container flex h-14 items-center justify-between">
           <div className="flex items-center gap-6">
             <Link to="/dashboard" className="font-semibold text-sm tracking-tight">
-              ProposalCraft
+              EZ-Bid
             </Link>
             <nav className="flex items-center gap-1">
               {navItems.map((item) => (
