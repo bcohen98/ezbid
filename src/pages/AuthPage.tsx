@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import EZBidLogo from '@/components/EZBidLogo';
 
 export default function AuthPage() {
   const [isSignUp, setIsSignUp] = useState(false);
