@@ -5,7 +5,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
+import PhoneInput from '@/components/PhoneInput';
+import ProposalToolbar from '@/components/proposal/ProposalToolbar';
 import type { ProposalFormData, ProposalTemplate, LineItemData } from '@/pages/NewProposal';
 import type { Database } from '@/integrations/supabase/types';
 import { formatCurrency } from '@/lib/formatCurrency';
@@ -94,13 +96,18 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6 pb-20">
       <div className="flex items-center gap-3 mb-2">
-        <Button type="button" variant="ghost" size="sm" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4 mr-1" /> Back
-        </Button>
         <h1 className="text-2xl font-semibold">New Proposal</h1>
       </div>
+
+      <ProposalToolbar
+        onBack={onBack}
+        onSave={() => onSubmit(form)}
+        onPreview={() => onSubmit(form)}
+        onDuplicate={() => {}}
+        isSaving={isSubmitting}
+      />
 
       {/* Client Info */}
       <Card>
@@ -118,7 +125,7 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
           </div>
           <div className="space-y-2">
             <Label>Client phone</Label>
-            <Input value={form.client_phone} onChange={(e) => handleChange('client_phone', e.target.value)} />
+            <PhoneInput value={form.client_phone} onChange={(v) => handleChange('client_phone', v)} />
           </div>
           <div className="space-y-2"><Label>Job site address</Label></div>
           <Input placeholder="Street" value={form.job_site_street} onChange={(e) => handleChange('job_site_street', e.target.value)} />
@@ -301,11 +308,6 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
         </CardContent>
       </Card>
 
-      <div className="flex justify-end gap-3">
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Creating...' : 'Create Proposal & Preview'}
-        </Button>
-      </div>
     </form>
   );
 }

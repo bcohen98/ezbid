@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import EZBidLogo from '@/components/EZBidLogo';
 
 export default function AuthPage() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -39,7 +40,7 @@ export default function AuthPage() {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm animate-fade-in">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">EZ-Bid</h1>
+          <EZBidLogo size="lg" className="justify-center" />
           <p className="mt-2 text-sm text-muted-foreground">
             {isSignUp ? 'Create your account' : 'Sign in to your account'}
           </p>

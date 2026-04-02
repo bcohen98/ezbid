@@ -10,7 +10,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, X } from 'lucide-react';
+import { Upload, X, Sparkles, Loader2 } from 'lucide-react';
+import PhoneInput from '@/components/PhoneInput';
+import { supabase as supabaseClient } from '@/integrations/supabase/client';
 
 const tradeTypes = [
   { value: 'general_contractor', label: 'General Contractor' },
@@ -51,6 +53,43 @@ export default function CompanyProfile() {
 
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [refining, setRefining] = useState(false);
+
+  const handleRefineWithAI = async () => {
+    const textFields = {
+      insurance_info: form.insurance_info,
+      default_payment_terms: form.default_payment_terms,
+      default_warranty: form.default_warranty,
+      default_disclosures: form.default_disclosures,
+    };
+    const hasContent = Object.values(textFields).some(v => v.trim());
+    if (!hasContent) {
+      toast({ title: 'Nothing to refine', description: 'Fill in some text fields first.' });
+      return;
+    }
+    setRefining(true);
+    try {
+      const { data, error } = await supabaseClient.functions.invoke('refine-text', {
+        body: { fields: textFields },
+      });
+      if (error) throw error;
+      if (data?.refined) {
+        const r = data.refined;
+        setForm(prev => ({
+          ...prev,
+          insurance_info: r.insurance_info || prev.insurance_info,
+          default_payment_terms: r.default_payment_terms || prev.default_payment_terms,
+          default_warranty: r.default_warranty || prev.default_warranty,
+          default_disclosures: r.default_disclosures || prev.default_disclosures,
+        }));
+        toast({ title: 'Text refined!', description: 'Review the changes and save when ready.' });
+      }
+    } catch (err: any) {
+      toast({ title: 'Refinement failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setRefining(false);
+    }
+  };
 
   useEffect(() => {
     if (profile) {
@@ -245,7 +284,7 @@ export default function CompanyProfile() {
               <div className="space-y-2"><Label>ZIP</Label><Input value={form.zip} onChange={(e) => handleChange('zip', e.target.value)} /></div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>Phone</Label><Input value={form.phone} onChange={(e) => handleChange('phone', e.target.value)} /></div>
+              <div className="space-y-2"><Label>Phone</Label><PhoneInput value={form.phone} onChange={(v) => setForm(prev => ({ ...prev, phone: v }))} /></div>
               <div className="space-y-2"><Label>Email</Label><Input value={form.email} onChange={(e) => handleChange('email', e.target.value)} /></div>
             </div>
             <div className="space-y-2"><Label>Website (optional)</Label><Input value={form.website} onChange={(e) => handleChange('website', e.target.value)} placeholder="https://" /></div>
@@ -281,7 +320,11 @@ export default function CompanyProfile() {
           </CardContent>
         </Card>
 
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-3">
+          <Button variant="outline" onClick={handleRefineWithAI} disabled={refining} className="gap-2">
+            {refining ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            {refining ? 'Refining...' : 'Refine with AI'}
+          </Button>
           <Button onClick={handleSave} disabled={isUpdating}>
             {isUpdating ? 'Saving...' : 'Save changes'}
           </Button>
