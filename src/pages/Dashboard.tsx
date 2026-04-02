@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useProposals } from '@/hooks/useProposals';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -8,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Plus, FileText, AlertCircle } from 'lucide-react';
+import { formatCurrency } from '@/lib/formatCurrency';
 
 const statusColors: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground',
@@ -16,14 +18,28 @@ const statusColors: Record<string, string> = {
   expired: 'bg-destructive/10 text-destructive',
 };
 
+type TabKey = 'all' | 'signed' | 'sent' | 'draft';
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const { proposals, isLoading: proposalsLoading } = useProposals();
   const { subscription, isLoading: subLoading } = useSubscription();
   const { profileCompletion, isLoading: profileLoading } = useCompanyProfile();
+  const [activeTab, setActiveTab] = useState<TabKey>('all');
 
   const isActive = subscription?.status === 'active';
   const proposalsUsed = subscription?.proposals_used ?? 0;
+
+  const tabs: { key: TabKey; label: string }[] = [
+    { key: 'all', label: 'All' },
+    { key: 'signed', label: 'Signed' },
+    { key: 'sent', label: 'Pending Signature' },
+    { key: 'draft', label: 'Incomplete' },
+  ];
+
+  const filteredProposals = activeTab === 'all'
+    ? proposals
+    : proposals.filter((p) => p.status === activeTab);
 
   return (
     <AppLayout>
@@ -85,9 +101,23 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        {/* Create New */}
+        {/* Tabs + Create */}
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Recent Proposals</h2>
+          <div className="flex items-center gap-1 border rounded-lg p-1">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                  activeTab === tab.key
+                    ? 'bg-foreground text-background font-medium'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
           <Button onClick={() => navigate('/proposals/new')} className="gap-2">
             <Plus className="h-4 w-4" />
             Create New Proposal
@@ -97,21 +127,25 @@ export default function Dashboard() {
         {/* Proposals list */}
         {proposalsLoading ? (
           <p className="text-sm text-muted-foreground">Loading proposals...</p>
-        ) : proposals.length === 0 ? (
+        ) : filteredProposals.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12 text-center">
               <FileText className="h-10 w-10 text-muted-foreground/40 mb-3" />
-              <p className="text-sm font-medium">No proposals yet</p>
+              <p className="text-sm font-medium">
+                {activeTab === 'all' ? 'No proposals yet' : `No ${tabs.find(t => t.key === activeTab)?.label.toLowerCase()} proposals`}
+              </p>
               <p className="text-xs text-muted-foreground mt-1">Create your first professional proposal in minutes.</p>
-              <Button onClick={() => navigate('/proposals/new')} className="mt-4 gap-2" size="sm">
-                <Plus className="h-4 w-4" />
-                Create Proposal
-              </Button>
+              {activeTab === 'all' && (
+                <Button onClick={() => navigate('/proposals/new')} className="mt-4 gap-2" size="sm">
+                  <Plus className="h-4 w-4" />
+                  Create Proposal
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
           <div className="border rounded-lg divide-y">
-            {proposals.map((p) => (
+            {filteredProposals.map((p) => (
               <Link
                 key={p.id}
                 to={`/proposals/${p.id}`}
@@ -127,7 +161,7 @@ export default function Dashboard() {
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium">${Number(p.total || 0).toLocaleString()}</span>
+                  <span className="text-sm font-medium">${formatCurrency(p.total)}</span>
                   <Badge variant="outline" className={statusColors[p.status] || ''}>
                     {p.status}
                   </Badge>

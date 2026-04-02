@@ -9,7 +9,7 @@ import ProposalForm from '@/components/proposal/ProposalForm';
 import UpgradePrompt from '@/components/proposal/UpgradePrompt';
 import { useToast } from '@/hooks/use-toast';
 
-export type ProposalTemplate = 'classic' | 'modern' | 'minimal';
+export type ProposalTemplate = 'classic' | 'modern' | 'minimal' | 'bold' | 'executive';
 
 export interface LineItemData {
   description: string;
@@ -54,7 +54,7 @@ export default function NewProposal() {
   const { createProposal, isCreating } = useProposals();
   const { subscription, canCreateProposal, incrementProposalCount } = useSubscription();
   const { profile } = useCompanyProfile();
-  const [step, setStep] = useState<'template' | 'form'>(canCreateProposal ? 'template' : 'template');
+  const [step, setStep] = useState<'template' | 'form'>('template');
   const [selectedTemplate, setSelectedTemplate] = useState<ProposalTemplate>('classic');
   const [showUpgrade, setShowUpgrade] = useState(!canCreateProposal);
 
@@ -145,7 +145,7 @@ export default function NewProposal() {
 
   return (
     <AppLayout>
-      <div className="container max-w-3xl py-8 animate-fade-in">
+      <div className="container max-w-4xl py-8 animate-fade-in">
         {step === 'template' ? (
           <TemplateSelector
             selected={selectedTemplate}
