@@ -324,6 +324,31 @@ export default function CompanyProfile() {
           </CardContent>
         </Card>
 
+        {/* Payment */}
+        <Card>
+          <CardHeader><CardTitle className="text-base flex items-center gap-2"><CreditCard className="h-4 w-4" /> Payment Settings</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Accept online payments</p>
+                <p className="text-xs text-muted-foreground">Allow clients to pay invoices via credit card or bank transfer (ACH) through Stripe.</p>
+              </div>
+              <Switch
+                checked={form.stripe_enabled}
+                onCheckedChange={(checked) => setForm(prev => ({ ...prev, stripe_enabled: checked }))}
+              />
+            </div>
+            {form.stripe_enabled && (
+              <div className="rounded-lg border border-success/30 bg-success/5 p-3">
+                <p className="text-sm font-medium text-success">Stripe connected ✓</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Clients will be able to pay via credit card and bank ACH when you send proposals.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         <div className="flex justify-end gap-3">
           <Button variant="outline" onClick={handleRefineWithAI} disabled={refining} className="gap-2">
             {refining ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
