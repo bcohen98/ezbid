@@ -53,6 +53,43 @@ export default function CompanyProfile() {
 
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [refining, setRefining] = useState(false);
+
+  const handleRefineWithAI = async () => {
+    const textFields = {
+      insurance_info: form.insurance_info,
+      default_payment_terms: form.default_payment_terms,
+      default_warranty: form.default_warranty,
+      default_disclosures: form.default_disclosures,
+    };
+    const hasContent = Object.values(textFields).some(v => v.trim());
+    if (!hasContent) {
+      toast({ title: 'Nothing to refine', description: 'Fill in some text fields first.' });
+      return;
+    }
+    setRefining(true);
+    try {
+      const { data, error } = await supabaseClient.functions.invoke('refine-text', {
+        body: { fields: textFields },
+      });
+      if (error) throw error;
+      if (data?.refined) {
+        const r = data.refined;
+        setForm(prev => ({
+          ...prev,
+          insurance_info: r.insurance_info || prev.insurance_info,
+          default_payment_terms: r.default_payment_terms || prev.default_payment_terms,
+          default_warranty: r.default_warranty || prev.default_warranty,
+          default_disclosures: r.default_disclosures || prev.default_disclosures,
+        }));
+        toast({ title: 'Text refined!', description: 'Review the changes and save when ready.' });
+      }
+    } catch (err: any) {
+      toast({ title: 'Refinement failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setRefining(false);
+    }
+  };
 
   useEffect(() => {
     if (profile) {
