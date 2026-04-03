@@ -14,7 +14,7 @@ interface Props {
   onLineItemEdit?: (id: string, updates: { description: string; quantity: number; unit: string; unit_price: number; subtotal: number }) => void;
 }
 
-export default function ProposalDocument({ proposal, lineItems, profile, onFieldEdit }: Props) {
+export default function ProposalDocument({ proposal, lineItems, profile, onFieldEdit, onLineItemEdit }: Props) {
   const template = proposal.template || 'classic';
   const brandColor = profile?.brand_color || '#000000';
 
