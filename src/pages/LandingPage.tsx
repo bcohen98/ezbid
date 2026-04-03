@@ -101,7 +101,7 @@ export default function LandingPage() {
       </section>
 
       {/* Testimonials */}
-      <section className="py-16">
+      <section id="testimonials" className="py-16">
         <div className="container max-w-5xl mx-auto">
           {/* Hero pull quote */}
           <div className="rounded-lg bg-secondary px-6 py-10 md:px-12 md:py-12 text-center mb-14">
