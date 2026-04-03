@@ -1,5 +1,6 @@
 import type { Database } from '@/integrations/supabase/types';
 import { formatCurrency } from '@/lib/formatCurrency';
+import EditableSection from './EditableSection';
 
 type Proposal = Database['public']['Tables']['proposals']['Row'];
 type LineItem = Database['public']['Tables']['proposal_line_items']['Row'];
@@ -9,11 +10,21 @@ interface Props {
   proposal: Proposal;
   lineItems: LineItem[];
   profile: CompanyProfile | null | undefined;
+  onFieldEdit?: (field: string, value: string) => void;
 }
 
-export default function ProposalDocument({ proposal, lineItems, profile }: Props) {
+export default function ProposalDocument({ proposal, lineItems, profile, onFieldEdit }: Props) {
   const template = proposal.template || 'classic';
   const brandColor = profile?.brand_color || '#000000';
+
+  const editable = (field: string, value: string | null, children: React.ReactNode) => {
+    if (!onFieldEdit || !value) return children;
+    return (
+      <EditableSection field={field} value={value} onSave={onFieldEdit}>
+        {children}
+      </EditableSection>
+    );
+  };
 
   return (
     <div className="p-8 text-sm" style={{ fontFamily: "'Inter', sans-serif", minHeight: '800px' }}>
@@ -135,13 +146,17 @@ export default function ProposalDocument({ proposal, lineItems, profile }: Props
       </div>
 
       {/* Title */}
-      {proposal.title && <h2 className="text-lg font-semibold mb-4">{proposal.title}</h2>}
+      {proposal.title && editable('title', proposal.title,
+        <h2 className="text-lg font-semibold mb-4">{proposal.title}</h2>
+      )}
 
       {/* Job Description */}
       {(proposal.enhanced_job_description || proposal.job_description) && (
         <div className="mb-4">
           <SectionHeading template={template} color={brandColor}>Job Description</SectionHeading>
-          <p className="text-sm mt-1 whitespace-pre-wrap">{proposal.enhanced_job_description || proposal.job_description}</p>
+          {editable('job_description', proposal.enhanced_job_description || proposal.job_description,
+            <p className="text-sm mt-1 whitespace-pre-wrap">{proposal.enhanced_job_description || proposal.job_description}</p>
+          )}
         </div>
       )}
 
@@ -149,7 +164,9 @@ export default function ProposalDocument({ proposal, lineItems, profile }: Props
       {(proposal.enhanced_scope_of_work || proposal.scope_of_work) && (
         <div className="mb-4">
           <SectionHeading template={template} color={brandColor}>Scope of Work</SectionHeading>
-          <p className="text-sm mt-1 whitespace-pre-wrap">{proposal.enhanced_scope_of_work || proposal.scope_of_work}</p>
+          {editable('scope_of_work', proposal.enhanced_scope_of_work || proposal.scope_of_work,
+            <p className="text-sm mt-1 whitespace-pre-wrap">{proposal.enhanced_scope_of_work || proposal.scope_of_work}</p>
+          )}
         </div>
       )}
 
@@ -157,13 +174,17 @@ export default function ProposalDocument({ proposal, lineItems, profile }: Props
       {proposal.materials_included && (
         <div className="mb-4">
           <SectionHeading template={template} color={brandColor}>Materials Included</SectionHeading>
-          <p className="text-sm mt-1 whitespace-pre-wrap">{proposal.materials_included}</p>
+          {editable('materials_included', proposal.materials_included,
+            <p className="text-sm mt-1 whitespace-pre-wrap">{proposal.materials_included}</p>
+          )}
         </div>
       )}
       {proposal.materials_excluded && (
         <div className="mb-4">
           <SectionHeading template={template} color={brandColor}>Materials Excluded</SectionHeading>
-          <p className="text-sm mt-1 whitespace-pre-wrap">{proposal.materials_excluded}</p>
+          {editable('materials_excluded', proposal.materials_excluded,
+            <p className="text-sm mt-1 whitespace-pre-wrap">{proposal.materials_excluded}</p>
+          )}
         </div>
       )}
 
@@ -173,7 +194,9 @@ export default function ProposalDocument({ proposal, lineItems, profile }: Props
           <SectionHeading template={template} color={brandColor}>Timeline</SectionHeading>
           <div className="text-sm mt-1">
             {proposal.estimated_start_date && <div>Start date: {proposal.estimated_start_date}</div>}
-            {proposal.estimated_duration && <div>Duration: {proposal.estimated_duration}</div>}
+            {proposal.estimated_duration && editable('estimated_duration', proposal.estimated_duration,
+              <div>Duration: {proposal.estimated_duration}</div>
+            )}
           </div>
         </div>
       )}
@@ -224,7 +247,9 @@ export default function ProposalDocument({ proposal, lineItems, profile }: Props
       {proposal.payment_terms && (
         <div className="mb-4">
           <SectionHeading template={template} color={brandColor}>Payment Terms</SectionHeading>
-          <p className="text-sm mt-1">{proposal.payment_terms}</p>
+          {editable('payment_terms', proposal.payment_terms,
+            <p className="text-sm mt-1">{proposal.payment_terms}</p>
+          )}
           {proposal.accepted_payment_methods?.length ? (
             <p className="text-xs text-muted-foreground mt-1">Accepted: {proposal.accepted_payment_methods.join(', ')}</p>
           ) : null}
@@ -235,7 +260,9 @@ export default function ProposalDocument({ proposal, lineItems, profile }: Props
       {proposal.warranty_terms && (
         <div className="mb-4">
           <SectionHeading template={template} color={brandColor}>Warranty</SectionHeading>
-          <p className="text-sm mt-1 whitespace-pre-wrap">{proposal.warranty_terms}</p>
+          {editable('warranty_terms', proposal.warranty_terms,
+            <p className="text-sm mt-1 whitespace-pre-wrap">{proposal.warranty_terms}</p>
+          )}
         </div>
       )}
 
@@ -243,7 +270,9 @@ export default function ProposalDocument({ proposal, lineItems, profile }: Props
       {proposal.disclosures && (
         <div className="mb-4">
           <SectionHeading template={template} color={brandColor}>Disclosures</SectionHeading>
-          <p className="text-sm mt-1 whitespace-pre-wrap">{proposal.disclosures}</p>
+          {editable('disclosures', proposal.disclosures,
+            <p className="text-sm mt-1 whitespace-pre-wrap">{proposal.disclosures}</p>
+          )}
         </div>
       )}
 
@@ -251,7 +280,9 @@ export default function ProposalDocument({ proposal, lineItems, profile }: Props
       {proposal.special_conditions && (
         <div className="mb-4">
           <SectionHeading template={template} color={brandColor}>Special Conditions</SectionHeading>
-          <p className="text-sm mt-1 whitespace-pre-wrap">{proposal.special_conditions}</p>
+          {editable('special_conditions', proposal.special_conditions,
+            <p className="text-sm mt-1 whitespace-pre-wrap">{proposal.special_conditions}</p>
+          )}
         </div>
       )}
 
