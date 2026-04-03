@@ -41,7 +41,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, onField
               <div className="text-xs opacity-70 mt-1">
                 {[profile?.street_address, profile?.city, profile?.state, profile?.zip].filter(Boolean).join(', ')}
               </div>
-              {profile?.phone && <div className="text-xs opacity-70">{profile.phone}</div>}
+              {profile?.phone && <div className="text-xs opacity-70">{formatPhone(profile.phone)}</div>}
               {profile?.email && <div className="text-xs opacity-70">{profile.email}</div>}
               {profile?.license_numbers?.length ? <div className="text-xs opacity-70 mt-1">Lic# {profile.license_numbers.join(', ')}</div> : null}
             </div>
@@ -63,7 +63,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, onField
               <div className="text-xs text-muted-foreground mt-1">
                 {[profile?.street_address, profile?.city, profile?.state, profile?.zip].filter(Boolean).join(', ')}
               </div>
-              {profile?.phone && <div className="text-xs text-muted-foreground">{profile.phone}</div>}
+              {profile?.phone && <div className="text-xs text-muted-foreground">{formatPhone(profile.phone)}</div>}
             </div>
             <div className="text-right">
               <div className="text-2xl font-bold tracking-tight" style={{ color: brandColor }}>PROPOSAL</div>
@@ -99,7 +99,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, onField
             <div className="text-xs text-muted-foreground mt-1">
               {[profile?.street_address, profile?.city, profile?.state, profile?.zip].filter(Boolean).join(', ')}
             </div>
-            {profile?.phone && <div className="text-xs text-muted-foreground">{profile.phone}</div>}
+            {profile?.phone && <div className="text-xs text-muted-foreground">{formatPhone(profile.phone)}</div>}
           </div>
           <div className="flex justify-between items-end mt-4">
             <div className="text-3xl font-black uppercase tracking-tighter" style={{ color: brandColor }}>Proposal</div>
@@ -117,7 +117,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, onField
               <div className="text-xs text-muted-foreground mt-0.5">
                 {[profile?.street_address, profile?.city, profile?.state, profile?.zip].filter(Boolean).join(', ')}
               </div>
-              {profile?.phone && <div className="text-xs text-muted-foreground">{profile.phone}</div>}
+              {profile?.phone && <div className="text-xs text-muted-foreground">{formatPhone(profile.phone)}</div>}
               {profile?.email && <div className="text-xs text-muted-foreground">{profile.email}</div>}
               {profile?.license_numbers?.length ? <div className="text-xs text-muted-foreground mt-1">License: {profile.license_numbers.join(', ')}</div> : null}
             </div>
@@ -135,7 +135,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, onField
           <SectionHeading template={template} color={brandColor}>Client</SectionHeading>
           <div className="text-sm mt-1">{proposal.client_name}</div>
           {proposal.client_email && <div className="text-xs text-muted-foreground">{proposal.client_email}</div>}
-          {proposal.client_phone && <div className="text-xs text-muted-foreground">{proposal.client_phone}</div>}
+          {proposal.client_phone && <div className="text-xs text-muted-foreground">{formatPhone(proposal.client_phone)}</div>}
           {proposal.job_site_street && (
             <div className="text-xs text-muted-foreground mt-1">
               {proposal.job_site_street}, {proposal.job_site_city}, {proposal.job_site_state} {proposal.job_site_zip}
