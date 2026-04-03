@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useProposals } from '@/hooks/useProposals';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Plus, FileText, AlertCircle } from 'lucide-react';
+import { Plus, FileText, AlertCircle, PenLine, X } from 'lucide-react';
 import { formatCurrency } from '@/lib/formatCurrency';
 
 const statusColors: Record<string, string> = {
