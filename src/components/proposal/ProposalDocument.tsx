@@ -400,6 +400,15 @@ function SectionHeading({ template, color, children }: { template: string; color
   if (template === 'executive') {
     return <h3 className="text-sm font-semibold tracking-tight border-b pb-1 mb-1">{children}</h3>;
   }
+  if (template === 'contractor') {
+    return <h3 className="text-sm font-bold uppercase border-b-2 border-foreground pb-1 mb-1">{children}</h3>;
+  }
+  if (template === 'premium') {
+    return <h3 className="text-sm font-semibold tracking-widest uppercase" style={{ color: '#8B7355' }}>{children}</h3>;
+  }
+  if (template === 'clean') {
+    return <h3 className="text-sm font-medium" style={{ color }}>{children}</h3>;
+  }
   // Classic
   return <h3 className="text-sm font-semibold">{children}</h3>;
 }

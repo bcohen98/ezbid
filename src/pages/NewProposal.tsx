@@ -9,7 +9,7 @@ import ProposalForm from '@/components/proposal/ProposalForm';
 import UpgradePrompt from '@/components/proposal/UpgradePrompt';
 import { useToast } from '@/hooks/use-toast';
 
-export type ProposalTemplate = 'classic' | 'modern' | 'minimal' | 'bold' | 'executive';
+export type ProposalTemplate = 'classic' | 'modern' | 'minimal' | 'bold' | 'executive' | 'contractor' | 'premium' | 'clean';
 
 export interface LineItemData {
   description: string;

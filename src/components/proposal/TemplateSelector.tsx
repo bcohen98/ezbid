@@ -232,6 +232,76 @@ function TemplateThumbnail({ template, brandColor }: { template: ProposalTemplat
     );
   }
 
+  if (template === 'contractor') {
+    return (
+      <div className="p-4 h-full flex flex-col text-[6px]">
+        <div className="bg-muted/50 border rounded-sm p-2 mb-3">
+          <div className="flex justify-between items-center">
+            <div className="font-bold text-[8px] uppercase">Work Order</div>
+            <div className="text-muted-foreground text-[5px]">PRO-0001</div>
+          </div>
+          <div className="text-muted-foreground mt-0.5">COMPANY NAME</div>
+        </div>
+        <div className="space-y-2 flex-1">
+          <div><span className="font-bold text-[7px]">1.</span> <span className="text-[7px]">Scope of Work</span></div>
+          <div className="h-1 bg-muted rounded w-full"></div>
+          <div><span className="font-bold text-[7px]">2.</span> <span className="text-[7px]">Materials</span></div>
+          <div className="h-1 bg-muted rounded w-3/4"></div>
+        </div>
+        <div className="border-t-2 border-foreground mt-2 pt-1">
+          <div className="font-bold text-right">Total: $0.00</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (template === 'premium') {
+    return (
+      <div className="h-full flex flex-col text-[6px]" style={{ background: 'linear-gradient(180deg, #faf9f6 0%, #f5f0e8 100%)' }}>
+        <div className="p-4 flex-1 flex flex-col">
+          <div className="text-center mb-3">
+            <div className="font-semibold text-[9px] tracking-widest uppercase" style={{ color: '#8B7355' }}>COMPANY NAME</div>
+            <div className="w-8 h-[1px] mx-auto mt-1" style={{ backgroundColor: '#8B7355' }}></div>
+          </div>
+          <div className="text-center text-[7px] font-medium mb-2" style={{ color: '#8B7355' }}>Professional Proposal</div>
+          <div className="flex-1 space-y-1">
+            <div className="h-1 rounded w-full" style={{ backgroundColor: '#e8dfd2' }}></div>
+            <div className="h-1 rounded w-3/4" style={{ backgroundColor: '#e8dfd2' }}></div>
+          </div>
+          <div className="border-t mt-2 pt-1" style={{ borderColor: '#8B7355' }}>
+            <div className="font-semibold text-right" style={{ color: '#8B7355' }}>Total: $0.00</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (template === 'clean') {
+    return (
+      <div className="p-4 h-full flex flex-col text-[6px]">
+        <div className="flex justify-between items-start mb-4 pb-2 border-b">
+          <div>
+            <div className="font-semibold text-[8px]">COMPANY NAME</div>
+            <div className="text-muted-foreground">123 Main St</div>
+          </div>
+          <div className="text-right">
+            <div className="font-medium text-[8px]">PROPOSAL</div>
+            <div className="text-muted-foreground">PRO-0001</div>
+          </div>
+        </div>
+        <div className="text-[7px] font-medium mb-1" style={{ color: brandColor }}>Scope of Work</div>
+        <div className="flex-1 space-y-1">
+          <div className="h-1 bg-muted rounded w-full"></div>
+          <div className="h-1 bg-muted rounded w-5/6"></div>
+          <div className="h-1 bg-muted rounded w-2/3"></div>
+        </div>
+        <div className="border-t mt-2 pt-1">
+          <div className="font-medium text-right text-[7px]">Total: $0.00</div>
+        </div>
+      </div>
+    );
+  }
+
   // Minimal
   return (
     <div className="p-4 h-full flex flex-col text-[6px]">
