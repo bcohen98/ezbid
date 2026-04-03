@@ -89,7 +89,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <Badge variant={isActive ? 'default' : 'secondary'}>
-                {isActive ? 'Active — $79/mo' : 'Free tier'}
+                {isActive ? 'Active — $29/mo' : 'Free tier'}
               </Badge>
             </CardContent>
           </Card>

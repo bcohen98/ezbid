@@ -167,7 +167,7 @@ export default function LandingPage() {
                 Most popular
               </span>
               <h3 className="text-lg font-semibold">Pro</h3>
-              <p className="mt-1 text-3xl font-bold">$79<span className="text-sm font-normal text-muted-foreground">/mo</span></p>
+              <p className="mt-1 text-3xl font-bold">$29<span className="text-sm font-normal text-muted-foreground">/mo</span></p>
               <p className="text-xs text-muted-foreground">Unlimited proposals</p>
               <ul className="mt-5 space-y-2">
                 {["Unlimited proposals", "All templates", "AI-enhanced descriptions", "PDF export", "Email delivery", "E-signatures", "Priority support"].map((f) => (
