@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      clients: {
+        Row: {
+          address: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       company_profiles: {
         Row: {
           brand_color: string | null
@@ -94,6 +127,189 @@ export type Database = {
           zip?: string | null
         }
         Relationships: []
+      }
+      invoices: {
+        Row: {
+          amount_paid: number | null
+          balance_due: number | null
+          client_id: string | null
+          created_at: string
+          due_date: string | null
+          id: string
+          invoice_number: number
+          job_id: string | null
+          line_items: Json | null
+          paid_at: string | null
+          proposal_id: string | null
+          status: Database["public"]["Enums"]["invoice_status"]
+          subtotal: number | null
+          tax: number | null
+          total: number | null
+          user_id: string
+        }
+        Insert: {
+          amount_paid?: number | null
+          balance_due?: number | null
+          client_id?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          invoice_number?: number
+          job_id?: string | null
+          line_items?: Json | null
+          paid_at?: string | null
+          proposal_id?: string | null
+          status?: Database["public"]["Enums"]["invoice_status"]
+          subtotal?: number | null
+          tax?: number | null
+          total?: number | null
+          user_id: string
+        }
+        Update: {
+          amount_paid?: number | null
+          balance_due?: number | null
+          client_id?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          invoice_number?: number
+          job_id?: string | null
+          line_items?: Json | null
+          paid_at?: string | null
+          proposal_id?: string | null
+          status?: Database["public"]["Enums"]["invoice_status"]
+          subtotal?: number | null
+          tax?: number | null
+          total?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jobs: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          estimated_duration: string | null
+          id: string
+          job_site_address: string | null
+          notes: string | null
+          start_date: string | null
+          status: Database["public"]["Enums"]["job_status"]
+          title: string
+          trade_type: Database["public"]["Enums"]["trade_type"] | null
+          user_id: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          estimated_duration?: string | null
+          id?: string
+          job_site_address?: string | null
+          notes?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["job_status"]
+          title: string
+          trade_type?: Database["public"]["Enums"]["trade_type"] | null
+          user_id: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          estimated_duration?: string | null
+          id?: string
+          job_site_address?: string | null
+          notes?: string | null
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["job_status"]
+          title?: string
+          trade_type?: Database["public"]["Enums"]["trade_type"] | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jobs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          client_id: string | null
+          created_at: string
+          id: string
+          invoice_id: string | null
+          paid_at: string | null
+          payment_method: string | null
+          status: Database["public"]["Enums"]["payment_status"]
+          stripe_payment_intent_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          status?: Database["public"]["Enums"]["payment_status"]
+          stripe_payment_intent_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          status?: Database["public"]["Enums"]["payment_status"]
+          stripe_payment_intent_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       proposal_line_items: {
         Row: {
@@ -179,6 +395,7 @@ export type Database = {
           accepted_payment_methods: string[] | null
           balance_due: number | null
           client_email: string | null
+          client_id: string | null
           client_name: string | null
           client_phone: string | null
           client_signature_url: string | null
@@ -195,6 +412,7 @@ export type Database = {
           estimated_start_date: string | null
           id: string
           job_description: string | null
+          job_id: string | null
           job_site_city: string | null
           job_site_state: string | null
           job_site_street: string | null
@@ -209,6 +427,7 @@ export type Database = {
           proposal_number: number
           revision_history: Json | null
           scope_of_work: string | null
+          sent_at: string | null
           special_conditions: string | null
           status: Database["public"]["Enums"]["proposal_status"]
           subtotal: number | null
@@ -226,6 +445,7 @@ export type Database = {
           accepted_payment_methods?: string[] | null
           balance_due?: number | null
           client_email?: string | null
+          client_id?: string | null
           client_name?: string | null
           client_phone?: string | null
           client_signature_url?: string | null
@@ -242,6 +462,7 @@ export type Database = {
           estimated_start_date?: string | null
           id?: string
           job_description?: string | null
+          job_id?: string | null
           job_site_city?: string | null
           job_site_state?: string | null
           job_site_street?: string | null
@@ -256,6 +477,7 @@ export type Database = {
           proposal_number: number
           revision_history?: Json | null
           scope_of_work?: string | null
+          sent_at?: string | null
           special_conditions?: string | null
           status?: Database["public"]["Enums"]["proposal_status"]
           subtotal?: number | null
@@ -273,6 +495,7 @@ export type Database = {
           accepted_payment_methods?: string[] | null
           balance_due?: number | null
           client_email?: string | null
+          client_id?: string | null
           client_name?: string | null
           client_phone?: string | null
           client_signature_url?: string | null
@@ -289,6 +512,7 @@ export type Database = {
           estimated_start_date?: string | null
           id?: string
           job_description?: string | null
+          job_id?: string | null
           job_site_city?: string | null
           job_site_state?: string | null
           job_site_street?: string | null
@@ -303,6 +527,7 @@ export type Database = {
           proposal_number?: number
           revision_history?: Json | null
           scope_of_work?: string | null
+          sent_at?: string | null
           special_conditions?: string | null
           status?: Database["public"]["Enums"]["proposal_status"]
           subtotal?: number | null
@@ -316,7 +541,22 @@ export type Database = {
           valid_until?: string | null
           warranty_terms?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "proposals_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposals_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -343,7 +583,9 @@ export type Database = {
         Row: {
           created_at: string
           current_period_end: string | null
+          current_period_start: string | null
           id: string
+          plan: Database["public"]["Enums"]["subscription_plan"] | null
           proposals_used: number
           status: string
           stripe_customer_id: string | null
@@ -354,7 +596,9 @@ export type Database = {
         Insert: {
           created_at?: string
           current_period_end?: string | null
+          current_period_start?: string | null
           id?: string
+          plan?: Database["public"]["Enums"]["subscription_plan"] | null
           proposals_used?: number
           status?: string
           stripe_customer_id?: string | null
@@ -365,7 +609,9 @@ export type Database = {
         Update: {
           created_at?: string
           current_period_end?: string | null
+          current_period_start?: string | null
           id?: string
+          plan?: Database["public"]["Enums"]["subscription_plan"] | null
           proposals_used?: number
           status?: string
           stripe_customer_id?: string | null
@@ -392,6 +638,15 @@ export type Database = {
     Enums: {
       app_role: "admin" | "user"
       deposit_mode: "percentage" | "flat"
+      invoice_status: "draft" | "sent" | "paid" | "overdue"
+      job_status:
+        | "lead"
+        | "proposed"
+        | "won"
+        | "lost"
+        | "in_progress"
+        | "completed"
+      payment_status: "pending" | "completed" | "failed" | "refunded"
       proposal_status:
         | "draft"
         | "sent"
@@ -403,6 +658,7 @@ export type Database = {
         | "payment_pending"
         | "closed"
       proposal_template: "classic" | "modern" | "minimal" | "bold" | "executive"
+      subscription_plan: "starter" | "pro"
       trade_type:
         | "general_contractor"
         | "roofing"
@@ -542,6 +798,16 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "user"],
       deposit_mode: ["percentage", "flat"],
+      invoice_status: ["draft", "sent", "paid", "overdue"],
+      job_status: [
+        "lead",
+        "proposed",
+        "won",
+        "lost",
+        "in_progress",
+        "completed",
+      ],
+      payment_status: ["pending", "completed", "failed", "refunded"],
       proposal_status: [
         "draft",
         "sent",
@@ -554,6 +820,7 @@ export const Constants = {
         "closed",
       ],
       proposal_template: ["classic", "modern", "minimal", "bold", "executive"],
+      subscription_plan: ["starter", "pro"],
       trade_type: [
         "general_contractor",
         "roofing",
