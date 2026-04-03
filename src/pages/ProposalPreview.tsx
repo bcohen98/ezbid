@@ -40,6 +40,8 @@ export default function ProposalPreview() {
     return <AppLayout><div className="container py-8"><p className="text-sm text-muted-foreground">Proposal not found</p></div></AppLayout>;
   }
 
+  console.log('[ProposalPreview] render — client_email:', JSON.stringify(proposal.client_email), 'type:', typeof proposal.client_email, 'falsy:', !proposal.client_email);
+
   const revisionHistory: RevisionEntry[] = Array.isArray((proposal as any).revision_history) ? (proposal as any).revision_history : [];
 
   const saveSnapshot = () => {
@@ -395,7 +397,7 @@ export default function ProposalPreview() {
               <Button
                 className="w-full gap-2"
                 onClick={handleSendClient}
-                disabled={isSendingClient || !proposal.client_email}
+                disabled={isSendingClient}
               >
                 {isSendingClient ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 {isSendingClient ? 'Sending...' : 'Send to client'}
