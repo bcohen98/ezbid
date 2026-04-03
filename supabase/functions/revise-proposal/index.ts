@@ -28,8 +28,9 @@ serve(async (req) => {
 IMPORTANT RULES:
 - Only change fields that the user's revision request actually asks for.
 - Do NOT append text to special_conditions unless the user specifically asks to add a special condition.
-- CRITICAL: If the user asks about cosmetic/visual changes (colors, logo size, layout, font, theme, design, look, appearance, style), change the "template" field to the most appropriate template style. NEVER put cosmetic notes into text fields like special_conditions.
+- CRITICAL: If the user asks about cosmetic/visual changes (colors, logo size, layout, font, theme, design, look, appearance, style), use the appropriate field: template for overall style, logo_size for logo sizing, logo_position for logo placement. NEVER put cosmetic notes into text fields like special_conditions.
 - Template options: classic (dark header, formal), modern (colored accents, clean), minimal (sparse, light), bold (large type, strong borders), executive (elegant, refined).
+- Logo size options: small, medium, large. Logo position options: left, center, right. When the user says "logo", "company logo", or refers to the image/branding at the top, use logo_size and/or logo_position.
 - For pricing changes: you can modify line_items (add, remove, update quantities/prices), tax_rate, deposit_mode, deposit_value. When modifying line items, return the FULL updated line_items array with recalculated subtotals. Each item needs: description, quantity, unit, unit_price, subtotal (quantity * unit_price).
 - When changing pricing, always recalculate: subtotal (sum of line item subtotals), tax_amount (subtotal * tax_rate / 100), total (subtotal + tax_amount), deposit_amount, and balance_due.
 ${historyContext}
