@@ -10,6 +10,7 @@ import CompanyProfile from "./pages/CompanyProfile";
 import NewProposal from "./pages/NewProposal";
 import ProposalPreview from "./pages/ProposalPreview";
 import ProposalDetail from "./pages/ProposalDetail";
+import Clients from "./pages/Clients";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
