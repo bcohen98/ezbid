@@ -7,8 +7,10 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ChevronDown, ChevronRight, ChevronUp, ArrowUpDown, Users, Search } from 'lucide-react';
-
+import { ChevronDown, ChevronRight, ChevronUp, ArrowUpDown, Users, Search, Pencil } from 'lucide-react';
+import EditClientDialog from '@/components/EditClientDialog';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 const statusColors: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground',
   sent: 'bg-blue-100 text-blue-700',
@@ -38,10 +40,12 @@ type SortDir = 'asc' | 'desc';
 
 export default function Clients() {
   const { proposals, isLoading } = useProposals();
+  const { toast } = useToast();
   const [expandedClients, setExpandedClients] = useState<Set<string>>(new Set());
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [search, setSearch] = useState('');
+  const [editingClient, setEditingClient] = useState<{ proposalIds: string[]; data: any } | null>(null);
 
   const clientGroups = useMemo(() => {
     const groups: Record<string, typeof proposals> = {};
@@ -178,7 +182,30 @@ export default function Clients() {
                           {client.email && <p className="text-xs text-muted-foreground">{client.email}</p>}
                         </div>
                       </div>
-                      <div className="flex items-center gap-4 text-sm">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const p = client.proposals[0];
+                            setEditingClient({
+                              proposalIds: client.proposals.map(pr => pr.id),
+                              data: {
+                                client_name: p.client_name || '',
+                                client_email: p.client_email || '',
+                                client_phone: p.client_phone || '',
+                                job_site_street: p.job_site_street || '',
+                                job_site_city: p.job_site_city || '',
+                                job_site_state: p.job_site_state || '',
+                                job_site_zip: p.job_site_zip || '',
+                              },
+                            });
+                          }}
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Button>
                         <span className="text-muted-foreground">{client.proposals.length} proposal{client.proposals.length !== 1 ? 's' : ''}</span>
                         <span className="font-medium">${formatCurrency(client.totalValue)}</span>
                       </div>
@@ -230,6 +257,29 @@ export default function Clients() {
               );
             })}
           </div>
+        )}
+        {editingClient && (
+          <EditClientDialog
+            open={!!editingClient}
+            onOpenChange={(open) => { if (!open) setEditingClient(null); }}
+            initialData={editingClient.data}
+            onSave={async (data) => {
+              for (const pid of editingClient.proposalIds) {
+                await supabase.from('proposals').update({
+                  client_name: data.client_name,
+                  client_email: data.client_email,
+                  client_phone: data.client_phone,
+                  job_site_street: data.job_site_street,
+                  job_site_city: data.job_site_city,
+                  job_site_state: data.job_site_state,
+                  job_site_zip: data.job_site_zip,
+                }).eq('id', pid);
+              }
+              setEditingClient(null);
+              toast({ title: 'Client info updated across all proposals' });
+              window.location.reload();
+            }}
+          />
         )}
       </div>
     </AppLayout>

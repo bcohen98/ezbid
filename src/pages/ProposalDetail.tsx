@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useProposal, useProposalLineItems, useProposals } from '@/hooks/useProposals';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
@@ -5,18 +6,20 @@ import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, Eye, Copy, Send } from 'lucide-react';
+import { ArrowLeft, Eye, Copy, Send, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/formatCurrency';
+import EditClientDialog from '@/components/EditClientDialog';
 
 export default function ProposalDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { data: proposal, isLoading } = useProposal(id);
+  const { data: proposal, isLoading, refetch } = useProposal(id);
   const { lineItems } = useProposalLineItems(id);
-  const { createProposal } = useProposals();
+  const { createProposal, updateProposal } = useProposals();
   const { profile } = useCompanyProfile();
+  const [editClientOpen, setEditClientOpen] = useState(false);
 
   if (isLoading) {
     return <AppLayout><div className="container py-8"><p className="text-sm text-muted-foreground">Loading...</p></div></AppLayout>;
@@ -81,9 +84,17 @@ export default function ProposalDetail() {
         {/* Summary */}
         <Card>
           <CardContent className="p-6 space-y-4 text-sm">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="font-medium">Client Info</h3>
+              <Button variant="ghost" size="sm" className="gap-1 text-xs h-7" onClick={() => setEditClientOpen(true)}>
+                <Pencil className="h-3 w-3" /> Edit
+              </Button>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div><span className="text-muted-foreground">Client:</span> {proposal.client_name}</div>
               <div><span className="text-muted-foreground">Email:</span> {proposal.client_email}</div>
+              <div><span className="text-muted-foreground">Phone:</span> {proposal.client_phone || '—'}</div>
+              <div><span className="text-muted-foreground">Address:</span> {[proposal.job_site_street, proposal.job_site_city, proposal.job_site_state, proposal.job_site_zip].filter(Boolean).join(', ') || '—'}</div>
               <div><span className="text-muted-foreground">Proposal date:</span> {proposal.proposal_date}</div>
               <div><span className="text-muted-foreground">Valid until:</span> {proposal.valid_until}</div>
               <div><span className="text-muted-foreground">Template:</span> {proposal.template}</div>
@@ -106,6 +117,26 @@ export default function ProposalDetail() {
             )}
           </CardContent>
         </Card>
+        {proposal && (
+          <EditClientDialog
+            open={editClientOpen}
+            onOpenChange={setEditClientOpen}
+            initialData={{
+              client_name: proposal.client_name || '',
+              client_email: proposal.client_email || '',
+              client_phone: proposal.client_phone || '',
+              job_site_street: proposal.job_site_street || '',
+              job_site_city: proposal.job_site_city || '',
+              job_site_state: proposal.job_site_state || '',
+              job_site_zip: proposal.job_site_zip || '',
+            }}
+            onSave={async (data) => {
+              await updateProposal({ id: proposal.id, ...data });
+              await refetch();
+              toast({ title: 'Client info updated' });
+            }}
+          />
+        )}
       </div>
     </AppLayout>
   );
