@@ -31,6 +31,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const companyLabel = profile?.company_name || 'My Company';
 
   const navItems = [
+    { href: '/proposals/new', label: 'New Proposal', icon: Plus },
     { href: '/dashboard', label: 'Proposals', icon: FileText },
     { href: '/clients', label: 'Clients', icon: Users },
     { href: '/company-profile', label: companyLabel, icon: Settings },
@@ -60,12 +61,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             </nav>
           </div>
           <div className="flex items-center gap-2">
-            <Link to="/proposals/new">
-              <Button size="sm" className="gap-2">
-                <Plus className="h-4 w-4" />
-                New Proposal
-              </Button>
-            </Link>
             <Button variant="ghost" size="sm" className="gap-2" onClick={() => signOut()}>
               <LogOut className="h-4 w-4" />
               Log out
