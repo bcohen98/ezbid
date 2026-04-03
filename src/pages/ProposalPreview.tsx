@@ -284,7 +284,9 @@ export default function ProposalPreview() {
   };
 
   const handleSendClient = async () => {
+    console.log('[handleSendClient] triggered, proposal_id:', proposal.id, 'client_email:', proposal.client_email);
     if (!proposal.client_email) {
+      console.log('[handleSendClient] BLOCKED: no client_email');
       toast({ title: 'Missing client email', description: 'Please add a client email address in the proposal form.', variant: 'destructive' });
       return;
     }
