@@ -231,13 +231,31 @@ export default function ProposalPreview() {
       });
       if (error) throw error;
       if (data?.html) {
-        const printWindow = window.open('', '_blank');
-        if (printWindow) {
-          printWindow.document.write(data.html);
-          printWindow.document.close();
-          setTimeout(() => printWindow.print(), 500);
-        }
-        toast({ title: 'PDF ready', description: 'Use the print dialog to save as PDF.' });
+        // Create a hidden container, render HTML, convert to PDF
+        const container = document.createElement('div');
+        container.style.position = 'fixed';
+        container.style.left = '-9999px';
+        container.style.top = '0';
+        container.style.width = '8.5in';
+        container.innerHTML = data.html;
+        document.body.appendChild(container);
+
+        const html2pdf = (await import('html2pdf.js')).default;
+        const fileName = data.fileName || `Proposal-PRO-${String(proposal.proposal_number).padStart(4, '0')}.pdf`;
+
+        await html2pdf()
+          .set({
+            margin: 0,
+            filename: fileName,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+            jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
+          })
+          .from(container)
+          .save();
+
+        document.body.removeChild(container);
+        toast({ title: 'PDF downloaded', description: fileName });
       }
     } catch (err: any) {
       toast({ title: 'PDF generation failed', description: err.message, variant: 'destructive' });
