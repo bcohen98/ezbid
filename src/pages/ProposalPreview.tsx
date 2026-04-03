@@ -276,7 +276,8 @@ export default function ProposalPreview() {
               <Textarea
                 value={revisionNote}
                 onChange={(e) => setRevisionNote(e.target.value)}
-                placeholder="e.g. Switch to bold template, add a $500 line item for cleanup, change tax to 8.5%, remove the flooring item, increase labor price to $75/hr..."
+                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleRevise(); } }}
+                placeholder="e.g. Switch to bold template, add a $500 line item for cleanup, change tax to 8.5%... (Enter to submit, Shift+Enter for new line)"
                 rows={4}
               />
               <Button
