@@ -6,7 +6,8 @@ import { formatCurrency } from '@/lib/formatCurrency';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronRight, ArrowUpDown, Users } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { ChevronDown, ChevronRight, ChevronUp, ArrowUpDown, Users, Search } from 'lucide-react';
 
 const statusColors: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground',
@@ -40,6 +41,7 @@ export default function Clients() {
   const [expandedClients, setExpandedClients] = useState<Set<string>>(new Set());
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [search, setSearch] = useState('');
 
   const clientGroups = useMemo(() => {
     const groups: Record<string, typeof proposals> = {};
@@ -48,7 +50,6 @@ export default function Clients() {
       if (!groups[key]) groups[key] = [];
       groups[key].push(p);
     }
-    // Sort proposals within each group
     for (const key of Object.keys(groups)) {
       groups[key].sort((a, b) => {
         let cmp = 0;
@@ -63,6 +64,7 @@ export default function Clients() {
   }, [proposals, sortKey, sortDir]);
 
   const clientList = useMemo(() => {
+    const q = search.toLowerCase().trim();
     return Object.entries(clientGroups)
       .map(([key, props]) => ({
         key,
@@ -75,8 +77,14 @@ export default function Clients() {
           return d > latest ? d : latest;
         }, new Date(0)),
       }))
+      .filter(c => {
+        if (!q) return true;
+        return c.name.toLowerCase().includes(q) ||
+          (c.email || '').toLowerCase().includes(q) ||
+          c.proposals.some(p => (p.title || '').toLowerCase().includes(q));
+      })
       .sort((a, b) => b.latestDate.getTime() - a.latestDate.getTime());
-  }, [clientGroups]);
+  }, [clientGroups, search]);
 
   const toggleClient = (key: string) => {
     setExpandedClients(prev => {
@@ -91,6 +99,11 @@ export default function Clients() {
     else { setSortKey(key); setSortDir('desc'); }
   };
 
+  const SortIcon = ({ k }: { k: SortKey }) => {
+    if (sortKey !== k) return <ArrowUpDown className="h-3 w-3 opacity-50" />;
+    return sortDir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />;
+  };
+
   if (isLoading) {
     return <AppLayout><div className="container py-8"><p className="text-sm text-muted-foreground">Loading clients...</p></div></AppLayout>;
   }
@@ -98,11 +111,23 @@ export default function Clients() {
   return (
     <AppLayout>
       <div className="container py-6 animate-fade-in">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Users className="h-5 w-5" />
             <h1 className="text-xl font-semibold">Clients</h1>
             <Badge variant="secondary" className="ml-2">{clientList.length}</Badge>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <div className="relative flex-1 max-w-xs">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search clients or proposals..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-8 h-9 text-sm"
+            />
           </div>
           <div className="flex gap-1">
             {(['date', 'title', 'total', 'status'] as SortKey[]).map(k => (
@@ -114,14 +139,16 @@ export default function Clients() {
                 onClick={() => toggleSort(k)}
               >
                 {k.charAt(0).toUpperCase() + k.slice(1)}
-                {sortKey === k && <ArrowUpDown className="h-3 w-3" />}
+                <SortIcon k={k} />
               </Button>
             ))}
           </div>
         </div>
 
         {clientList.length === 0 ? (
-          <Card><CardContent className="py-12 text-center text-muted-foreground">No proposals yet. Create your first proposal to see clients here.</CardContent></Card>
+          <Card><CardContent className="py-12 text-center text-muted-foreground">
+            {search ? 'No clients match your search.' : 'No proposals yet. Create your first proposal to see clients here.'}
+          </CardContent></Card>
         ) : (
           <div className="space-y-3">
             {clientList.map(client => {
