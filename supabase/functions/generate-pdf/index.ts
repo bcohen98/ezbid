@@ -105,8 +105,14 @@ function buildProposalHtml(proposal: any, lineItems: any[], profile: any): strin
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
   * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family:'Inter',Arial,sans-serif; font-size:13px; color:#1a1a1a; padding:40px; }
+  body { font-family:'Inter',Arial,Helvetica,sans-serif; font-size:13px; color:#1a1a1a; padding:40px; background:#fff; }
   @page { size:letter; margin:0.5in; }
+  .row { width:100%; overflow:hidden; }
+  .col-left { float:left; width:60%; }
+  .col-right { float:right; width:38%; text-align:right; }
+  .totals-row { overflow:hidden; padding:2px 0; }
+  .totals-label { float:left; color:#888; }
+  .totals-value { float:right; }
 </style></head><body>
 ${headerHtml}
 <div style="display:flex;justify-content:space-between;margin-bottom:24px;">
