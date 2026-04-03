@@ -41,7 +41,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, onField
         <div className="rounded-md p-4 mb-6" style={{ backgroundColor: '#1a1a1a', color: '#ffffff' }}>
           <div className="flex items-start justify-between">
             <div>
-              {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className="h-10 mb-2 brightness-0 invert" />}
+              {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className={`${logoSizeClass} mb-2 brightness-0 invert ${logoAlignClass}`} />}
               <div className="font-semibold text-base">{profile?.company_name || 'Company Name'}</div>
               <div className="text-xs opacity-70 mt-1">
                 {[profile?.street_address, profile?.city, profile?.state, profile?.zip].filter(Boolean).join(', ')}
@@ -63,7 +63,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, onField
           <div className="h-2 rounded-full mb-6" style={{ backgroundColor: brandColor }} />
           <div className="flex items-start justify-between mb-6">
             <div>
-              {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className="h-10 mb-2" />}
+              {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className={`${logoSizeClass} mb-2 ${logoAlignClass}`} />}
               <div className="font-semibold text-base" style={{ color: brandColor }}>{profile?.company_name || 'Company Name'}</div>
               <div className="text-xs text-muted-foreground mt-1">
                 {[profile?.street_address, profile?.city, profile?.state, profile?.zip].filter(Boolean).join(', ')}
@@ -82,7 +82,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, onField
         <div className="mb-8">
           <div className="flex items-start justify-between">
             <div>
-              {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className="h-8 mb-2" />}
+              {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className={`${logoSizeClass} mb-2 ${logoAlignClass}`} />}
               <div className="text-xl font-semibold tracking-tight">{profile?.company_name || 'Company Name'}</div>
               <div className="text-xs text-muted-foreground mt-1">
                 {[profile?.street_address, profile?.city, profile?.state, profile?.zip].filter(Boolean).join(', ')}
@@ -99,7 +99,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, onField
       {template === 'bold' && (
         <div className="mb-6">
           <div className="border-l-4 pl-4 py-2" style={{ borderColor: brandColor }}>
-            {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className="h-10 mb-2" />}
+            {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className={`${logoSizeClass} mb-2 ${logoAlignClass}`} />}
             <div className="text-xl font-bold uppercase tracking-wide">{profile?.company_name || 'Company Name'}</div>
             <div className="text-xs text-muted-foreground mt-1">
               {[profile?.street_address, profile?.city, profile?.state, profile?.zip].filter(Boolean).join(', ')}
@@ -117,7 +117,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, onField
         <div className="mb-6">
           <div className="flex items-start justify-between border-b-2 pb-4" style={{ borderColor: brandColor }}>
             <div>
-              {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className="h-12 mb-2" />}
+              {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className={`${logoSizeClass} mb-2 ${logoAlignClass}`} />}
               <div className="text-lg font-semibold">{profile?.company_name || 'Company Name'}</div>
               <div className="text-xs text-muted-foreground mt-0.5">
                 {[profile?.street_address, profile?.city, profile?.state, profile?.zip].filter(Boolean).join(', ')}
