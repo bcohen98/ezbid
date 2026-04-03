@@ -293,9 +293,7 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("[send-proposal-email] Error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    const message = e instanceof Error ? e.message : "Unknown error";
+    return createErrorResponse(message, message.includes("Resend API error") ? 400 : 500);
   }
 });
