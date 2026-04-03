@@ -133,7 +133,7 @@ export default function ProposalPreview() {
 
   const handleTotalsEdit = async (updates: { tax_rate: number; deposit_mode: string; deposit_value: number }) => {
     try {
-      const sub = Number(proposal.subtotal) || 0;
+      saveSnapshot();
       const taxAmount = sub * updates.tax_rate / 100;
       const total = sub + taxAmount;
       const depositAmount = updates.deposit_mode === 'percentage' ? total * updates.deposit_value / 100 : updates.deposit_value;
