@@ -104,8 +104,9 @@ export default function ProposalDetail() {
           <Button variant="outline" size="sm" className="gap-2" onClick={handleDuplicate}>
             <Copy className="h-4 w-4" /> Duplicate
           </Button>
-          <Button variant="outline" size="sm" className="gap-2" onClick={() => toast({ title: 'Coming soon' })}>
-            <Send className="h-4 w-4" /> Resend
+          <Button variant="outline" size="sm" className="gap-2" onClick={handleResend} disabled={isSending}>
+            {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            {isSending ? 'Sending…' : 'Resend'}
           </Button>
         </div>
 
