@@ -5,7 +5,7 @@ import AppLayout from '@/components/AppLayout';
 import ProposalDocument from '@/components/proposal/ProposalDocument';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Send, Mail, Sparkles, Loader2, Download, FileText, History } from 'lucide-react';
+import { ArrowLeft, Send, Mail, Sparkles, Loader2, Download, FileText } from 'lucide-react';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
