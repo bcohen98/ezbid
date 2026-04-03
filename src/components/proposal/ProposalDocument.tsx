@@ -218,13 +218,17 @@ export default function ProposalDocument({ proposal, lineItems, profile, onField
             </thead>
             <tbody>
               {lineItems.map((item) => (
-                <tr key={item.id} className="border-b">
-                  <td className="py-2">{item.description}</td>
-                  <td className="text-right py-2">{item.quantity}</td>
-                  <td className="text-right py-2">{item.unit}</td>
-                  <td className="text-right py-2">${formatCurrency(item.unit_price)}</td>
-                  <td className="text-right py-2">${formatCurrency(item.subtotal)}</td>
-                </tr>
+                onLineItemEdit ? (
+                  <EditableLineItemRow key={item.id} item={item} onSave={onLineItemEdit} />
+                ) : (
+                  <tr key={item.id} className="border-b">
+                    <td className="py-2">{item.description}</td>
+                    <td className="text-right py-2">{item.quantity}</td>
+                    <td className="text-right py-2">{item.unit}</td>
+                    <td className="text-right py-2">${formatCurrency(item.unit_price)}</td>
+                    <td className="text-right py-2">${formatCurrency(item.subtotal)}</td>
+                  </tr>
+                )
               ))}
             </tbody>
           </table>
