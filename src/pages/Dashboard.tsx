@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useProposals } from '@/hooks/useProposals';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Plus, FileText, AlertCircle } from 'lucide-react';
+import { Plus, FileText, AlertCircle, PenLine, X } from 'lucide-react';
 import { formatCurrency } from '@/lib/formatCurrency';
 
 const statusColors: Record<string, string> = {
@@ -31,6 +31,26 @@ export default function Dashboard() {
   const { subscription, isLoading: subLoading } = useSubscription();
   const { profileCompletion, isLoading: profileLoading } = useCompanyProfile();
   const [activeTab, setActiveTab] = useState<TabKey>('all');
+
+  // Check for unsaved draft in localStorage
+  const [draftDismissed, setDraftDismissed] = useState(false);
+  const unsavedDraft = useMemo(() => {
+    if (draftDismissed) return null;
+    try {
+      const saved = localStorage.getItem('ezbid_proposal_draft');
+      if (!saved) return null;
+      const parsed = JSON.parse(saved);
+      // Only show if there's meaningful content
+      const hasContent = parsed.client_name || parsed.title || parsed.job_description ||
+        parsed.line_items?.some((li: any) => li.description);
+      return hasContent ? parsed : null;
+    } catch { return null; }
+  }, [draftDismissed]);
+
+  const discardDraft = () => {
+    localStorage.removeItem('ezbid_proposal_draft');
+    setDraftDismissed(true);
+  };
 
   const isActive = subscription?.status === 'active';
   const proposalsUsed = subscription?.proposals_used ?? 0;
@@ -65,6 +85,27 @@ export default function Dashboard() {
               <Link to="/company-profile">
                 <Button variant="outline" size="sm">Complete</Button>
               </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Unsaved draft banner */}
+        {unsavedDraft && (
+          <div className="flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 p-4">
+            <PenLine className="h-5 w-5 text-primary shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium">You have an unsaved draft</p>
+              <p className="text-xs text-muted-foreground truncate">
+                {unsavedDraft.title || unsavedDraft.client_name || 'Untitled proposal'} · {unsavedDraft.template} template
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => navigate('/proposals/new')} className="gap-1.5">
+                <PenLine className="h-3.5 w-3.5" /> Resume
+              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={discardDraft}>
+                <X className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         )}
