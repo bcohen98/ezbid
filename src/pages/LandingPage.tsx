@@ -145,7 +145,7 @@ export default function LandingPage() {
           <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
             {/* Free */}
             <div className="rounded-lg border bg-card p-6">
-              <h3 className="text-lg font-semibold">Free</h3>
+              <h3 className="text-lg font-semibold">Free Trial</h3>
               <p className="mt-1 text-3xl font-bold">$0</p>
               <p className="text-xs text-muted-foreground">3 proposals included</p>
               <ul className="mt-5 space-y-2">
