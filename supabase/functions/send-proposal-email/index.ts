@@ -210,16 +210,17 @@ serve(async (req) => {
 
     const companyName = profile?.company_name || "Your Contractor";
     const ownerName = profile?.owner_name || "";
-    const contractorEmail = profile?.email || user.email!;
+    const contractorEmail = user.email || profile?.email || "";
     const logoUrl = profile?.logo_url || null;
 
     const proposalNumber = `PRO-${String(proposal.proposal_number || 0).padStart(4, "0")}`;
     const jobTitle = proposal.title || "Untitled";
-    const clientName = proposal.client_name || "Client";
-    const clientEmail = proposal.client_email;
+    const clientName = recipient_name || proposal.client_name || "Client";
+    const clientEmail = recipient_email || proposal.client_email;
     const total = `$${Number(proposal.total || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
 
     const origin = req.headers.get("origin") || "https://ez.bid";
+    const sandboxMode = isSandboxSender(FROM_ADDRESS);
 
     // ── SCENARIO A: Send to self ──
     if (send_to_self) {
