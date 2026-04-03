@@ -65,12 +65,26 @@ export function useProposals() {
     },
   });
 
+  const deleteProposal = useMutation({
+    mutationFn: async (id: string) => {
+      // Delete line items first, then the proposal
+      await supabase.from('proposal_line_items').delete().eq('proposal_id', id);
+      const { error } = await supabase.from('proposals').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['proposals', user?.id] });
+    },
+  });
+
   return {
     proposals: query.data ?? [],
     isLoading: query.isLoading,
     createProposal: createProposal.mutateAsync,
     updateProposal: updateProposal.mutateAsync,
+    deleteProposal: deleteProposal.mutateAsync,
     isCreating: createProposal.isPending,
+    isDeleting: deleteProposal.isPending,
   };
 }
 
