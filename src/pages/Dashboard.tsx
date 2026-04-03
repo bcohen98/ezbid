@@ -89,27 +89,6 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Unsaved draft banner */}
-        {unsavedDraft && (
-          <div className="flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 p-4">
-            <PenLine className="h-5 w-5 text-primary shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium">You have an unsaved draft</p>
-              <p className="text-xs text-muted-foreground truncate">
-                {unsavedDraft.title || unsavedDraft.client_name || 'Untitled proposal'} · {unsavedDraft.template} template
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => navigate('/proposals/new')} className="gap-1.5">
-                <PenLine className="h-3.5 w-3.5" /> Resume
-              </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={discardDraft}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        )}
-
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
