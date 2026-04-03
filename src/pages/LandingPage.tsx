@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Navigate } from 'react-router-dom';
 import EZBidLogo from '@/components/EZBidLogo';
 import { Button } from '@/components/ui/button';
+import heroBg from '@/assets/hero-bg.jpg';
 import { FileText, Sparkles, Send, CheckCircle, ArrowRight } from 'lucide-react';
 
 const testimonials = [
@@ -53,8 +54,12 @@ export default function LandingPage() {
       </header>
 
       {/* Hero */}
-      <section className="py-20 md:py-28">
-        <div className="container text-center max-w-3xl mx-auto">
+      <section
+        className="py-20 md:py-28 relative bg-cover bg-center"
+        style={{ backgroundImage: `url(${heroBg})` }}
+      >
+        <div className="absolute inset-0 bg-background/90" />
+        <div className="container text-center max-w-3xl mx-auto relative z-10">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight">
             Win more jobs with proposals that look like you mean business
           </h1>
