@@ -268,6 +268,7 @@ export default function ProposalPreview() {
   };
 
   const handleSendSelf = async () => {
+    console.log('[handleSendSelf] triggered, proposal_id:', proposal.id);
     setIsSendingSelf(true);
     try {
       const { data, error } = await supabase.functions.invoke('send-proposal-email', {
