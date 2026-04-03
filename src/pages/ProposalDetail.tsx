@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useProposal, useProposalLineItems, useProposals } from '@/hooks/useProposals';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
@@ -5,9 +6,10 @@ import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, Eye, Copy, Send } from 'lucide-react';
+import { ArrowLeft, Eye, Copy, Send, Pencil } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/formatCurrency';
+import EditClientDialog from '@/components/EditClientDialog';
 
 export default function ProposalDetail() {
   const { id } = useParams();

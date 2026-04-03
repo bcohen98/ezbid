@@ -7,8 +7,10 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ChevronDown, ChevronRight, ChevronUp, ArrowUpDown, Users, Search } from 'lucide-react';
-
+import { ChevronDown, ChevronRight, ChevronUp, ArrowUpDown, Users, Search, Pencil } from 'lucide-react';
+import EditClientDialog from '@/components/EditClientDialog';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 const statusColors: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground',
   sent: 'bg-blue-100 text-blue-700',
