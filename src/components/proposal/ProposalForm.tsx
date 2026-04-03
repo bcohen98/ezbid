@@ -191,6 +191,7 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
                   <select value={item.unit} onChange={(e) => updateLineItem(i, 'unit', e.target.value)} className="h-8 text-sm border rounded px-1 bg-background w-full">
                     <option value="ea">ea</option>
                     <option value="hr">hr</option>
+                    <option value="ft">ft</option>
                     <option value="sqft">sqft</option>
                     <option value="lnft">lnft</option>
                     <option value="lot">lot</option>
