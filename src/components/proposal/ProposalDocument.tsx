@@ -1,6 +1,6 @@
 import type { Database } from '@/integrations/supabase/types';
 import { formatCurrency } from '@/lib/formatCurrency';
-import EditableSection from './EditableSection';
+import EditableSection, { EditableLineItemRow } from './EditableSection';
 
 type Proposal = Database['public']['Tables']['proposals']['Row'];
 type LineItem = Database['public']['Tables']['proposal_line_items']['Row'];
@@ -11,9 +11,10 @@ interface Props {
   lineItems: LineItem[];
   profile: CompanyProfile | null | undefined;
   onFieldEdit?: (field: string, value: string) => void;
+  onLineItemEdit?: (id: string, updates: { description: string; quantity: number; unit: string; unit_price: number; subtotal: number }) => void;
 }
 
-export default function ProposalDocument({ proposal, lineItems, profile, onFieldEdit }: Props) {
+export default function ProposalDocument({ proposal, lineItems, profile, onFieldEdit, onLineItemEdit }: Props) {
   const template = proposal.template || 'classic';
   const brandColor = profile?.brand_color || '#000000';
 
@@ -217,13 +218,17 @@ export default function ProposalDocument({ proposal, lineItems, profile, onField
             </thead>
             <tbody>
               {lineItems.map((item) => (
-                <tr key={item.id} className="border-b">
-                  <td className="py-2">{item.description}</td>
-                  <td className="text-right py-2">{item.quantity}</td>
-                  <td className="text-right py-2">{item.unit}</td>
-                  <td className="text-right py-2">${formatCurrency(item.unit_price)}</td>
-                  <td className="text-right py-2">${formatCurrency(item.subtotal)}</td>
-                </tr>
+                onLineItemEdit ? (
+                  <EditableLineItemRow key={item.id} item={item} onSave={onLineItemEdit} />
+                ) : (
+                  <tr key={item.id} className="border-b">
+                    <td className="py-2">{item.description}</td>
+                    <td className="text-right py-2">{item.quantity}</td>
+                    <td className="text-right py-2">{item.unit}</td>
+                    <td className="text-right py-2">${formatCurrency(item.unit_price)}</td>
+                    <td className="text-right py-2">${formatCurrency(item.subtotal)}</td>
+                  </tr>
+                )
               ))}
             </tbody>
           </table>
