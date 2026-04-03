@@ -181,11 +181,11 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
           <div className="space-y-2">
             <Label>Line items</Label>
             <div className="border rounded-lg overflow-hidden">
-              <div className="grid grid-cols-[1fr_80px_60px_100px_40px] gap-2 px-3 py-2 bg-muted text-xs font-medium text-muted-foreground">
-                <span>Description</span><span>Qty</span><span>Unit</span><span>Unit Price</span><span></span>
+              <div className="grid grid-cols-[1fr_80px_60px_100px_90px_40px] gap-2 px-3 py-2 bg-muted text-xs font-medium text-muted-foreground">
+                <span>Description</span><span>Qty</span><span>Unit</span><span>Unit Price</span><span className="text-right">Total</span><span></span>
               </div>
               {form.line_items.map((item, i) => (
-                <div key={i} className="grid grid-cols-[1fr_80px_60px_100px_40px] gap-2 px-3 py-2 border-t items-center">
+                <div key={i} className="grid grid-cols-[1fr_80px_60px_100px_90px_40px] gap-2 px-3 py-2 border-t items-center">
                   <Input value={item.description} onChange={(e) => updateLineItem(i, 'description', e.target.value)} placeholder="Description" className="h-8 text-sm" />
                   <Input type="number" value={item.quantity} onChange={(e) => updateLineItem(i, 'quantity', parseFloat(e.target.value) || 0)} className="h-8 text-sm" min={0} />
                   <select value={item.unit} onChange={(e) => updateLineItem(i, 'unit', e.target.value)} className="h-8 text-sm border rounded px-1 bg-background w-full">
@@ -206,6 +206,7 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
                     <option value="pallet">pallet</option>
                   </select>
                   <Input type="number" value={item.unit_price} onChange={(e) => updateLineItem(i, 'unit_price', parseFloat(e.target.value) || 0)} className="h-8 text-sm" min={0} step="0.01" />
+                  <span className="text-sm font-medium text-right">${formatCurrency(item.quantity * item.unit_price)}</span>
                   <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeLineItem(i)} disabled={form.line_items.length <= 1}>
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
