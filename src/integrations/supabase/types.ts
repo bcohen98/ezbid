@@ -634,6 +634,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      sign_proposal: {
+        Args: { p_proposal_id: string; p_signature_url: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user"
