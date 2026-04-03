@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Sparkles, ArrowRight } from 'lucide-react';
+import { Sparkles, ArrowRight, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface Props {
   proposalsUsed: number;
@@ -8,6 +11,26 @@ interface Props {
 }
 
 export default function UpgradePrompt({ proposalsUsed, onContinue }: Props) {
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+
+  const handleUpgrade = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-pro-checkout');
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      } else {
+        throw new Error('No checkout URL returned');
+      }
+    } catch (e: any) {
+      toast({ title: 'Error', description: e.message || 'Could not start checkout', variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="container max-w-md py-16 animate-fade-in">
       <Card>
@@ -20,8 +43,8 @@ export default function UpgradePrompt({ proposalsUsed, onContinue }: Props) {
             Upgrade to unlimited proposals for $29/month. Cancel anytime.
           </p>
           <div className="space-y-3">
-            <Button className="w-full gap-2">
-              Upgrade to Pro <ArrowRight className="h-4 w-4" />
+            <Button className="w-full gap-2" onClick={handleUpgrade} disabled={loading}>
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Upgrade to Pro <ArrowRight className="h-4 w-4" /></>}
             </Button>
             <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={onContinue}>
               Maybe later
