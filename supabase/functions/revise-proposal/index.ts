@@ -75,12 +75,14 @@ Only return the fields that need to change. Keep unchanged fields out of the res
             type: "function",
             function: {
               name: "return_revised_proposal",
-              description: "Return the revised proposal fields. Only include fields that changed. For cosmetic/visual requests, use the template field. Never append cosmetic notes to special_conditions. For pricing changes, include recalculated totals.",
+              description: "Return the revised proposal fields. Only include fields that changed. For cosmetic/visual requests, use template, logo_size, or logo_position. Never append cosmetic notes to special_conditions. For pricing changes, include recalculated totals.",
               parameters: {
                 type: "object",
                 properties: {
                   title: { type: "string", description: "Proposal title" },
-                  template: { type: "string", enum: ["classic", "modern", "minimal", "bold", "executive"], description: "Visual template style — use this for any cosmetic/visual change requests" },
+                  template: { type: "string", enum: ["classic", "modern", "minimal", "bold", "executive"], description: "Visual template style" },
+                  logo_size: { type: "string", enum: ["small", "medium", "large"], description: "Company logo size — use when user asks about logo size" },
+                  logo_position: { type: "string", enum: ["left", "center", "right"], description: "Company logo position — use when user asks about logo placement/alignment" },
                   job_description: { type: "string" },
                   scope_of_work: { type: "string" },
                   materials_included: { type: "string" },
