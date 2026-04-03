@@ -32,6 +32,16 @@ export default function ProposalPreview() {
     return <AppLayout><div className="container py-8"><p className="text-sm text-muted-foreground">Proposal not found</p></div></AppLayout>;
   }
 
+  const handleFieldEdit = async (field: string, value: string) => {
+    try {
+      await updateProposal({ id: proposal.id, [field]: value });
+      refetch();
+      toast({ title: 'Section updated' });
+    } catch (err: any) {
+      toast({ title: 'Update failed', description: err.message, variant: 'destructive' });
+    }
+  };
+
   const handleRevise = async () => {
     if (!revisionNote.trim() || !proposal) return;
     setIsRevising(true);
@@ -61,15 +71,11 @@ export default function ProposalPreview() {
       });
       if (error) throw error;
       if (data?.html) {
-        // Open HTML in new window for printing as PDF
         const printWindow = window.open('', '_blank');
         if (printWindow) {
           printWindow.document.write(data.html);
           printWindow.document.close();
-          // Auto-trigger print dialog after a short delay for rendering
-          setTimeout(() => {
-            printWindow.print();
-          }, 500);
+          setTimeout(() => printWindow.print(), 500);
         }
         toast({ title: 'PDF ready', description: 'Use the print dialog to save as PDF.' });
       }
@@ -111,7 +117,7 @@ export default function ProposalPreview() {
         },
       });
       if (error) throw error;
-      refetch(); // Status will be updated to "sent"
+      refetch();
       toast({ title: 'Proposal sent!', description: data?.message || `Sent to ${proposal.client_email}` });
     } catch (err: any) {
       toast({ title: 'Send failed', description: err.message, variant: 'destructive' });
@@ -133,7 +139,7 @@ export default function ProposalPreview() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
           {/* Preview */}
           <div className="border rounded-lg overflow-hidden bg-background shadow-sm">
-            <ProposalDocument proposal={proposal} lineItems={lineItems} profile={profile} />
+            <ProposalDocument proposal={proposal} lineItems={lineItems} profile={profile} onFieldEdit={handleFieldEdit} />
           </div>
 
           {/* Side panel */}
@@ -159,6 +165,7 @@ export default function ProposalPreview() {
                 {isRevising ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                 {isRevising ? 'Revising...' : 'Submit revision'}
               </Button>
+              <p className="text-xs text-muted-foreground">Or click any text section to edit it directly.</p>
             </div>
 
             {/* Download & Send */}

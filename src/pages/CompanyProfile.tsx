@@ -349,6 +349,37 @@ export default function CompanyProfile() {
           </CardContent>
         </Card>
 
+        {/* Subscription Billing */}
+        <Card>
+          <CardHeader><CardTitle className="text-base flex items-center gap-2"><CreditCard className="h-4 w-4" /> Subscription & Billing</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Manage your EZ-Bid subscription payment method — update your credit card, debit card, or bank account (ACH) on file.
+            </p>
+            <Button
+              variant="outline"
+              className="w-full gap-2"
+              onClick={async () => {
+                try {
+                  const { data, error } = await supabaseClient.functions.invoke('customer-portal');
+                  if (error) throw error;
+                  if (data?.url) {
+                    window.open(data.url, '_blank');
+                  }
+                } catch (err: any) {
+                  toast({ title: 'Could not open billing portal', description: err.message, variant: 'destructive' });
+                }
+              }}
+            >
+              <CreditCard className="h-4 w-4" />
+              Manage billing & payment method
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              You'll be redirected to a secure portal to update your payment details.
+            </p>
+          </CardContent>
+        </Card>
+
         <div className="flex justify-end gap-3">
           <Button variant="outline" onClick={handleRefineWithAI} disabled={refining} className="gap-2">
             {refining ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
