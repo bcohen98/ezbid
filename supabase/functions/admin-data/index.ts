@@ -239,7 +239,7 @@ async function getRevenue(client: ReturnType<typeof createClient>) {
     .select("status, created_at, updated_at, stripe_subscription_id");
 
   const activeSubs = (allSubs || []).filter((s) => s.status === "active");
-  const mrr = activeSubs.length * 29;
+  const mrr = activeSubs.length * 39;
 
   // New subscribers this month (active + created this month)
   const newThisMonth = activeSubs.filter(
