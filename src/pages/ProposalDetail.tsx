@@ -21,6 +21,33 @@ export default function ProposalDetail() {
   const { createProposal, updateProposal } = useProposals();
   const { profile } = useCompanyProfile();
   const [editClientOpen, setEditClientOpen] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+
+  const handleResend = useCallback(async () => {
+    if (!proposal) return;
+    if (!proposal.client_email) {
+      toast({ title: 'Missing client email', description: 'Add a client email before sending.', variant: 'destructive' });
+      return;
+    }
+    setIsSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-proposal-email', {
+        body: {
+          proposal_id: proposal.id,
+          recipient_email: proposal.client_email,
+          recipient_name: proposal.client_name,
+          send_to_self: false,
+        },
+      });
+      if (error) throw error;
+      refetch();
+      toast({ title: 'Proposal sent!', description: data?.message || `Sent to ${proposal.client_email}` });
+    } catch (err: any) {
+      toast({ title: 'Send failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsSending(false);
+    }
+  }, [proposal, toast, refetch]);
 
   if (isLoading) {
     return <AppLayout><div className="container py-8"><p className="text-sm text-muted-foreground">Loading...</p></div></AppLayout>;
