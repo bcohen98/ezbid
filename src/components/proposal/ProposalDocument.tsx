@@ -1,6 +1,6 @@
 import type { Database } from '@/integrations/supabase/types';
 import { formatCurrency } from '@/lib/formatCurrency';
-import EditableSection, { EditableLineItemRow } from './EditableSection';
+import EditableSection, { EditableLineItemRow, EditableTotals } from './EditableSection';
 
 type Proposal = Database['public']['Tables']['proposals']['Row'];
 type LineItem = Database['public']['Tables']['proposal_line_items']['Row'];
@@ -12,9 +12,10 @@ interface Props {
   profile: CompanyProfile | null | undefined;
   onFieldEdit?: (field: string, value: string) => void;
   onLineItemEdit?: (id: string, updates: { description: string; quantity: number; unit: string; unit_price: number; subtotal: number }) => void;
+  onTotalsEdit?: (updates: { tax_rate: number; deposit_mode: string; deposit_value: number }) => void;
 }
 
-export default function ProposalDocument({ proposal, lineItems, profile, onFieldEdit, onLineItemEdit }: Props) {
+export default function ProposalDocument({ proposal, lineItems, profile, onFieldEdit, onLineItemEdit, onTotalsEdit }: Props) {
   const template = proposal.template || 'classic';
   const brandColor = profile?.brand_color || '#000000';
 
@@ -232,19 +233,29 @@ export default function ProposalDocument({ proposal, lineItems, profile, onField
               ))}
             </tbody>
           </table>
-          <div className="border-t pt-2 mt-0 space-y-1 text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>${formatCurrency(proposal.subtotal)}</span></div>
-            {Number(proposal.tax_rate) > 0 && (
-              <div className="flex justify-between"><span className="text-muted-foreground">Tax ({proposal.tax_rate}%)</span><span>${formatCurrency(proposal.tax_amount)}</span></div>
-            )}
-            <div className="flex justify-between font-semibold text-base border-t pt-1"><span>Total</span><span>${formatCurrency(proposal.total)}</span></div>
-            {Number(proposal.deposit_amount) > 0 && (
-              <>
-                <div className="flex justify-between text-muted-foreground"><span>Deposit required</span><span>${formatCurrency(proposal.deposit_amount)}</span></div>
-                <div className="flex justify-between font-medium"><span>Balance due</span><span>${formatCurrency(proposal.balance_due)}</span></div>
-              </>
-            )}
-          </div>
+          {onTotalsEdit ? (
+            <EditableTotals
+              subtotal={Number(proposal.subtotal) || 0}
+              taxRate={Number(proposal.tax_rate) || 0}
+              depositMode={proposal.deposit_mode || 'percentage'}
+              depositValue={Number(proposal.deposit_value) || 0}
+              onSave={onTotalsEdit}
+            />
+          ) : (
+            <div className="border-t pt-2 mt-0 space-y-1 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>${formatCurrency(proposal.subtotal)}</span></div>
+              {Number(proposal.tax_rate) > 0 && (
+                <div className="flex justify-between"><span className="text-muted-foreground">Tax ({proposal.tax_rate}%)</span><span>${formatCurrency(proposal.tax_amount)}</span></div>
+              )}
+              <div className="flex justify-between font-semibold text-base border-t pt-1"><span>Total</span><span>${formatCurrency(proposal.total)}</span></div>
+              {Number(proposal.deposit_amount) > 0 && (
+                <>
+                  <div className="flex justify-between text-muted-foreground"><span>Deposit required</span><span>${formatCurrency(proposal.deposit_amount)}</span></div>
+                  <div className="flex justify-between font-medium"><span>Balance due</span><span>${formatCurrency(proposal.balance_due)}</span></div>
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
 
