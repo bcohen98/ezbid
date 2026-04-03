@@ -11,6 +11,7 @@ import CompanyProfile from "./pages/CompanyProfile";
 import NewProposal from "./pages/NewProposal";
 import ProposalPreview from "./pages/ProposalPreview";
 import ProposalDetail from "./pages/ProposalDetail";
+import ProposalSign from "./pages/ProposalSign";
 import Clients from "./pages/Clients";
 import AdminOverview from "./pages/admin/AdminOverview";
 import AdminUsers from "./pages/admin/AdminUsers";
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/proposals/new" element={<NewProposal />} />
             <Route path="/proposals/:id/preview" element={<ProposalPreview />} />
             <Route path="/proposals/:id" element={<ProposalDetail />} />
+            <Route path="/proposals/:id/sign" element={<ProposalSign />} />
             <Route path="/admin" element={<AdminOverview />} />
             <Route path="/admin/users" element={<AdminUsers />} />
             <Route path="/admin/proposals" element={<AdminProposals />} />
