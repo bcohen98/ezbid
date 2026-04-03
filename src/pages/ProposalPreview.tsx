@@ -88,7 +88,7 @@ export default function ProposalPreview() {
 
   const handleLineItemEdit = async (itemId: string, updates: { description: string; quantity: number; unit: string; unit_price: number; subtotal: number }) => {
     try {
-      const updatedItems = lineItems.map(li =>
+      saveSnapshot();
         li.id === itemId
           ? { ...li, ...updates }
           : li
