@@ -117,6 +117,26 @@ export default function ProposalDetail() {
             )}
           </CardContent>
         </Card>
+        {proposal && (
+          <EditClientDialog
+            open={editClientOpen}
+            onOpenChange={setEditClientOpen}
+            initialData={{
+              client_name: proposal.client_name || '',
+              client_email: proposal.client_email || '',
+              client_phone: proposal.client_phone || '',
+              job_site_street: proposal.job_site_street || '',
+              job_site_city: proposal.job_site_city || '',
+              job_site_state: proposal.job_site_state || '',
+              job_site_zip: proposal.job_site_zip || '',
+            }}
+            onSave={async (data) => {
+              await updateProposal({ id: proposal.id, ...data });
+              await refetch();
+              toast({ title: 'Client info updated' });
+            }}
+          />
+        )}
       </div>
     </AppLayout>
   );
