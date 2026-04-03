@@ -85,12 +85,12 @@ function buildProposalHtml(proposal: any, lineItems: any[], profile: any): strin
         </tbody>
       </table>
       <div style="border-top:1px solid #e5e5e5;padding-top:8px;font-size:13px;">
-        <div style="display:flex;justify-content:space-between;"><span style="color:#888;">Subtotal</span><span>$${formatCurrency(proposal.subtotal)}</span></div>
-        ${Number(proposal.tax_rate) > 0 ? `<div style="display:flex;justify-content:space-between;"><span style="color:#888;">Tax (${proposal.tax_rate}%)</span><span>$${formatCurrency(proposal.tax_amount)}</span></div>` : ''}
-        <div style="display:flex;justify-content:space-between;font-weight:600;font-size:15px;border-top:1px solid #e5e5e5;padding-top:4px;margin-top:4px;"><span>Total</span><span>$${formatCurrency(proposal.total)}</span></div>
+        <div class="totals-row"><span class="totals-label">Subtotal</span><span class="totals-value">$${formatCurrency(proposal.subtotal)}</span></div>
+        ${Number(proposal.tax_rate) > 0 ? `<div class="totals-row"><span class="totals-label">Tax (${proposal.tax_rate}%)</span><span class="totals-value">$${formatCurrency(proposal.tax_amount)}</span></div>` : ''}
+        <div class="totals-row" style="font-weight:600;font-size:15px;border-top:1px solid #e5e5e5;padding-top:4px;margin-top:4px;"><span style="float:left;">Total</span><span style="float:right;">$${formatCurrency(proposal.total)}</span></div>
         ${Number(proposal.deposit_amount) > 0 ? `
-          <div style="display:flex;justify-content:space-between;color:#888;"><span>Deposit required</span><span>$${formatCurrency(proposal.deposit_amount)}</span></div>
-          <div style="display:flex;justify-content:space-between;font-weight:500;"><span>Balance due</span><span>$${formatCurrency(proposal.balance_due)}</span></div>
+          <div class="totals-row"><span class="totals-label">Deposit required</span><span class="totals-value">$${formatCurrency(proposal.deposit_amount)}</span></div>
+          <div class="totals-row" style="font-weight:500;"><span style="float:left;">Balance due</span><span style="float:right;">$${formatCurrency(proposal.balance_due)}</span></div>
         ` : ''}
       </div>
     </div>` : '';
