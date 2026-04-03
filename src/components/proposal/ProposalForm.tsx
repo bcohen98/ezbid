@@ -205,7 +205,7 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
                     <option value="box">box</option>
                     <option value="pallet">pallet</option>
                   </select>
-                  <Input type="number" value={item.unit_price} onChange={(e) => updateLineItem(i, 'unit_price', parseFloat(e.target.value) || 0)} className="h-8 text-sm" min={0} step="0.01" />
+                  <Input type="number" value={item.unit_price || ''} onChange={(e) => updateLineItem(i, 'unit_price', parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} className="h-8 text-sm" min={0} step="0.01" />
                   <span className="text-sm font-medium text-right">${formatCurrency(item.quantity * item.unit_price)}</span>
                   <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeLineItem(i)} disabled={form.line_items.length <= 1}>
                     <Trash2 className="h-3.5 w-3.5" />
