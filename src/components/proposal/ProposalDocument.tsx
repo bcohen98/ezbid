@@ -134,6 +134,63 @@ export default function ProposalDocument({ proposal, lineItems, profile, onField
         </div>
       )}
 
+      {template === 'contractor' && (
+        <div className="mb-6">
+          <div className="bg-muted/30 border-2 rounded-md p-4 mb-4">
+            <div className="flex items-start justify-between">
+              <div>
+                {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className={`${logoSizeClass} mb-2 ${logoAlignClass}`} />}
+                <div className="text-base font-bold uppercase">{profile?.company_name || 'Company Name'}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">
+                  {[profile?.street_address, profile?.city, profile?.state, profile?.zip].filter(Boolean).join(', ')}
+                </div>
+                {profile?.phone && <div className="text-xs text-muted-foreground">{formatPhone(profile.phone)}</div>}
+                {profile?.license_numbers?.length ? <div className="text-xs text-muted-foreground mt-1">Lic# {profile.license_numbers.join(', ')}</div> : null}
+              </div>
+              <div className="text-right">
+                <div className="text-xl font-bold uppercase">Work Order</div>
+                <div className="text-xs text-muted-foreground mt-1">PRO-{String(proposal.proposal_number).padStart(4, '0')}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {template === 'premium' && (
+        <div className="mb-6 text-center">
+          {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className={`${logoSizeClass} mb-2 mx-auto`} />}
+          <div className="text-lg font-semibold tracking-widest uppercase" style={{ color: '#8B7355' }}>{profile?.company_name || 'Company Name'}</div>
+          <div className="w-16 h-[1px] mx-auto mt-2 mb-2" style={{ backgroundColor: '#8B7355' }}></div>
+          <div className="text-xs text-muted-foreground">
+            {[profile?.street_address, profile?.city, profile?.state, profile?.zip].filter(Boolean).join(', ')}
+          </div>
+          {profile?.phone && <div className="text-xs text-muted-foreground">{formatPhone(profile.phone)}</div>}
+          <div className="mt-3">
+            <div className="text-sm uppercase tracking-widest" style={{ color: '#8B7355' }}>Professional Proposal</div>
+            <div className="text-xs text-muted-foreground mt-1">PRO-{String(proposal.proposal_number).padStart(4, '0')}</div>
+          </div>
+        </div>
+      )}
+
+      {template === 'clean' && (
+        <div className="mb-6">
+          <div className="flex items-start justify-between border-b pb-4">
+            <div>
+              {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className={`${logoSizeClass} mb-2 ${logoAlignClass}`} />}
+              <div className="text-base font-semibold">{profile?.company_name || 'Company Name'}</div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                {[profile?.street_address, profile?.city, profile?.state, profile?.zip].filter(Boolean).join(', ')}
+              </div>
+              {profile?.phone && <div className="text-xs text-muted-foreground">{formatPhone(profile.phone)}</div>}
+            </div>
+            <div className="text-right">
+              <div className="text-xl font-medium">PROPOSAL</div>
+              <div className="text-xs text-muted-foreground mt-1">PRO-{String(proposal.proposal_number).padStart(4, '0')}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Dates & Client */}
       <div className="grid grid-cols-2 gap-6 mb-6">
         <div>
