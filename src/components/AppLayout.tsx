@@ -3,7 +3,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { Button } from '@/components/ui/button';
-import { FileText, Settings, LogOut, Plus } from 'lucide-react';
+import { FileText, Settings, LogOut, Plus, Users } from 'lucide-react';
 import EZBidLogo from '@/components/EZBidLogo';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
@@ -32,6 +32,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   const navItems = [
     { href: '/dashboard', label: 'Proposals', icon: FileText },
+    { href: '/clients', label: 'Clients', icon: Users },
     { href: '/company-profile', label: companyLabel, icon: Settings },
   ];
 

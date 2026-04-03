@@ -15,7 +15,12 @@ const statusColors: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground',
   sent: 'bg-primary/10 text-primary',
   signed: 'bg-success/10 text-success',
+  accepted: 'bg-green-100 text-green-700',
+  denied: 'bg-red-100 text-red-700',
   expired: 'bg-destructive/10 text-destructive',
+  work_pending: 'bg-yellow-100 text-yellow-700',
+  payment_pending: 'bg-purple-100 text-purple-700',
+  closed: 'bg-muted text-muted-foreground',
 };
 
 type TabKey = 'all' | 'signed' | 'sent' | 'draft';

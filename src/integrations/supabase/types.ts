@@ -139,6 +139,41 @@ export type Database = {
           },
         ]
       }
+      proposal_versions: {
+        Row: {
+          change_summary: string | null
+          created_at: string
+          id: string
+          proposal_id: string
+          snapshot: Json
+          version_number: number
+        }
+        Insert: {
+          change_summary?: string | null
+          created_at?: string
+          id?: string
+          proposal_id: string
+          snapshot: Json
+          version_number?: number
+        }
+        Update: {
+          change_summary?: string | null
+          created_at?: string
+          id?: string
+          proposal_id?: string
+          snapshot?: Json
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_versions_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       proposals: {
         Row: {
           accepted_payment_methods: string[] | null
@@ -170,6 +205,7 @@ export type Database = {
           pdf_url: string | null
           proposal_date: string | null
           proposal_number: number
+          revision_history: Json | null
           scope_of_work: string | null
           special_conditions: string | null
           status: Database["public"]["Enums"]["proposal_status"]
@@ -214,6 +250,7 @@ export type Database = {
           pdf_url?: string | null
           proposal_date?: string | null
           proposal_number: number
+          revision_history?: Json | null
           scope_of_work?: string | null
           special_conditions?: string | null
           status?: Database["public"]["Enums"]["proposal_status"]
@@ -258,6 +295,7 @@ export type Database = {
           pdf_url?: string | null
           proposal_date?: string | null
           proposal_number?: number
+          revision_history?: Json | null
           scope_of_work?: string | null
           special_conditions?: string | null
           status?: Database["public"]["Enums"]["proposal_status"]
@@ -319,7 +357,16 @@ export type Database = {
     }
     Enums: {
       deposit_mode: "percentage" | "flat"
-      proposal_status: "draft" | "sent" | "signed" | "expired"
+      proposal_status:
+        | "draft"
+        | "sent"
+        | "signed"
+        | "expired"
+        | "accepted"
+        | "denied"
+        | "work_pending"
+        | "payment_pending"
+        | "closed"
       proposal_template: "classic" | "modern" | "minimal" | "bold" | "executive"
       trade_type:
         | "general_contractor"
@@ -459,7 +506,17 @@ export const Constants = {
   public: {
     Enums: {
       deposit_mode: ["percentage", "flat"],
-      proposal_status: ["draft", "sent", "signed", "expired"],
+      proposal_status: [
+        "draft",
+        "sent",
+        "signed",
+        "expired",
+        "accepted",
+        "denied",
+        "work_pending",
+        "payment_pending",
+        "closed",
+      ],
       proposal_template: ["classic", "modern", "minimal", "bold", "executive"],
       trade_type: [
         "general_contractor",

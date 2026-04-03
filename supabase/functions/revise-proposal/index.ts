@@ -9,18 +9,30 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { proposal, revisionNote } = await req.json();
+    const { proposal, revisionNote, lineItems, revisionHistory } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const prompt = `You are a professional proposal editor for contractors. A user has a proposal and wants the following revision. You can change text content, visual template style, and financial settings.
+    // Build conversation context from previous revisions
+    const historyContext = Array.isArray(revisionHistory) && revisionHistory.length > 0
+      ? `\n\nPREVIOUS REVISION REQUESTS (for context):\n${revisionHistory.map((h: any, i: number) => `${i + 1}. User asked: "${h.request}" → Changed: ${JSON.stringify(h.changes)}`).join('\n')}\n`
+      : '';
+
+    // Build line items summary for pricing context
+    const lineItemsSummary = Array.isArray(lineItems) && lineItems.length > 0
+      ? `\nLINE ITEMS:\n${lineItems.map((li: any, i: number) => `  ${i + 1}. "${li.description}" — qty: ${li.quantity}, unit: ${li.unit || 'ea'}, unit_price: ${li.unit_price}, subtotal: ${li.subtotal}`).join('\n')}\n`
+      : '\nNo line items currently.\n';
+
+    const prompt = `You are a professional proposal editor for contractors. A user has a proposal and wants the following revision. You can change text content, visual template style, financial settings, AND line items/pricing.
 
 IMPORTANT RULES:
 - Only change fields that the user's revision request actually asks for.
 - Do NOT append text to special_conditions unless the user specifically asks to add a special condition.
-- If the user asks about cosmetic/visual changes (colors, logo size, layout, font, theme), change the "template" field to the most appropriate template style. DO NOT put cosmetic notes into text fields.
+- CRITICAL: If the user asks about cosmetic/visual changes (colors, logo size, layout, font, theme, design, look, appearance, style), change the "template" field to the most appropriate template style. NEVER put cosmetic notes into text fields like special_conditions.
 - Template options: classic (dark header, formal), modern (colored accents, clean), minimal (sparse, light), bold (large type, strong borders), executive (elegant, refined).
-
+- For pricing changes: you can modify line_items (add, remove, update quantities/prices), tax_rate, deposit_mode, deposit_value. When modifying line items, return the FULL updated line_items array with recalculated subtotals. Each item needs: description, quantity, unit, unit_price, subtotal (quantity * unit_price).
+- When changing pricing, always recalculate: subtotal (sum of line item subtotals), tax_amount (subtotal * tax_rate / 100), total (subtotal + tax_amount), deposit_amount, and balance_due.
+${historyContext}
 REVISION REQUEST: "${revisionNote}"
 
 CURRENT PROPOSAL:
@@ -38,7 +50,9 @@ CURRENT PROPOSAL:
 - Deposit Mode: ${proposal.deposit_mode || "percentage"} (options: percentage, flat)
 - Deposit Value: ${proposal.deposit_value || 0}
 - Tax Rate: ${proposal.tax_rate || 0}
-
+- Subtotal: ${proposal.subtotal || 0}
+- Total: ${proposal.total || 0}
+${lineItemsSummary}
 Only return the fields that need to change. Keep unchanged fields out of the response.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -50,7 +64,7 @@ Only return the fields that need to change. Keep unchanged fields out of the res
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
-          { role: "system", content: "You revise contractor proposals based on user instructions. You can change text, visual template style, and financial terms. Return only the changed fields as JSON. NEVER put cosmetic/visual requests into text fields like special_conditions — use the template field instead." },
+          { role: "system", content: "You revise contractor proposals based on user instructions. You can change text, visual template style, financial terms, and line items with pricing math. Return only the changed fields as JSON. CRITICAL: NEVER put cosmetic/visual requests into text fields like special_conditions — use the template field instead. For pricing changes, recalculate all totals." },
           { role: "user", content: prompt },
         ],
         tools: [
@@ -58,7 +72,7 @@ Only return the fields that need to change. Keep unchanged fields out of the res
             type: "function",
             function: {
               name: "return_revised_proposal",
-              description: "Return the revised proposal fields. Only include fields that changed. For cosmetic/visual requests, use the template field. Never append cosmetic notes to special_conditions.",
+              description: "Return the revised proposal fields. Only include fields that changed. For cosmetic/visual requests, use the template field. Never append cosmetic notes to special_conditions. For pricing changes, include recalculated totals.",
               parameters: {
                 type: "object",
                 properties: {
@@ -76,6 +90,26 @@ Only return the fields that need to change. Keep unchanged fields out of the res
                   deposit_mode: { type: "string", enum: ["percentage", "flat"] },
                   deposit_value: { type: "number" },
                   tax_rate: { type: "number" },
+                  subtotal: { type: "number" },
+                  tax_amount: { type: "number" },
+                  total: { type: "number" },
+                  deposit_amount: { type: "number" },
+                  balance_due: { type: "number" },
+                  line_items: {
+                    type: "array",
+                    description: "Full updated line items array. Only include if pricing changes were requested.",
+                    items: {
+                      type: "object",
+                      properties: {
+                        description: { type: "string" },
+                        quantity: { type: "number" },
+                        unit: { type: "string" },
+                        unit_price: { type: "number" },
+                        subtotal: { type: "number" },
+                      },
+                      required: ["description", "quantity", "unit_price", "subtotal"],
+                    },
+                  },
                 },
               },
             },
