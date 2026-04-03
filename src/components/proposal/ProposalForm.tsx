@@ -5,7 +5,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Sparkles, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import PhoneInput from '@/components/PhoneInput';
 import ProposalToolbar from '@/components/proposal/ProposalToolbar';
 import type { ProposalFormData, ProposalTemplate, LineItemData } from '@/pages/NewProposal';
@@ -90,9 +92,46 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
   const depositAmount = form.deposit_mode === 'percentage' ? total * (form.deposit_value / 100) : form.deposit_value;
   const balanceDue = total - depositAmount;
 
+  const [isPolishing, setIsPolishing] = useState(false);
+  const { toast } = useToast();
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(form);
+  };
+
+  const handlePolish = async () => {
+    setIsPolishing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('polish-proposal', {
+        body: { proposal: form, line_items: form.line_items },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      setForm((prev) => ({
+        ...prev,
+        title: data.title || prev.title,
+        job_description: data.job_description || prev.job_description,
+        scope_of_work: data.scope_of_work || prev.scope_of_work,
+        materials_included: data.materials_included || prev.materials_included,
+        materials_excluded: data.materials_excluded || prev.materials_excluded,
+        payment_terms: data.payment_terms || prev.payment_terms,
+        warranty_terms: data.warranty_terms || prev.warranty_terms,
+        disclosures: data.disclosures || prev.disclosures,
+        special_conditions: data.special_conditions || prev.special_conditions,
+        estimated_duration: data.estimated_duration || prev.estimated_duration,
+        line_items: prev.line_items.map((item, i) => ({
+          ...item,
+          description: data.line_item_descriptions?.[i] || item.description,
+        })),
+      }));
+      toast({ title: 'Proposal polished!', description: 'Text has been refined for a professional tone.' });
+    } catch (err: any) {
+      toast({ title: 'Polish failed', description: err.message || 'Could not polish proposal', variant: 'destructive' });
+    } finally {
+      setIsPolishing(false);
+    }
   };
 
   return (
@@ -324,6 +363,13 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
           </div>
         </CardContent>
       </Card>
+      {/* AI Polish */}
+      <div className="flex justify-center pb-4">
+        <Button type="button" variant="outline" size="lg" onClick={handlePolish} disabled={isPolishing} className="gap-2">
+          {isPolishing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+          {isPolishing ? 'Polishing...' : 'Polish with AI'}
+        </Button>
+      </div>
 
     </form>
   );
