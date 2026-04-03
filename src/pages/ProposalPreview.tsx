@@ -160,7 +160,7 @@ export default function ProposalPreview() {
     if (!revisionNote.trim() || !proposal) return;
     setIsRevising(true);
     try {
-      // If proposal is sent, save a version snapshot first
+      saveSnapshot();
       if (proposal.status === 'sent') {
         const nextVersion = revisionHistory.length + 1;
         await supabase.from('proposal_versions').insert({
