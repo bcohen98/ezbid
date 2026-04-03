@@ -29,6 +29,8 @@ export default function ProposalPreview() {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isSendingSelf, setIsSendingSelf] = useState(false);
   const [isSendingClient, setIsSendingClient] = useState(false);
+  const [isUndoing, setIsUndoing] = useState(false);
+  const lastSnapshot = useRef<{ proposal: any; lineItems: any[] } | null>(null);
 
   if (isLoading) {
     return <AppLayout><div className="container py-8"><p className="text-sm text-muted-foreground">Loading preview...</p></div></AppLayout>;
