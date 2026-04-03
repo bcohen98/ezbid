@@ -32,6 +32,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   const navItems = [
     { href: '/dashboard', label: 'Proposals', icon: FileText },
+    { href: '/clients', label: 'Clients', icon: Users },
     { href: '/company-profile', label: companyLabel, icon: Settings },
   ];
 
