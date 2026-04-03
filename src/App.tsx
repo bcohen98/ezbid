@@ -27,6 +27,7 @@ const App = () => (
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/company-profile" element={<CompanyProfile />} />
+            <Route path="/clients" element={<Clients />} />
             <Route path="/proposals/new" element={<NewProposal />} />
             <Route path="/proposals/:id/preview" element={<ProposalPreview />} />
             <Route path="/proposals/:id" element={<ProposalDetail />} />
