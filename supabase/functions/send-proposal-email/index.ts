@@ -6,12 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// ─── SENDER ADDRESS ───────────────────────────────────────────────
-// TEMPORARY: Using Resend sandbox sender for testing.
-// Once ez.bid domain is verified in Resend, swap this to:
-//   const FROM_ADDRESS = "EZ-Bid <proposals@ez.bid>";
-const FROM_ADDRESS = "EZ-Bid <onboarding@resend.dev>";
-// ──────────────────────────────────────────────────────────────────
+const FROM_ADDRESS = "EZ-Bid <proposals@ezbid.pro>";
 
 const RESEND_API = "https://api.resend.com/emails";
 
