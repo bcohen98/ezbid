@@ -38,8 +38,11 @@ Available templates:
 - minimal: No color, pure typography, ultra-clean whitespace. Best for: high-end clients, architects, design-build firms, minimalist branding.
 - bold: Strong left border accent in brand color, large headings, high contrast. Best for: standing out, aggressive bids, roofing/concrete, making an impact.
 - executive: Formal double-line border, elegant serif feel, professional and polished. Best for: commercial projects, large bids, corporate clients, luxury work.
+- contractor: Work-order style with numbered sections, bordered header, job-site ready feel. Best for: subcontractors, trade-specific bids, service calls, handyman work.
+- premium: Luxury centered layout with gold accents and elegant spacing. Best for: high-end residential, custom homes, luxury renovations, design-build.
+- clean: Simple two-column header, modern business layout with colored section headers. Best for: small businesses, clean branding, versatile general use.
 
-Based on the user's description, recommend the BEST template and explain why in 1-2 sentences. Also rank all 5 from best to worst fit.`
+Based on the user's description, recommend the BEST template and explain why in 1-2 sentences. Also rank all 8 from best to worst fit.`
           },
           { role: "user", content: description },
         ],
