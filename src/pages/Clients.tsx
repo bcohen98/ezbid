@@ -40,10 +40,12 @@ type SortDir = 'asc' | 'desc';
 
 export default function Clients() {
   const { proposals, isLoading } = useProposals();
+  const { toast } = useToast();
   const [expandedClients, setExpandedClients] = useState<Set<string>>(new Set());
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [search, setSearch] = useState('');
+  const [editingClient, setEditingClient] = useState<{ proposalIds: string[]; data: any } | null>(null);
 
   const clientGroups = useMemo(() => {
     const groups: Record<string, typeof proposals> = {};
