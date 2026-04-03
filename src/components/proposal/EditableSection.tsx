@@ -117,7 +117,22 @@ export function EditableLineItemRow({ item, onSave }: EditableLineItemProps) {
           <Input type="number" value={qty} onChange={e => setQty(Number(e.target.value))} className="h-7 text-sm text-right w-16" min={0} step="any" />
         </td>
         <td className="py-2 px-1">
-          <Input value={unit} onChange={e => setUnit(e.target.value)} className="h-7 text-sm text-right w-16" />
+          <select value={unit} onChange={e => setUnit(e.target.value)} className="h-7 text-xs border rounded px-1 bg-background w-16 text-right">
+            <option value="ea">ea</option>
+            <option value="hr">hr</option>
+            <option value="sqft">sqft</option>
+            <option value="lnft">lnft</option>
+            <option value="lot">lot</option>
+            <option value="day">day</option>
+            <option value="wk">wk</option>
+            <option value="mo">mo</option>
+            <option value="ton">ton</option>
+            <option value="yd">yd</option>
+            <option value="gal">gal</option>
+            <option value="bag">bag</option>
+            <option value="box">box</option>
+            <option value="pallet">pallet</option>
+          </select>
         </td>
         <td className="py-2 px-1">
           <Input type="number" value={price} onChange={e => setPrice(Number(e.target.value))} className="h-7 text-sm text-right w-24" min={0} step="0.01" />
