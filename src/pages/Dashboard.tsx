@@ -31,7 +31,7 @@ type SortDir = 'asc' | 'desc';
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { proposals, isLoading: proposalsLoading } = useProposals();
+  const { proposals, isLoading: proposalsLoading, deleteProposal } = useProposals();
   const { subscription, isLoading: subLoading } = useSubscription();
   const { profileCompletion, isLoading: profileLoading } = useCompanyProfile();
   const [activeTab, setActiveTab] = useState<TabKey>('all');
