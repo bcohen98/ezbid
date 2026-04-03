@@ -224,7 +224,7 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
             <div className="flex justify-between items-center">
               <span className="text-muted-foreground flex items-center gap-2">
                 Tax rate
-                <Input type="number" value={form.tax_rate} onChange={(e) => handleChange('tax_rate', parseFloat(e.target.value) || 0)} className="h-7 w-16 text-sm" min={0} step="0.1" />%
+                <Input type="number" value={form.tax_rate || ''} onChange={(e) => handleChange('tax_rate', parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} className="h-7 w-16 text-sm" min={0} step="0.1" />%
               </span>
               <span className="font-medium">${formatCurrency(taxAmount)}</span>
             </div>
