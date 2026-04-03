@@ -15,10 +15,11 @@ export default function ProposalDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { data: proposal, isLoading } = useProposal(id);
+  const { data: proposal, isLoading, refetch } = useProposal(id);
   const { lineItems } = useProposalLineItems(id);
-  const { createProposal } = useProposals();
+  const { createProposal, updateProposal } = useProposals();
   const { profile } = useCompanyProfile();
+  const [editClientOpen, setEditClientOpen] = useState(false);
 
   if (isLoading) {
     return <AppLayout><div className="container py-8"><p className="text-sm text-muted-foreground">Loading...</p></div></AppLayout>;
