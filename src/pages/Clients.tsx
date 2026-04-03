@@ -258,6 +258,29 @@ export default function Clients() {
             })}
           </div>
         )}
+        {editingClient && (
+          <EditClientDialog
+            open={!!editingClient}
+            onOpenChange={(open) => { if (!open) setEditingClient(null); }}
+            initialData={editingClient.data}
+            onSave={async (data) => {
+              for (const pid of editingClient.proposalIds) {
+                await supabase.from('proposals').update({
+                  client_name: data.client_name,
+                  client_email: data.client_email,
+                  client_phone: data.client_phone,
+                  job_site_street: data.job_site_street,
+                  job_site_city: data.job_site_city,
+                  job_site_state: data.job_site_state,
+                  job_site_zip: data.job_site_zip,
+                }).eq('id', pid);
+              }
+              setEditingClient(null);
+              toast({ title: 'Client info updated across all proposals' });
+              window.location.reload();
+            }}
+          />
+        )}
       </div>
     </AppLayout>
   );
