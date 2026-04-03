@@ -145,9 +145,9 @@ ${proposal.accepted_payment_methods?.length ? `<p style="font-size:11px;color:#8
 ${section('Warranty', proposal.warranty_terms)}
 ${section('Disclosures', proposal.disclosures)}
 ${section('Special Conditions', proposal.special_conditions)}
-<div style="margin-top:48px;display:flex;gap:48px;">
-  <div style="flex:1;"><div style="border-bottom:1px solid #ccc;height:40px;"></div><div style="font-size:11px;color:#888;margin-top:4px;">Client Signature</div><div style="font-size:11px;color:#888;margin-top:4px;">Date: _______________</div></div>
-  <div style="flex:1;"><div style="border-bottom:1px solid #ccc;height:40px;"></div><div style="font-size:11px;color:#888;margin-top:4px;">Contractor Signature</div><div style="font-size:11px;color:#888;margin-top:4px;">Date: _______________</div></div>
+<div style="margin-top:48px;overflow:hidden;">
+  <div style="float:left;width:45%;"><div style="border-bottom:1px solid #ccc;height:40px;"></div><div style="font-size:11px;color:#888;margin-top:4px;">Client Signature</div><div style="font-size:11px;color:#888;margin-top:4px;">Date: _______________</div></div>
+  <div style="float:right;width:45%;"><div style="border-bottom:1px solid #ccc;height:40px;"></div><div style="font-size:11px;color:#888;margin-top:4px;">Contractor Signature</div><div style="font-size:11px;color:#888;margin-top:4px;">Date: _______________</div></div>
 </div>
 <div style="margin-top:32px;padding-top:16px;border-top:1px solid #e5e5e5;text-align:center;font-size:11px;color:#888;">
   ${companyName} ${profile?.license_numbers?.length ? `· Lic# ${escapeHtml(profile.license_numbers.join(', '))}` : ''}
