@@ -9,7 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Plus, FileText, AlertCircle, PenLine, X, Search, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
+import { Plus, FileText, AlertCircle, PenLine, X, Search, ArrowUpDown, ChevronUp, ChevronDown, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/formatCurrency';
 
 const statusColors: Record<string, string> = {
@@ -30,7 +31,7 @@ type SortDir = 'asc' | 'desc';
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { proposals, isLoading: proposalsLoading } = useProposals();
+  const { proposals, isLoading: proposalsLoading, deleteProposal } = useProposals();
   const { subscription, isLoading: subLoading } = useSubscription();
   const { profileCompletion, isLoading: profileLoading } = useCompanyProfile();
   const [activeTab, setActiveTab] = useState<TabKey>('all');
@@ -259,12 +260,14 @@ export default function Dashboard() {
               </div>
             )}
             {filteredProposals.map((p) => (
-              <Link
+              <div
                 key={p.id}
-                to={`/proposals/${p.id}`}
                 className="flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
               >
-                <div className="flex-1 min-w-0">
+                <Link
+                  to={`/proposals/${p.id}`}
+                  className="flex-1 min-w-0"
+                >
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground font-mono">PRO-{String(p.proposal_number).padStart(4, '0')}</span>
                     <span className="text-sm font-medium truncate">{p.title || 'Untitled'}</span>
@@ -272,14 +275,34 @@ export default function Dashboard() {
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {p.client_name || 'No client'} · {new Date(p.created_at).toLocaleDateString()}
                   </p>
-                </div>
+                </Link>
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-medium">${formatCurrency(p.total)}</span>
                   <Badge variant="outline" className={statusColors[p.status] || ''}>
                     {p.status}
                   </Badge>
+                  {p.status === 'draft' && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (window.confirm('Delete this draft proposal?')) {
+                          deleteProposal(p.id).then(() => {
+                            toast.success('Draft deleted');
+                          }).catch(() => {
+                            toast.error('Failed to delete');
+                          });
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         )}
