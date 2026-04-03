@@ -54,8 +54,20 @@ export default function NewProposal() {
   const { createProposal, isCreating } = useProposals();
   const { subscription, canCreateProposal, incrementProposalCount } = useSubscription();
   const { profile } = useCompanyProfile();
-  const [step, setStep] = useState<'template' | 'form'>('template');
-  const [selectedTemplate, setSelectedTemplate] = useState<ProposalTemplate>('classic');
+  const [step, setStep] = useState<'template' | 'form'>(() => {
+    try {
+      const saved = localStorage.getItem('ezbid_proposal_draft');
+      if (saved) return 'form';
+    } catch {}
+    return 'template';
+  });
+  const [selectedTemplate, setSelectedTemplate] = useState<ProposalTemplate>(() => {
+    try {
+      const saved = localStorage.getItem('ezbid_proposal_draft');
+      if (saved) return JSON.parse(saved).template || 'classic';
+    } catch {}
+    return 'classic';
+  });
   const [showUpgrade, setShowUpgrade] = useState(!canCreateProposal);
 
   if (showUpgrade) {
