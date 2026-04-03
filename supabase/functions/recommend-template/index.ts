@@ -57,7 +57,7 @@ Based on the user's description, recommend the BEST template and explain why in 
                 properties: {
                   recommended: {
                     type: "string",
-                    enum: ["classic", "modern", "minimal", "bold", "executive"],
+                    enum: ["classic", "modern", "minimal", "bold", "executive", "contractor", "premium", "clean"],
                     description: "The best template for this vibe"
                   },
                   reason: {
@@ -66,8 +66,8 @@ Based on the user's description, recommend the BEST template and explain why in 
                   },
                   ranked: {
                     type: "array",
-                    items: { type: "string", enum: ["classic", "modern", "minimal", "bold", "executive"] },
-                    description: "All 5 templates ranked from best to worst fit"
+                    items: { type: "string", enum: ["classic", "modern", "minimal", "bold", "executive", "contractor", "premium", "clean"] },
+                    description: "All 8 templates ranked from best to worst fit"
                   }
                 },
                 required: ["recommended", "reason", "ranked"],
