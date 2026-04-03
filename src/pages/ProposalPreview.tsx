@@ -375,6 +375,7 @@ export default function ProposalPreview() {
               </h3>
               
               <Button
+                type="button"
                 variant="outline"
                 className="w-full gap-2"
                 onClick={handleDownloadPdf}
@@ -385,6 +386,7 @@ export default function ProposalPreview() {
               </Button>
 
               <Button
+                type="button"
                 variant="outline"
                 className="w-full gap-2"
                 onClick={handleSendSelf}
@@ -395,6 +397,7 @@ export default function ProposalPreview() {
               </Button>
 
               <Button
+                type="button"
                 className="w-full gap-2"
                 onClick={handleSendClient}
                 disabled={isSendingClient}
