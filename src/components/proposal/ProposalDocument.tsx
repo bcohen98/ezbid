@@ -1,6 +1,6 @@
 import type { Database } from '@/integrations/supabase/types';
 import { formatCurrency } from '@/lib/formatCurrency';
-import EditableSection, { EditableLineItemRow } from './EditableSection';
+import EditableSection, { EditableLineItemRow, EditableTotals } from './EditableSection';
 
 type Proposal = Database['public']['Tables']['proposals']['Row'];
 type LineItem = Database['public']['Tables']['proposal_line_items']['Row'];
