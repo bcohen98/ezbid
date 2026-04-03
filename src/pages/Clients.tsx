@@ -44,7 +44,7 @@ export default function Clients() {
   const clientGroups = useMemo(() => {
     const groups: Record<string, typeof proposals> = {};
     for (const p of proposals) {
-      const key = (p.client_email || p.client_name || 'Unknown Client').toLowerCase().trim();
+      const key = (p.client_name || 'Unknown Client').toLowerCase().trim();
       if (!groups[key]) groups[key] = [];
       groups[key].push(p);
     }
