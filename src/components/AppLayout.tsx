@@ -66,8 +66,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 New Proposal
               </Button>
             </Link>
-            <Button variant="ghost" size="sm" onClick={() => signOut()}>
+            <Button variant="ghost" size="sm" className="gap-2" onClick={() => signOut()}>
               <LogOut className="h-4 w-4" />
+              Log out
             </Button>
           </div>
         </div>
