@@ -657,7 +657,15 @@ export type Database = {
         | "work_pending"
         | "payment_pending"
         | "closed"
-      proposal_template: "classic" | "modern" | "minimal" | "bold" | "executive"
+      proposal_template:
+        | "classic"
+        | "modern"
+        | "minimal"
+        | "bold"
+        | "executive"
+        | "contractor"
+        | "premium"
+        | "clean"
       subscription_plan: "starter" | "pro"
       trade_type:
         | "general_contractor"
@@ -819,7 +827,16 @@ export const Constants = {
         "payment_pending",
         "closed",
       ],
-      proposal_template: ["classic", "modern", "minimal", "bold", "executive"],
+      proposal_template: [
+        "classic",
+        "modern",
+        "minimal",
+        "bold",
+        "executive",
+        "contractor",
+        "premium",
+        "clean",
+      ],
       subscription_plan: ["starter", "pro"],
       trade_type: [
         "general_contractor",
