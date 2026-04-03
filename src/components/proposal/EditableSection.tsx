@@ -210,7 +210,7 @@ export function EditableTotals({ subtotal, taxRate, depositMode, depositValue, o
         <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>${fmt(subtotal)}</span></div>
         <div className="flex items-center justify-between gap-2">
           <span className="text-muted-foreground">Tax rate (%)</span>
-          <Input type="number" value={draftTaxRate} onChange={e => setDraftTaxRate(Number(e.target.value))} className="h-7 text-sm text-right w-20" min={0} step="0.1" />
+          <Input type="number" value={draftTaxRate || ''} onChange={e => setDraftTaxRate(Number(e.target.value))} onFocus={e => e.target.select()} className="h-7 text-sm text-right w-20" min={0} step="0.1" />
         </div>
         <div className="flex justify-between text-xs text-muted-foreground"><span>Tax amount</span><span>${fmt(taxAmount)}</span></div>
         <div className="flex justify-between font-semibold text-base border-t pt-1"><span>Total</span><span>${fmt(total)}</span></div>
