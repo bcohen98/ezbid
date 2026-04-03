@@ -268,6 +268,7 @@ export default function ProposalPreview() {
   };
 
   const handleSendSelf = async () => {
+    console.log('[handleSendSelf] triggered, proposal_id:', proposal.id);
     setIsSendingSelf(true);
     try {
       const { data, error } = await supabase.functions.invoke('send-proposal-email', {
@@ -283,7 +284,9 @@ export default function ProposalPreview() {
   };
 
   const handleSendClient = async () => {
+    console.log('[handleSendClient] triggered, proposal_id:', proposal.id, 'client_email:', proposal.client_email);
     if (!proposal.client_email) {
+      console.log('[handleSendClient] BLOCKED: no client_email');
       toast({ title: 'Missing client email', description: 'Please add a client email address in the proposal form.', variant: 'destructive' });
       return;
     }
