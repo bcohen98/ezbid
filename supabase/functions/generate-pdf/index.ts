@@ -43,15 +43,15 @@ function buildProposalHtml(proposal: any, lineItems: any[], profile: any): strin
       </div>`;
   } else {
     headerHtml = `
-      <div style="margin-bottom:24px;${template === 'modern' ? `border-top:4px solid ${brandColor};padding-top:16px;` : ''}">
-        <div style="display:flex;justify-content:space-between;">
-          <div>
+      <div style="margin-bottom:24px;${template === 'modern' ? `border-top:4px solid ${brandColor};padding-top:16px;` : ''}overflow:hidden;">
+        <div class="row">
+          <div class="col-left">
             ${profile?.logo_url ? `<img src="${escapeHtml(profile.logo_url)}" style="height:40px;margin-bottom:8px;" />` : ''}
             <div style="font-weight:600;font-size:16px;${template === 'modern' ? `color:${brandColor};` : ''}">${companyName}</div>
             <div style="font-size:11px;color:#888;margin-top:4px;">${escapeHtml(address)}</div>
             ${profile?.phone ? `<div style="font-size:11px;color:#888;">${escapeHtml(profile.phone)}</div>` : ''}
           </div>
-          <div style="text-align:right;">
+          <div class="col-right">
             <div style="font-size:22px;font-weight:700;${template === 'modern' || template === 'bold' ? `color:${brandColor};` : ''}">PROPOSAL</div>
             <div style="font-size:11px;color:#888;margin-top:4px;">PRO-${String(proposal.proposal_number).padStart(4, '0')}</div>
           </div>
