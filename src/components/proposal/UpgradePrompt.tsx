@@ -40,7 +40,7 @@ export default function UpgradePrompt({ proposalsUsed, onContinue }: Props) {
           </div>
           <h2 className="text-xl font-semibold mb-2">You've used all 3 free proposals</h2>
           <p className="text-sm text-muted-foreground mb-6">
-            Upgrade to unlimited proposals for $29/month. Cancel anytime.
+            Upgrade to unlimited proposals for $39/month. Cancel anytime.
           </p>
           <div className="space-y-3">
             <Button className="w-full gap-2" onClick={handleUpgrade} disabled={loading}>
