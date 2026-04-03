@@ -19,6 +19,11 @@ interface Props {
 export default function ProposalDocument({ proposal, lineItems, profile, onFieldEdit, onLineItemEdit, onTotalsEdit }: Props) {
   const template = proposal.template || 'classic';
   const brandColor = profile?.brand_color || '#000000';
+  const logoSize = (proposal as any).logo_size || 'medium';
+  const logoPosition = (proposal as any).logo_position || 'left';
+
+  const logoSizeClass = logoSize === 'small' ? 'h-8' : logoSize === 'large' ? 'h-16' : 'h-10';
+  const logoAlignClass = logoPosition === 'center' ? 'mx-auto' : logoPosition === 'right' ? 'ml-auto' : '';
 
   const editable = (field: string, value: string | null, children: React.ReactNode) => {
     if (!onFieldEdit || !value) return children;
