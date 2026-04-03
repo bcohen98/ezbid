@@ -181,8 +181,8 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
           <div className="space-y-2">
             <Label>Line items</Label>
             <div className="border rounded-lg overflow-hidden">
-              <div className="grid grid-cols-[1fr_80px_60px_100px_40px] gap-2 px-3 py-2 bg-muted text-xs font-medium text-muted-foreground">
-                <span>Description</span><span>Qty</span><span>Unit</span><span>Unit Price</span><span></span>
+              <div className="grid grid-cols-[1fr_80px_60px_100px_90px_40px] gap-2 px-3 py-2 bg-muted text-xs font-medium text-muted-foreground">
+                <span>Description</span><span>Qty</span><span>Unit</span><span>Unit Price</span><span className="text-right">Total</span><span></span>
               </div>
               {form.line_items.map((item, i) => (
                 <div key={i} className="grid grid-cols-[1fr_80px_60px_100px_40px] gap-2 px-3 py-2 border-t items-center">
