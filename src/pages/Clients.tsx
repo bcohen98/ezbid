@@ -83,8 +83,19 @@ export default function Clients() {
           (c.email || '').toLowerCase().includes(q) ||
           c.proposals.some(p => (p.title || '').toLowerCase().includes(q));
       })
-      .sort((a, b) => b.latestDate.getTime() - a.latestDate.getTime());
-  }, [clientGroups, search]);
+      .sort((a, b) => {
+        let cmp = 0;
+        if (sortKey === 'date') cmp = a.latestDate.getTime() - b.latestDate.getTime();
+        else if (sortKey === 'title') cmp = a.name.localeCompare(b.name);
+        else if (sortKey === 'total') cmp = a.totalValue - b.totalValue;
+        else if (sortKey === 'status') {
+          const aStatus = a.proposals[0]?.status || '';
+          const bStatus = b.proposals[0]?.status || '';
+          cmp = aStatus.localeCompare(bStatus);
+        }
+        return sortDir === 'desc' ? -cmp : cmp;
+      });
+  }, [clientGroups, search, sortKey, sortDir]);
 
   const toggleClient = (key: string) => {
     setExpandedClients(prev => {
