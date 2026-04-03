@@ -397,7 +397,7 @@ export default function ProposalPreview() {
               <Button
                 className="w-full gap-2"
                 onClick={handleSendClient}
-                disabled={isSendingClient || !proposal.client_email}
+                disabled={isSendingClient}
               >
                 {isSendingClient ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 {isSendingClient ? 'Sending...' : 'Send to client'}
