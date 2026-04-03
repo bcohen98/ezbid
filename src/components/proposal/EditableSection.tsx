@@ -114,7 +114,7 @@ export function EditableLineItemRow({ item, onSave }: EditableLineItemProps) {
           <Input value={desc} onChange={e => setDesc(e.target.value)} className="h-7 text-sm" />
         </td>
         <td className="py-2 px-1">
-          <Input type="number" value={qty} onChange={e => setQty(Number(e.target.value))} className="h-7 text-sm text-right w-16" min={0} step="any" />
+          <Input type="number" value={qty || ''} onChange={e => setQty(Number(e.target.value))} onFocus={e => e.target.select()} className="h-7 text-sm text-right w-16" min={0} step="any" />
         </td>
         <td className="py-2 px-1">
           <select value={unit} onChange={e => setUnit(e.target.value)} className="h-7 text-xs border rounded px-1 bg-background w-16 text-right">
