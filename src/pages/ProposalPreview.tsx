@@ -120,6 +120,7 @@ export default function ProposalPreview() {
     }
   };
 
+  const handleRevise = async () => {
     if (!revisionNote.trim() || !proposal) return;
     setIsRevising(true);
     try {
