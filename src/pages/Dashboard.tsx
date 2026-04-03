@@ -10,7 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Plus, FileText, AlertCircle, PenLine, X, Search, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
-import { toast } from 'sonner';
+
 import { formatCurrency } from '@/lib/formatCurrency';
 
 const statusColors: Record<string, string> = {
