@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Plus, FileText, AlertCircle, PenLine, X } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Plus, FileText, AlertCircle, PenLine, X, Search, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
 import { formatCurrency } from '@/lib/formatCurrency';
 
 const statusColors: Record<string, string> = {
@@ -24,6 +25,8 @@ const statusColors: Record<string, string> = {
 };
 
 type TabKey = 'all' | 'signed' | 'sent' | 'draft';
+type SortKey = 'date' | 'client' | 'total' | 'status';
+type SortDir = 'asc' | 'desc';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -31,6 +34,9 @@ export default function Dashboard() {
   const { subscription, isLoading: subLoading } = useSubscription();
   const { profileCompletion, isLoading: profileLoading } = useCompanyProfile();
   const [activeTab, setActiveTab] = useState<TabKey>('all');
+  const [sortKey, setSortKey] = useState<SortKey>('date');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [search, setSearch] = useState('');
 
   // Check for unsaved draft in localStorage
   const [draftDismissed, setDraftDismissed] = useState(false);
@@ -40,7 +46,6 @@ export default function Dashboard() {
       const saved = localStorage.getItem('ezbid_proposal_draft');
       if (!saved) return null;
       const parsed = JSON.parse(saved);
-      // Only show if there's meaningful content
       const hasContent = parsed.client_name || parsed.title || parsed.job_description ||
         parsed.line_items?.some((li: any) => li.description);
       return hasContent ? parsed : null;
@@ -62,9 +67,42 @@ export default function Dashboard() {
     { key: 'draft', label: 'Incomplete' },
   ];
 
-  const filteredProposals = activeTab === 'all'
-    ? proposals
-    : proposals.filter((p) => p.status === activeTab);
+  const filteredProposals = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    let list = activeTab === 'all'
+      ? proposals
+      : proposals.filter((p) => p.status === activeTab);
+
+    if (q) {
+      list = list.filter(p =>
+        (p.title || '').toLowerCase().includes(q) ||
+        (p.client_name || '').toLowerCase().includes(q) ||
+        (p.client_email || '').toLowerCase().includes(q) ||
+        `PRO-${String(p.proposal_number).padStart(4, '0')}`.toLowerCase().includes(q)
+      );
+    }
+
+    const sorted = [...list].sort((a, b) => {
+      let cmp = 0;
+      if (sortKey === 'date') cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      else if (sortKey === 'client') cmp = (a.client_name || '').localeCompare(b.client_name || '');
+      else if (sortKey === 'total') cmp = Number(a.total || 0) - Number(b.total || 0);
+      else if (sortKey === 'status') cmp = (a.status || '').localeCompare(b.status || '');
+      return sortDir === 'desc' ? -cmp : cmp;
+    });
+
+    return sorted;
+  }, [proposals, activeTab, search, sortKey, sortDir]);
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortKey(key); setSortDir('desc'); }
+  };
+
+  const SortIcon = ({ k }: { k: SortKey }) => {
+    if (sortKey !== k) return <ArrowUpDown className="h-3 w-3 opacity-50" />;
+    return sortDir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />;
+  };
 
   return (
     <AppLayout>
@@ -149,6 +187,33 @@ export default function Dashboard() {
           </Button>
         </div>
 
+        {/* Search + Sort */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="relative flex-1 max-w-xs">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search proposals..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-8 h-9 text-sm"
+            />
+          </div>
+          <div className="flex gap-1">
+            {(['date', 'client', 'total', 'status'] as SortKey[]).map(k => (
+              <Button
+                key={k}
+                variant={sortKey === k ? 'default' : 'ghost'}
+                size="sm"
+                className="text-xs gap-1"
+                onClick={() => toggleSort(k)}
+              >
+                {k.charAt(0).toUpperCase() + k.slice(1)}
+                <SortIcon k={k} />
+              </Button>
+            ))}
+          </div>
+        </div>
+
         {/* Proposals list */}
         {proposalsLoading ? (
           <p className="text-sm text-muted-foreground">Loading proposals...</p>
@@ -157,10 +222,10 @@ export default function Dashboard() {
             <CardContent className="flex flex-col items-center justify-center py-12 text-center">
               <FileText className="h-10 w-10 text-muted-foreground/40 mb-3" />
               <p className="text-sm font-medium">
-                {activeTab === 'all' ? 'No proposals yet' : `No ${tabs.find(t => t.key === activeTab)?.label.toLowerCase()} proposals`}
+                {search ? 'No proposals match your search' : activeTab === 'all' ? 'No proposals yet' : `No ${tabs.find(t => t.key === activeTab)?.label.toLowerCase()} proposals`}
               </p>
               <p className="text-xs text-muted-foreground mt-1">Create your first professional proposal in minutes.</p>
-              {activeTab === 'all' && (
+              {activeTab === 'all' && !search && (
                 <Button onClick={() => navigate('/proposals/new')} className="mt-4 gap-2" size="sm">
                   <Plus className="h-4 w-4" />
                   Create Proposal
