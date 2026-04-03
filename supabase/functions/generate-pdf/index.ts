@@ -25,9 +25,9 @@ function buildProposalHtml(proposal: any, lineItems: any[], profile: any): strin
   let headerHtml = '';
   if (template === 'classic') {
     headerHtml = `
-      <div style="background:#1a1a1a;color:#fff;padding:20px;border-radius:6px;margin-bottom:24px;">
-        <div style="display:flex;justify-content:space-between;">
-          <div>
+      <div style="background:#1a1a1a;color:#fff;padding:20px;border-radius:6px;margin-bottom:24px;overflow:hidden;">
+        <div class="row">
+          <div class="col-left">
             ${profile?.logo_url ? `<img src="${escapeHtml(profile.logo_url)}" style="height:40px;margin-bottom:8px;filter:brightness(0) invert(1);" />` : ''}
             <div style="font-weight:600;font-size:16px;">${companyName}</div>
             <div style="font-size:11px;opacity:0.7;margin-top:4px;">${escapeHtml(address)}</div>
@@ -35,7 +35,7 @@ function buildProposalHtml(proposal: any, lineItems: any[], profile: any): strin
             ${profile?.email ? `<div style="font-size:11px;opacity:0.7;">${escapeHtml(profile.email)}</div>` : ''}
             ${profile?.license_numbers?.length ? `<div style="font-size:11px;opacity:0.7;margin-top:4px;">Lic# ${escapeHtml(profile.license_numbers.join(', '))}</div>` : ''}
           </div>
-          <div style="text-align:right;">
+          <div class="col-right" style="color:#fff;">
             <div style="font-size:24px;font-weight:700;letter-spacing:-0.5px;">PROPOSAL</div>
             <div style="font-size:11px;opacity:0.7;margin-top:4px;">PRO-${String(proposal.proposal_number).padStart(4, '0')}</div>
           </div>
