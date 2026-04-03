@@ -5,8 +5,8 @@ import AppLayout from '@/components/AppLayout';
 import ProposalDocument from '@/components/proposal/ProposalDocument';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Send, Mail, Sparkles, Loader2, Download, FileText } from 'lucide-react';
-import { useState } from 'react';
+import { ArrowLeft, Send, Mail, Sparkles, Loader2, Download, FileText, Undo2 } from 'lucide-react';
+import { useState, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -29,6 +29,8 @@ export default function ProposalPreview() {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isSendingSelf, setIsSendingSelf] = useState(false);
   const [isSendingClient, setIsSendingClient] = useState(false);
+  const [isUndoing, setIsUndoing] = useState(false);
+  const lastSnapshot = useRef<{ proposal: any; lineItems: any[] } | null>(null);
 
   if (isLoading) {
     return <AppLayout><div className="container py-8"><p className="text-sm text-muted-foreground">Loading preview...</p></div></AppLayout>;
@@ -40,8 +42,42 @@ export default function ProposalPreview() {
 
   const revisionHistory: RevisionEntry[] = Array.isArray((proposal as any).revision_history) ? (proposal as any).revision_history : [];
 
+  const saveSnapshot = () => {
+    lastSnapshot.current = { proposal: { ...proposal }, lineItems: [...lineItems] };
+  };
+
+  const handleUndo = async () => {
+    if (!lastSnapshot.current) {
+      toast({ title: 'Nothing to undo' });
+      return;
+    }
+    setIsUndoing(true);
+    try {
+      const snap = lastSnapshot.current;
+      const { id, created_at, updated_at, user_id, ...fields } = snap.proposal;
+      await updateProposal({ id: proposal.id, ...fields });
+      await upsertItems(snap.lineItems.map((li: any, i: number) => ({
+        proposal_id: proposal.id,
+        description: li.description,
+        quantity: li.quantity,
+        unit: li.unit || 'ea',
+        unit_price: li.unit_price,
+        subtotal: li.subtotal,
+        sort_order: i,
+      })));
+      lastSnapshot.current = null;
+      refetch();
+      toast({ title: 'Undone!', description: 'Reverted to previous state.' });
+    } catch (err: any) {
+      toast({ title: 'Undo failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsUndoing(false);
+    }
+  };
+
   const handleFieldEdit = async (field: string, value: string) => {
     try {
+      saveSnapshot();
       await updateProposal({ id: proposal.id, [field]: value });
       refetch();
       toast({ title: 'Section updated' });
@@ -52,6 +88,7 @@ export default function ProposalPreview() {
 
   const handleLineItemEdit = async (itemId: string, updates: { description: string; quantity: number; unit: string; unit_price: number; subtotal: number }) => {
     try {
+      saveSnapshot();
       const updatedItems = lineItems.map(li =>
         li.id === itemId
           ? { ...li, ...updates }
@@ -97,6 +134,7 @@ export default function ProposalPreview() {
 
   const handleTotalsEdit = async (updates: { tax_rate: number; deposit_mode: string; deposit_value: number }) => {
     try {
+      saveSnapshot();
       const sub = Number(proposal.subtotal) || 0;
       const taxAmount = sub * updates.tax_rate / 100;
       const total = sub + taxAmount;
@@ -124,7 +162,7 @@ export default function ProposalPreview() {
     if (!revisionNote.trim() || !proposal) return;
     setIsRevising(true);
     try {
-      // If proposal is sent, save a version snapshot first
+      saveSnapshot();
       if (proposal.status === 'sent') {
         const nextVersion = revisionHistory.length + 1;
         await supabase.from('proposal_versions').insert({
@@ -290,7 +328,18 @@ export default function ProposalPreview() {
                 {isRevising ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                 {isRevising ? 'Revising...' : 'Submit revision'}
               </Button>
-              <p className="text-xs text-muted-foreground">Supports text, template style, pricing, and line item changes. Click any section to edit directly.</p>
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1 text-xs"
+                  disabled={!lastSnapshot.current || isUndoing}
+                  onClick={handleUndo}
+                >
+                  {isUndoing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Undo2 className="h-3 w-3" />}
+                  Undo last edit
+                </Button>
+              </div>
             </div>
 
             {/* Download & Send */}
