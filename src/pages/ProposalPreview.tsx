@@ -5,17 +5,23 @@ import AppLayout from '@/components/AppLayout';
 import ProposalDocument from '@/components/proposal/ProposalDocument';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Send, Mail, Sparkles, Loader2, Download, FileText } from 'lucide-react';
+import { ArrowLeft, Send, Mail, Sparkles, Loader2, Download, FileText, History } from 'lucide-react';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+
+interface RevisionEntry {
+  request: string;
+  changes: Record<string, unknown>;
+  timestamp: string;
+}
 
 export default function ProposalPreview() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { data: proposal, isLoading, refetch } = useProposal(id);
-  const { lineItems } = useProposalLineItems(id);
+  const { lineItems, upsertItems } = useProposalLineItems(id);
   const { profile } = useCompanyProfile();
   const { updateProposal } = useProposals();
   const [revisionNote, setRevisionNote] = useState('');
@@ -32,6 +38,8 @@ export default function ProposalPreview() {
     return <AppLayout><div className="container py-8"><p className="text-sm text-muted-foreground">Proposal not found</p></div></AppLayout>;
   }
 
+  const revisionHistory: RevisionEntry[] = Array.isArray((proposal as any).revision_history) ? (proposal as any).revision_history : [];
+
   const handleFieldEdit = async (field: string, value: string) => {
     try {
       await updateProposal({ id: proposal.id, [field]: value });
@@ -46,12 +54,56 @@ export default function ProposalPreview() {
     if (!revisionNote.trim() || !proposal) return;
     setIsRevising(true);
     try {
+      // If proposal is sent, save a version snapshot first
+      if (proposal.status === 'sent') {
+        const nextVersion = revisionHistory.length + 1;
+        await supabase.from('proposal_versions').insert({
+          proposal_id: proposal.id,
+          version_number: nextVersion,
+          snapshot: proposal as any,
+          change_summary: revisionNote.trim(),
+        });
+      }
+
       const { data, error } = await supabase.functions.invoke('revise-proposal', {
-        body: { proposal, revisionNote: revisionNote.trim() },
+        body: {
+          proposal,
+          revisionNote: revisionNote.trim(),
+          lineItems,
+          revisionHistory: revisionHistory.slice(-5), // Last 5 for context
+        },
       });
       if (error) throw error;
       if (data?.revised) {
-        await updateProposal({ id: proposal.id, ...data.revised });
+        const { line_items: revisedLineItems, ...proposalUpdates } = data.revised;
+
+        // Update line items if AI changed them
+        if (revisedLineItems && Array.isArray(revisedLineItems)) {
+          const newItems = revisedLineItems.map((li: any, i: number) => ({
+            proposal_id: proposal.id,
+            description: li.description,
+            quantity: li.quantity,
+            unit: li.unit || 'ea',
+            unit_price: li.unit_price,
+            subtotal: li.subtotal || li.quantity * li.unit_price,
+            sort_order: i,
+          }));
+          await upsertItems(newItems);
+        }
+
+        // Store revision in history
+        const newEntry: RevisionEntry = {
+          request: revisionNote.trim(),
+          changes: proposalUpdates,
+          timestamp: new Date().toISOString(),
+        };
+        const updatedHistory = [...revisionHistory, newEntry];
+
+        await updateProposal({
+          id: proposal.id,
+          ...proposalUpdates,
+          revision_history: updatedHistory as any,
+        });
         setRevisionNote('');
         refetch();
         toast({ title: 'Proposal revised!', description: 'Review the changes below.' });
@@ -149,10 +201,25 @@ export default function ProposalPreview() {
               <h3 className="text-sm font-medium flex items-center gap-2">
                 <Sparkles className="h-4 w-4" /> AI Revision
               </h3>
+
+              {/* Revision history summary */}
+              {revisionHistory.length > 0 && (
+                <div className="bg-muted/50 rounded-md p-2 max-h-32 overflow-y-auto">
+                  <p className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1">
+                    <History className="h-3 w-3" /> Previous revisions ({revisionHistory.length})
+                  </p>
+                  {revisionHistory.slice(-3).map((entry, i) => (
+                    <p key={i} className="text-xs text-muted-foreground truncate">
+                      • {entry.request}
+                    </p>
+                  ))}
+                </div>
+              )}
+
               <Textarea
                 value={revisionNote}
                 onChange={(e) => setRevisionNote(e.target.value)}
-                placeholder="e.g. Switch to the bold template, make scope more detailed, change deposit to 50% flat, add cleanup note, set tax to 8.5%..."
+                placeholder="e.g. Switch to bold template, add a $500 line item for cleanup, change tax to 8.5%, remove the flooring item, increase labor price to $75/hr..."
                 rows={4}
               />
               <Button
@@ -165,7 +232,7 @@ export default function ProposalPreview() {
                 {isRevising ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                 {isRevising ? 'Revising...' : 'Submit revision'}
               </Button>
-              <p className="text-xs text-muted-foreground">Or click any text section to edit it directly.</p>
+              <p className="text-xs text-muted-foreground">Supports text, template style, pricing, and line item changes. Click any section to edit directly.</p>
             </div>
 
             {/* Download & Send */}
