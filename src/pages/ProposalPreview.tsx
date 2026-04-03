@@ -231,24 +231,27 @@ export default function ProposalPreview() {
       });
       if (error) throw error;
       if (data?.html) {
-        // Create a hidden container, render HTML, convert to PDF
         const container = document.createElement('div');
-        container.style.position = 'fixed';
+        container.style.position = 'absolute';
         container.style.left = '-9999px';
         container.style.top = '0';
-        container.style.width = '8.5in';
+        container.style.width = '816px'; // 8.5in at 96dpi
+        container.style.background = '#fff';
         container.innerHTML = data.html;
         document.body.appendChild(container);
+
+        // Wait for images and layout to settle
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         const html2pdf = (await import('html2pdf.js')).default;
         const fileName = data.fileName || `Proposal-PRO-${String(proposal.proposal_number).padStart(4, '0')}.pdf`;
 
         await html2pdf()
           .set({
-            margin: 0,
+            margin: [0.5, 0.5, 0.5, 0.5],
             filename: fileName,
             image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+            html2canvas: { scale: 2, useCORS: true, letterRendering: true, windowWidth: 816 },
             jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
           })
           .from(container)
