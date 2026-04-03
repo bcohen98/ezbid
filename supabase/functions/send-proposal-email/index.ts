@@ -22,6 +22,19 @@ interface ResendPayload {
   html: string;
 }
 
+const SANDBOX_FROM_ADDRESS = "onboarding@resend.dev";
+
+function isSandboxSender(fromAddress: string) {
+  return fromAddress.includes(SANDBOX_FROM_ADDRESS);
+}
+
+function createErrorResponse(message: string, status = 400) {
+  return new Response(JSON.stringify({ error: message }), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 async function sendEmail(apiKey: string, payload: ResendPayload) {
   const res = await fetch(RESEND_API, {
     method: "POST",
@@ -169,8 +182,12 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabaseUser.auth.getUser();
     if (authError || !user) throw new Error("Unauthorized");
 
-    // ── Request body ──
-    const { proposal_id, send_to_self } = await req.json();
+    const {
+      proposal_id,
+      send_to_self,
+      recipient_email,
+      recipient_name,
+    } = await req.json();
     if (!proposal_id) throw new Error("Missing proposal_id");
 
     const supabaseAdmin = createClient(supabaseUrl, serviceKey);
@@ -193,19 +210,24 @@ serve(async (req) => {
 
     const companyName = profile?.company_name || "Your Contractor";
     const ownerName = profile?.owner_name || "";
-    const contractorEmail = profile?.email || user.email!;
+    const contractorEmail = user.email || profile?.email || "";
     const logoUrl = profile?.logo_url || null;
 
     const proposalNumber = `PRO-${String(proposal.proposal_number || 0).padStart(4, "0")}`;
     const jobTitle = proposal.title || "Untitled";
-    const clientName = proposal.client_name || "Client";
-    const clientEmail = proposal.client_email;
+    const clientName = recipient_name || proposal.client_name || "Client";
+    const clientEmail = recipient_email || proposal.client_email;
     const total = `$${Number(proposal.total || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
 
     const origin = req.headers.get("origin") || "https://ez.bid";
+    const sandboxMode = isSandboxSender(FROM_ADDRESS);
 
     // ── SCENARIO A: Send to self ──
     if (send_to_self) {
+      if (!contractorEmail) {
+        return createErrorResponse("Your account email is missing. Add an email to your account before sending test emails.");
+      }
+
       const proposalUrl = `${origin}/proposals/${proposal_id}`;
       console.log(`[send-proposal-email] Scenario A: sending to contractor ${contractorEmail}`);
 
@@ -226,12 +248,19 @@ serve(async (req) => {
     }
 
     // ── SCENARIO B: Send to client for e-signature ──
-    if (!clientEmail) throw new Error("Client email is required to send proposal");
+    if (!clientEmail) {
+      return createErrorResponse("Client email is required to send proposal");
+    }
+
+    if (sandboxMode) {
+      return createErrorResponse(
+        `Resend sandbox mode is active. You can only send to ${contractorEmail}. Verify your sending domain, then replace onboarding@resend.dev with your real sender domain in supabase/functions/send-proposal-email/index.ts.`
+      );
+    }
 
     const signUrl = `${origin}/sign/${proposal_id}`;
     console.log(`[send-proposal-email] Scenario B: sending to client ${clientEmail}`);
 
-    // 1) Email to client
     await sendEmail(RESEND_API_KEY, {
       from: FROM_ADDRESS,
       to: [clientEmail],
@@ -239,16 +268,16 @@ serve(async (req) => {
       html: clientEmailHtml(companyName, ownerName, logoUrl, proposalNumber, jobTitle, total, signUrl),
     });
 
-    // 2) Confirmation email to contractor
-    console.log(`[send-proposal-email] Sending confirmation to contractor ${contractorEmail}`);
-    await sendEmail(RESEND_API_KEY, {
-      from: FROM_ADDRESS,
-      to: [contractorEmail],
-      subject: `Proposal sent to ${clientName}`,
-      html: confirmationEmailHtml(clientName, clientEmail),
-    });
+    if (contractorEmail) {
+      console.log(`[send-proposal-email] Sending confirmation to contractor ${contractorEmail}`);
+      await sendEmail(RESEND_API_KEY, {
+        from: FROM_ADDRESS,
+        to: [contractorEmail],
+        subject: `Proposal sent to ${clientName}`,
+        html: confirmationEmailHtml(clientName, clientEmail),
+      });
+    }
 
-    // 3) Update proposal status
     const { error: updateErr } = await supabaseAdmin
       .from("proposals")
       .update({ status: "sent", sent_at: new Date().toISOString(), delivery_method: "email_client" })
@@ -264,9 +293,7 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("[send-proposal-email] Error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    const message = e instanceof Error ? e.message : "Unknown error";
+    return createErrorResponse(message, message.includes("Resend API error") ? 400 : 500);
   }
 });
