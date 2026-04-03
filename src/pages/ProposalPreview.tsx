@@ -328,7 +328,18 @@ export default function ProposalPreview() {
                 {isRevising ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                 {isRevising ? 'Revising...' : 'Submit revision'}
               </Button>
-              <p className="text-xs text-muted-foreground">Supports text, template style, pricing, and line item changes. Click any section to edit directly.</p>
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1 text-xs"
+                  disabled={!lastSnapshot.current || isUndoing}
+                  onClick={handleUndo}
+                >
+                  {isUndoing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Undo2 className="h-3 w-3" />}
+                  Undo last edit
+                </Button>
+              </div>
             </div>
 
             {/* Download & Send */}
