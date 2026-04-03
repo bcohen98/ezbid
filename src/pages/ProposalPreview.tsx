@@ -95,7 +95,31 @@ export default function ProposalPreview() {
     }
   };
 
-  const handleRevise = async () => {
+  const handleTotalsEdit = async (updates: { tax_rate: number; deposit_mode: string; deposit_value: number }) => {
+    try {
+      const sub = Number(proposal.subtotal) || 0;
+      const taxAmount = sub * updates.tax_rate / 100;
+      const total = sub + taxAmount;
+      const depositAmount = updates.deposit_mode === 'percentage' ? total * updates.deposit_value / 100 : updates.deposit_value;
+      const balanceDue = total - depositAmount;
+
+      await updateProposal({
+        id: proposal.id,
+        tax_rate: updates.tax_rate,
+        tax_amount: taxAmount,
+        total,
+        deposit_mode: updates.deposit_mode as any,
+        deposit_value: updates.deposit_value,
+        deposit_amount: depositAmount,
+        balance_due: balanceDue,
+      });
+      refetch();
+      toast({ title: 'Totals updated' });
+    } catch (err: any) {
+      toast({ title: 'Update failed', description: err.message, variant: 'destructive' });
+    }
+  };
+
     if (!revisionNote.trim() || !proposal) return;
     setIsRevising(true);
     try {
