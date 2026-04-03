@@ -136,6 +136,7 @@ export default function NewProposal() {
       }
 
       await incrementProposalCount();
+      localStorage.removeItem('ezbid_proposal_draft');
       toast({ title: 'Proposal created as draft' });
       navigate(`/proposals/${proposal.id}/preview`);
     } catch (err: any) {
