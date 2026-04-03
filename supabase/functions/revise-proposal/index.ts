@@ -53,6 +53,8 @@ CURRENT PROPOSAL:
 - Tax Rate: ${proposal.tax_rate || 0}
 - Subtotal: ${proposal.subtotal || 0}
 - Total: ${proposal.total || 0}
+- Logo Size: ${proposal.logo_size || "medium"} (options: small, medium, large)
+- Logo Position: ${proposal.logo_position || "left"} (options: left, center, right)
 ${lineItemsSummary}
 Only return the fields that need to change. Keep unchanged fields out of the response.`;
 
