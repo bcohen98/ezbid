@@ -22,6 +22,19 @@ interface ResendPayload {
   html: string;
 }
 
+const SANDBOX_FROM_ADDRESS = "onboarding@resend.dev";
+
+function isSandboxSender(fromAddress: string) {
+  return fromAddress.includes(SANDBOX_FROM_ADDRESS);
+}
+
+function createErrorResponse(message: string, status = 400) {
+  return new Response(JSON.stringify({ error: message }), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 async function sendEmail(apiKey: string, payload: ResendPayload) {
   const res = await fetch(RESEND_API, {
     method: "POST",
