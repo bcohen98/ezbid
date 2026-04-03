@@ -50,6 +50,51 @@ export default function ProposalPreview() {
     }
   };
 
+  const handleLineItemEdit = async (itemId: string, updates: { description: string; quantity: number; unit: string; unit_price: number; subtotal: number }) => {
+    try {
+      const updatedItems = lineItems.map(li =>
+        li.id === itemId
+          ? { ...li, ...updates }
+          : li
+      );
+      // Recalculate proposal totals
+      const newSubtotal = updatedItems.reduce((sum, li) => sum + (li.subtotal || li.quantity * li.unit_price), 0);
+      const taxRate = Number(proposal.tax_rate) || 0;
+      const newTaxAmount = newSubtotal * taxRate / 100;
+      const newTotal = newSubtotal + newTaxAmount;
+      const depositValue = Number(proposal.deposit_value) || 0;
+      const depositMode = proposal.deposit_mode || 'percentage';
+      const newDepositAmount = depositMode === 'percentage' ? newTotal * depositValue / 100 : depositValue;
+      const newBalanceDue = newTotal - newDepositAmount;
+
+      // Save line items
+      await upsertItems(updatedItems.map((li, i) => ({
+        proposal_id: proposal.id,
+        description: li.description,
+        quantity: li.quantity,
+        unit: li.unit || 'ea',
+        unit_price: li.unit_price,
+        subtotal: li.subtotal,
+        sort_order: i,
+      })));
+
+      // Update proposal totals
+      await updateProposal({
+        id: proposal.id,
+        subtotal: newSubtotal,
+        tax_amount: newTaxAmount,
+        total: newTotal,
+        deposit_amount: newDepositAmount,
+        balance_due: newBalanceDue,
+      });
+
+      refetch();
+      toast({ title: 'Pricing updated' });
+    } catch (err: any) {
+      toast({ title: 'Update failed', description: err.message, variant: 'destructive' });
+    }
+  };
+
   const handleRevise = async () => {
     if (!revisionNote.trim() || !proposal) return;
     setIsRevising(true);
