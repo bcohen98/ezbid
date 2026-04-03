@@ -25,9 +25,9 @@ function buildProposalHtml(proposal: any, lineItems: any[], profile: any): strin
   let headerHtml = '';
   if (template === 'classic') {
     headerHtml = `
-      <div style="background:#1a1a1a;color:#fff;padding:20px;border-radius:6px;margin-bottom:24px;">
-        <div style="display:flex;justify-content:space-between;">
-          <div>
+      <div style="background:#1a1a1a;color:#fff;padding:20px;border-radius:6px;margin-bottom:24px;overflow:hidden;">
+        <div class="row">
+          <div class="col-left">
             ${profile?.logo_url ? `<img src="${escapeHtml(profile.logo_url)}" style="height:40px;margin-bottom:8px;filter:brightness(0) invert(1);" />` : ''}
             <div style="font-weight:600;font-size:16px;">${companyName}</div>
             <div style="font-size:11px;opacity:0.7;margin-top:4px;">${escapeHtml(address)}</div>
@@ -35,7 +35,7 @@ function buildProposalHtml(proposal: any, lineItems: any[], profile: any): strin
             ${profile?.email ? `<div style="font-size:11px;opacity:0.7;">${escapeHtml(profile.email)}</div>` : ''}
             ${profile?.license_numbers?.length ? `<div style="font-size:11px;opacity:0.7;margin-top:4px;">Lic# ${escapeHtml(profile.license_numbers.join(', '))}</div>` : ''}
           </div>
-          <div style="text-align:right;">
+          <div class="col-right" style="color:#fff;">
             <div style="font-size:24px;font-weight:700;letter-spacing:-0.5px;">PROPOSAL</div>
             <div style="font-size:11px;opacity:0.7;margin-top:4px;">PRO-${String(proposal.proposal_number).padStart(4, '0')}</div>
           </div>
@@ -43,15 +43,15 @@ function buildProposalHtml(proposal: any, lineItems: any[], profile: any): strin
       </div>`;
   } else {
     headerHtml = `
-      <div style="margin-bottom:24px;${template === 'modern' ? `border-top:4px solid ${brandColor};padding-top:16px;` : ''}">
-        <div style="display:flex;justify-content:space-between;">
-          <div>
+      <div style="margin-bottom:24px;${template === 'modern' ? `border-top:4px solid ${brandColor};padding-top:16px;` : ''}overflow:hidden;">
+        <div class="row">
+          <div class="col-left">
             ${profile?.logo_url ? `<img src="${escapeHtml(profile.logo_url)}" style="height:40px;margin-bottom:8px;" />` : ''}
             <div style="font-weight:600;font-size:16px;${template === 'modern' ? `color:${brandColor};` : ''}">${companyName}</div>
             <div style="font-size:11px;color:#888;margin-top:4px;">${escapeHtml(address)}</div>
             ${profile?.phone ? `<div style="font-size:11px;color:#888;">${escapeHtml(profile.phone)}</div>` : ''}
           </div>
-          <div style="text-align:right;">
+          <div class="col-right">
             <div style="font-size:22px;font-weight:700;${template === 'modern' || template === 'bold' ? `color:${brandColor};` : ''}">PROPOSAL</div>
             <div style="font-size:11px;color:#888;margin-top:4px;">PRO-${String(proposal.proposal_number).padStart(4, '0')}</div>
           </div>
@@ -85,12 +85,12 @@ function buildProposalHtml(proposal: any, lineItems: any[], profile: any): strin
         </tbody>
       </table>
       <div style="border-top:1px solid #e5e5e5;padding-top:8px;font-size:13px;">
-        <div style="display:flex;justify-content:space-between;"><span style="color:#888;">Subtotal</span><span>$${formatCurrency(proposal.subtotal)}</span></div>
-        ${Number(proposal.tax_rate) > 0 ? `<div style="display:flex;justify-content:space-between;"><span style="color:#888;">Tax (${proposal.tax_rate}%)</span><span>$${formatCurrency(proposal.tax_amount)}</span></div>` : ''}
-        <div style="display:flex;justify-content:space-between;font-weight:600;font-size:15px;border-top:1px solid #e5e5e5;padding-top:4px;margin-top:4px;"><span>Total</span><span>$${formatCurrency(proposal.total)}</span></div>
+        <div class="totals-row"><span class="totals-label">Subtotal</span><span class="totals-value">$${formatCurrency(proposal.subtotal)}</span></div>
+        ${Number(proposal.tax_rate) > 0 ? `<div class="totals-row"><span class="totals-label">Tax (${proposal.tax_rate}%)</span><span class="totals-value">$${formatCurrency(proposal.tax_amount)}</span></div>` : ''}
+        <div class="totals-row" style="font-weight:600;font-size:15px;border-top:1px solid #e5e5e5;padding-top:4px;margin-top:4px;"><span style="float:left;">Total</span><span style="float:right;">$${formatCurrency(proposal.total)}</span></div>
         ${Number(proposal.deposit_amount) > 0 ? `
-          <div style="display:flex;justify-content:space-between;color:#888;"><span>Deposit required</span><span>$${formatCurrency(proposal.deposit_amount)}</span></div>
-          <div style="display:flex;justify-content:space-between;font-weight:500;"><span>Balance due</span><span>$${formatCurrency(proposal.balance_due)}</span></div>
+          <div class="totals-row"><span class="totals-label">Deposit required</span><span class="totals-value">$${formatCurrency(proposal.deposit_amount)}</span></div>
+          <div class="totals-row" style="font-weight:500;"><span style="float:left;">Balance due</span><span style="float:right;">$${formatCurrency(proposal.balance_due)}</span></div>
         ` : ''}
       </div>
     </div>` : '';
@@ -105,19 +105,25 @@ function buildProposalHtml(proposal: any, lineItems: any[], profile: any): strin
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
   * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family:'Inter',Arial,sans-serif; font-size:13px; color:#1a1a1a; padding:40px; }
+  body { font-family:'Inter',Arial,Helvetica,sans-serif; font-size:13px; color:#1a1a1a; padding:40px; background:#fff; }
   @page { size:letter; margin:0.5in; }
+  .row { width:100%; overflow:hidden; }
+  .col-left { float:left; width:60%; }
+  .col-right { float:right; width:38%; text-align:right; }
+  .totals-row { overflow:hidden; padding:2px 0; }
+  .totals-label { float:left; color:#888; }
+  .totals-value { float:right; }
 </style></head><body>
 ${headerHtml}
-<div style="display:flex;justify-content:space-between;margin-bottom:24px;">
-  <div>
+<div class="row" style="margin-bottom:24px;">
+  <div class="col-left">
     <h3 style="font-size:13px;font-weight:600;margin-bottom:4px;">Client</h3>
     <div style="font-size:13px;">${escapeHtml(proposal.client_name)}</div>
     ${proposal.client_email ? `<div style="font-size:11px;color:#888;">${escapeHtml(proposal.client_email)}</div>` : ''}
     ${proposal.client_phone ? `<div style="font-size:11px;color:#888;">${escapeHtml(proposal.client_phone)}</div>` : ''}
     ${proposal.job_site_street ? `<div style="font-size:11px;color:#888;margin-top:4px;">${escapeHtml(proposal.job_site_street)}, ${escapeHtml(proposal.job_site_city)}, ${escapeHtml(proposal.job_site_state)} ${escapeHtml(proposal.job_site_zip)}</div>` : ''}
   </div>
-  <div style="text-align:right;font-size:11px;color:#888;">
+  <div class="col-right" style="font-size:11px;color:#888;">
     <div>Date: ${escapeHtml(proposal.proposal_date)}</div>
     <div>Valid until: ${escapeHtml(proposal.valid_until)}</div>
   </div>
@@ -139,9 +145,9 @@ ${proposal.accepted_payment_methods?.length ? `<p style="font-size:11px;color:#8
 ${section('Warranty', proposal.warranty_terms)}
 ${section('Disclosures', proposal.disclosures)}
 ${section('Special Conditions', proposal.special_conditions)}
-<div style="margin-top:48px;display:flex;gap:48px;">
-  <div style="flex:1;"><div style="border-bottom:1px solid #ccc;height:40px;"></div><div style="font-size:11px;color:#888;margin-top:4px;">Client Signature</div><div style="font-size:11px;color:#888;margin-top:4px;">Date: _______________</div></div>
-  <div style="flex:1;"><div style="border-bottom:1px solid #ccc;height:40px;"></div><div style="font-size:11px;color:#888;margin-top:4px;">Contractor Signature</div><div style="font-size:11px;color:#888;margin-top:4px;">Date: _______________</div></div>
+<div style="margin-top:48px;overflow:hidden;">
+  <div style="float:left;width:45%;"><div style="border-bottom:1px solid #ccc;height:40px;"></div><div style="font-size:11px;color:#888;margin-top:4px;">Client Signature</div><div style="font-size:11px;color:#888;margin-top:4px;">Date: _______________</div></div>
+  <div style="float:right;width:45%;"><div style="border-bottom:1px solid #ccc;height:40px;"></div><div style="font-size:11px;color:#888;margin-top:4px;">Contractor Signature</div><div style="font-size:11px;color:#888;margin-top:4px;">Date: _______________</div></div>
 </div>
 <div style="margin-top:32px;padding-top:16px;border-top:1px solid #e5e5e5;text-align:center;font-size:11px;color:#888;">
   ${companyName} ${profile?.license_numbers?.length ? `· Lic# ${escapeHtml(profile.license_numbers.join(', '))}` : ''}
