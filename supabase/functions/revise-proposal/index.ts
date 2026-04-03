@@ -67,7 +67,7 @@ Only return the fields that need to change. Keep unchanged fields out of the res
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
-          { role: "system", content: "You revise contractor proposals based on user instructions. You can change text, visual template style, financial terms, and line items with pricing math. Return only the changed fields as JSON. CRITICAL: NEVER put cosmetic/visual requests into text fields like special_conditions — use the template field instead. For pricing changes, recalculate all totals." },
+          { role: "system", content: "You revise contractor proposals based on user instructions. You can change text, visual template style, logo size/position, financial terms, and line items with pricing math. Return only the changed fields as JSON. CRITICAL: NEVER put cosmetic/visual requests into text fields like special_conditions — use template, logo_size, or logo_position instead. For pricing changes, recalculate all totals." },
           { role: "user", content: prompt },
         ],
         tools: [
