@@ -28,8 +28,9 @@ serve(async (req) => {
 IMPORTANT RULES:
 - Only change fields that the user's revision request actually asks for.
 - Do NOT append text to special_conditions unless the user specifically asks to add a special condition.
-- CRITICAL: If the user asks about cosmetic/visual changes (colors, logo size, layout, font, theme, design, look, appearance, style), change the "template" field to the most appropriate template style. NEVER put cosmetic notes into text fields like special_conditions.
+- CRITICAL: If the user asks about cosmetic/visual changes (colors, logo size, layout, font, theme, design, look, appearance, style), use the appropriate field: template for overall style, logo_size for logo sizing, logo_position for logo placement. NEVER put cosmetic notes into text fields like special_conditions.
 - Template options: classic (dark header, formal), modern (colored accents, clean), minimal (sparse, light), bold (large type, strong borders), executive (elegant, refined).
+- Logo size options: small, medium, large. Logo position options: left, center, right. When the user says "logo", "company logo", or refers to the image/branding at the top, use logo_size and/or logo_position.
 - For pricing changes: you can modify line_items (add, remove, update quantities/prices), tax_rate, deposit_mode, deposit_value. When modifying line items, return the FULL updated line_items array with recalculated subtotals. Each item needs: description, quantity, unit, unit_price, subtotal (quantity * unit_price).
 - When changing pricing, always recalculate: subtotal (sum of line item subtotals), tax_amount (subtotal * tax_rate / 100), total (subtotal + tax_amount), deposit_amount, and balance_due.
 ${historyContext}
@@ -52,6 +53,8 @@ CURRENT PROPOSAL:
 - Tax Rate: ${proposal.tax_rate || 0}
 - Subtotal: ${proposal.subtotal || 0}
 - Total: ${proposal.total || 0}
+- Logo Size: ${proposal.logo_size || "medium"} (options: small, medium, large)
+- Logo Position: ${proposal.logo_position || "left"} (options: left, center, right)
 ${lineItemsSummary}
 Only return the fields that need to change. Keep unchanged fields out of the response.`;
 
@@ -64,7 +67,7 @@ Only return the fields that need to change. Keep unchanged fields out of the res
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
-          { role: "system", content: "You revise contractor proposals based on user instructions. You can change text, visual template style, financial terms, and line items with pricing math. Return only the changed fields as JSON. CRITICAL: NEVER put cosmetic/visual requests into text fields like special_conditions — use the template field instead. For pricing changes, recalculate all totals." },
+          { role: "system", content: "You revise contractor proposals based on user instructions. You can change text, visual template style, logo size/position, financial terms, and line items with pricing math. Return only the changed fields as JSON. CRITICAL: NEVER put cosmetic/visual requests into text fields like special_conditions — use template, logo_size, or logo_position instead. For pricing changes, recalculate all totals." },
           { role: "user", content: prompt },
         ],
         tools: [
@@ -72,12 +75,14 @@ Only return the fields that need to change. Keep unchanged fields out of the res
             type: "function",
             function: {
               name: "return_revised_proposal",
-              description: "Return the revised proposal fields. Only include fields that changed. For cosmetic/visual requests, use the template field. Never append cosmetic notes to special_conditions. For pricing changes, include recalculated totals.",
+              description: "Return the revised proposal fields. Only include fields that changed. For cosmetic/visual requests, use template, logo_size, or logo_position. Never append cosmetic notes to special_conditions. For pricing changes, include recalculated totals.",
               parameters: {
                 type: "object",
                 properties: {
                   title: { type: "string", description: "Proposal title" },
-                  template: { type: "string", enum: ["classic", "modern", "minimal", "bold", "executive"], description: "Visual template style — use this for any cosmetic/visual change requests" },
+                  template: { type: "string", enum: ["classic", "modern", "minimal", "bold", "executive"], description: "Visual template style" },
+                  logo_size: { type: "string", enum: ["small", "medium", "large"], description: "Company logo size — use when user asks about logo size" },
+                  logo_position: { type: "string", enum: ["left", "center", "right"], description: "Company logo position — use when user asks about logo placement/alignment" },
                   job_description: { type: "string" },
                   scope_of_work: { type: "string" },
                   materials_included: { type: "string" },
