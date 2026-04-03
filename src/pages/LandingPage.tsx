@@ -64,7 +64,7 @@ export default function LandingPage() {
         <div className="absolute inset-0 bg-background/90" />
         <div className="container text-center max-w-3xl mx-auto relative z-10">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight">
-            Win more jobs with proposals that look like you mean business
+            Professional proposals in minutes
           </h1>
           <p className="mt-5 text-lg text-muted-foreground max-w-2xl mx-auto">
             EZ-Bid helps contractors create polished, professional proposals in minutes — not hours. Fill in the details, let AI sharpen the language, and send it out. No design skills needed.
