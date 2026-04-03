@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,36 +29,56 @@ const paymentMethods = ['Cash', 'Check', 'Zelle', 'Venmo', 'Credit Card', 'Bank 
 const today = new Date().toISOString().split('T')[0];
 const thirtyDays = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
+const AUTOSAVE_KEY = 'ezbid_proposal_draft';
+
 export default function ProposalForm({ template, profile, onSubmit, isSubmitting, onBack }: Props) {
-  const [form, setForm] = useState<ProposalFormData>({
-    template,
-    client_name: '',
-    client_email: '',
-    client_phone: '',
-    job_site_street: '',
-    job_site_city: '',
-    job_site_state: '',
-    job_site_zip: '',
-    title: '',
-    job_description: '',
-    scope_of_work: '',
-    materials_included: '',
-    materials_excluded: '',
-    estimated_start_date: '',
-    estimated_duration: '',
-    line_items: [{ description: '', quantity: 1, unit: 'ea', unit_price: 0 }],
-    tax_rate: 0,
-    deposit_mode: 'percentage',
-    deposit_value: profile?.default_deposit_percentage ?? 0,
-    payment_terms: profile?.default_payment_terms ?? '',
-    accepted_payment_methods: [],
-    warranty_terms: profile?.default_warranty ?? '',
-    disclosures: profile?.default_disclosures ?? '',
-    special_conditions: '',
-    proposal_date: today,
-    valid_until: thirtyDays,
-    delivery_method: 'email_self',
+  const [form, setForm] = useState<ProposalFormData>(() => {
+    // Try to restore from autosave
+    try {
+      const saved = localStorage.getItem(AUTOSAVE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Only restore if same template
+        if (parsed.template === template) return parsed;
+      }
+    } catch {}
+    return {
+      template,
+      client_name: '',
+      client_email: '',
+      client_phone: '',
+      job_site_street: '',
+      job_site_city: '',
+      job_site_state: '',
+      job_site_zip: '',
+      title: '',
+      job_description: '',
+      scope_of_work: '',
+      materials_included: '',
+      materials_excluded: '',
+      estimated_start_date: '',
+      estimated_duration: '',
+      line_items: [{ description: '', quantity: 1, unit: 'ea', unit_price: 0 }],
+      tax_rate: 0,
+      deposit_mode: 'percentage',
+      deposit_value: profile?.default_deposit_percentage ?? 0,
+      payment_terms: profile?.default_payment_terms ?? '',
+      accepted_payment_methods: [],
+      warranty_terms: profile?.default_warranty ?? '',
+      disclosures: profile?.default_disclosures ?? '',
+      special_conditions: '',
+      proposal_date: today,
+      valid_until: thirtyDays,
+      delivery_method: 'email_self',
+    };
   });
+
+  // Autosave to localStorage on every change
+  useEffect(() => {
+    try {
+      localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(form));
+    } catch {}
+  }, [form]);
 
   const handleChange = (field: keyof ProposalFormData, value: any) => {
     setForm((prev) => ({ ...prev, [field]: value }));
