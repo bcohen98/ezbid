@@ -31,7 +31,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const companyLabel = profile?.company_name || 'My Company';
 
   const navItems = [
-    { href: '/proposals/new', label: 'New Proposal', icon: Plus },
     { href: '/dashboard', label: 'Proposals', icon: FileText },
     { href: '/clients', label: 'Clients', icon: Users },
     { href: '/company-profile', label: companyLabel, icon: Settings },
@@ -46,6 +45,16 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               <EZBidLogo size="md" />
             </Link>
             <nav className="flex items-center gap-1">
+              <Link to="/proposals/new">
+                <Button
+                  variant={location.pathname === '/proposals/new' ? 'default' : 'default'}
+                  size="sm"
+                  className="gap-2 text-sm"
+                >
+                  <Plus className="h-4 w-4" />
+                  New Proposal
+                </Button>
+              </Link>
               {navItems.map((item) => (
                 <Link key={item.href} to={item.href}>
                   <Button
