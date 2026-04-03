@@ -182,7 +182,30 @@ export default function Clients() {
                           {client.email && <p className="text-xs text-muted-foreground">{client.email}</p>}
                         </div>
                       </div>
-                      <div className="flex items-center gap-4 text-sm">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const p = client.proposals[0];
+                            setEditingClient({
+                              proposalIds: client.proposals.map(pr => pr.id),
+                              data: {
+                                client_name: p.client_name || '',
+                                client_email: p.client_email || '',
+                                client_phone: p.client_phone || '',
+                                job_site_street: p.job_site_street || '',
+                                job_site_city: p.job_site_city || '',
+                                job_site_state: p.job_site_state || '',
+                                job_site_zip: p.job_site_zip || '',
+                              },
+                            });
+                          }}
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Button>
                         <span className="text-muted-foreground">{client.proposals.length} proposal{client.proposals.length !== 1 ? 's' : ''}</span>
                         <span className="font-medium">${formatCurrency(client.totalValue)}</span>
                       </div>
