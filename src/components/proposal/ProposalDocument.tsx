@@ -233,19 +233,29 @@ export default function ProposalDocument({ proposal, lineItems, profile, onField
               ))}
             </tbody>
           </table>
-          <div className="border-t pt-2 mt-0 space-y-1 text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>${formatCurrency(proposal.subtotal)}</span></div>
-            {Number(proposal.tax_rate) > 0 && (
-              <div className="flex justify-between"><span className="text-muted-foreground">Tax ({proposal.tax_rate}%)</span><span>${formatCurrency(proposal.tax_amount)}</span></div>
-            )}
-            <div className="flex justify-between font-semibold text-base border-t pt-1"><span>Total</span><span>${formatCurrency(proposal.total)}</span></div>
-            {Number(proposal.deposit_amount) > 0 && (
-              <>
-                <div className="flex justify-between text-muted-foreground"><span>Deposit required</span><span>${formatCurrency(proposal.deposit_amount)}</span></div>
-                <div className="flex justify-between font-medium"><span>Balance due</span><span>${formatCurrency(proposal.balance_due)}</span></div>
-              </>
-            )}
-          </div>
+          {onTotalsEdit ? (
+            <EditableTotals
+              subtotal={Number(proposal.subtotal) || 0}
+              taxRate={Number(proposal.tax_rate) || 0}
+              depositMode={proposal.deposit_mode || 'percentage'}
+              depositValue={Number(proposal.deposit_value) || 0}
+              onSave={onTotalsEdit}
+            />
+          ) : (
+            <div className="border-t pt-2 mt-0 space-y-1 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>${formatCurrency(proposal.subtotal)}</span></div>
+              {Number(proposal.tax_rate) > 0 && (
+                <div className="flex justify-between"><span className="text-muted-foreground">Tax ({proposal.tax_rate}%)</span><span>${formatCurrency(proposal.tax_amount)}</span></div>
+              )}
+              <div className="flex justify-between font-semibold text-base border-t pt-1"><span>Total</span><span>${formatCurrency(proposal.total)}</span></div>
+              {Number(proposal.deposit_amount) > 0 && (
+                <>
+                  <div className="flex justify-between text-muted-foreground"><span>Deposit required</span><span>${formatCurrency(proposal.deposit_amount)}</span></div>
+                  <div className="flex justify-between font-medium"><span>Balance due</span><span>${formatCurrency(proposal.balance_due)}</span></div>
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
 
