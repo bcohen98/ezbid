@@ -37,8 +37,13 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm animate-fade-in">
+    <div className="min-h-screen bg-background px-4">
+      <div className="absolute top-4 left-4">
+        <Link to="/">
+          <EZBidLogo size="md" />
+        </Link>
+      </div>
+      <div className="min-h-screen flex items-center justify-center">
         <div className="mb-8 text-center">
           <EZBidLogo size="lg" className="justify-center" />
           <p className="mt-2 text-sm text-muted-foreground">
