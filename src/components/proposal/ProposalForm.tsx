@@ -240,7 +240,7 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
                   <option value="percentage">%</option>
                   <option value="flat">$</option>
                 </select>
-                <Input type="number" value={form.deposit_value} onChange={(e) => handleChange('deposit_value', parseFloat(e.target.value) || 0)} className="h-7 w-20 text-sm" min={0} step="0.01" />
+                <Input type="number" value={form.deposit_value || ''} onChange={(e) => handleChange('deposit_value', parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} className="h-7 w-20 text-sm" min={0} step="0.01" />
               </span>
               <span className="font-medium">${formatCurrency(depositAmount)}</span>
             </div>

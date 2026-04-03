@@ -225,7 +225,7 @@ export function EditableTotals({ subtotal, taxRate, depositMode, depositValue, o
               <option value="percentage">%</option>
               <option value="flat">$</option>
             </select>
-            <Input type="number" value={draftDepositValue} onChange={e => setDraftDepositValue(Number(e.target.value))} className="h-7 text-sm text-right w-20" min={0} step="0.01" />
+            <Input type="number" value={draftDepositValue || ''} onChange={e => setDraftDepositValue(Number(e.target.value))} onFocus={e => e.target.select()} className="h-7 text-sm text-right w-20" min={0} step="0.01" />
           </div>
         </div>
         <div className="flex justify-between text-xs text-muted-foreground"><span>Deposit amount</span><span>${fmt(depositAmount)}</span></div>
