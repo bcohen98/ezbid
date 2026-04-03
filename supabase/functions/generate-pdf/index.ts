@@ -115,15 +115,15 @@ function buildProposalHtml(proposal: any, lineItems: any[], profile: any): strin
   .totals-value { float:right; }
 </style></head><body>
 ${headerHtml}
-<div style="display:flex;justify-content:space-between;margin-bottom:24px;">
-  <div>
+<div class="row" style="margin-bottom:24px;">
+  <div class="col-left">
     <h3 style="font-size:13px;font-weight:600;margin-bottom:4px;">Client</h3>
     <div style="font-size:13px;">${escapeHtml(proposal.client_name)}</div>
     ${proposal.client_email ? `<div style="font-size:11px;color:#888;">${escapeHtml(proposal.client_email)}</div>` : ''}
     ${proposal.client_phone ? `<div style="font-size:11px;color:#888;">${escapeHtml(proposal.client_phone)}</div>` : ''}
     ${proposal.job_site_street ? `<div style="font-size:11px;color:#888;margin-top:4px;">${escapeHtml(proposal.job_site_street)}, ${escapeHtml(proposal.job_site_city)}, ${escapeHtml(proposal.job_site_state)} ${escapeHtml(proposal.job_site_zip)}</div>` : ''}
   </div>
-  <div style="text-align:right;font-size:11px;color:#888;">
+  <div class="col-right" style="font-size:11px;color:#888;">
     <div>Date: ${escapeHtml(proposal.proposal_date)}</div>
     <div>Valid until: ${escapeHtml(proposal.valid_until)}</div>
   </div>
