@@ -187,8 +187,8 @@ export default function ProposalSign() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center max-w-md mx-auto px-6">
-          <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="h-8 w-8 text-green-600" />
+          <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-6">
+            <CheckCircle className="h-8 w-8 text-success" />
           </div>
           <h1 className="text-2xl font-semibold mb-2">Proposal Signed!</h1>
           <p className="text-muted-foreground mb-4">
