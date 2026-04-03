@@ -281,26 +281,6 @@ export default function Dashboard() {
                   <Badge variant="outline" className={statusColors[p.status] || ''}>
                     {p.status}
                   </Badge>
-                  {p.status === 'draft' && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (window.confirm('Delete this draft proposal?')) {
-                          deleteProposal(p.id).then(() => {
-                            toast.success('Draft deleted');
-                          }).catch(() => {
-                            toast.error('Failed to delete');
-                          });
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
                 </div>
               </div>
             ))}
