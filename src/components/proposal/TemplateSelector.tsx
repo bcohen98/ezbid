@@ -20,6 +20,9 @@ const templates: { id: ProposalTemplate; name: string; description: string }[] =
   { id: 'minimal', name: 'Minimal', description: 'No color, all typography, ultra-clean' },
   { id: 'bold', name: 'Bold', description: 'Strong left border accent, large headings, high contrast' },
   { id: 'executive', name: 'Executive', description: 'Formal double-line border, elegant & professional' },
+  { id: 'contractor', name: 'Contractor', description: 'Work-order style with numbered sections, job-site ready' },
+  { id: 'premium', name: 'Premium', description: 'Luxury feel with gold accents for high-end residential' },
+  { id: 'clean', name: 'Clean', description: 'Simple two-column header, modern business layout' },
 ];
 
 export default function TemplateSelector({ selected, brandColor, onSelect }: Props) {
