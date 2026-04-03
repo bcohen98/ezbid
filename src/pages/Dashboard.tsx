@@ -9,8 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Plus, FileText, AlertCircle, PenLine, X, Search, ArrowUpDown, ChevronUp, ChevronDown, Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { Plus, FileText, AlertCircle, PenLine, X, Search, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
+
 import { formatCurrency } from '@/lib/formatCurrency';
 
 const statusColors: Record<string, string> = {
@@ -31,7 +31,7 @@ type SortDir = 'asc' | 'desc';
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { proposals, isLoading: proposalsLoading, deleteProposal } = useProposals();
+  const { proposals, isLoading: proposalsLoading } = useProposals();
   const { subscription, isLoading: subLoading } = useSubscription();
   const { profileCompletion, isLoading: profileLoading } = useCompanyProfile();
   const [activeTab, setActiveTab] = useState<TabKey>('all');
@@ -148,7 +148,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <Badge variant={isActive ? 'default' : 'secondary'}>
-                {isActive ? 'Active — $29/mo' : 'Free tier'}
+                {isActive ? 'Active — $39/mo' : 'Free tier'}
               </Badge>
             </CardContent>
           </Card>
@@ -281,26 +281,6 @@ export default function Dashboard() {
                   <Badge variant="outline" className={statusColors[p.status] || ''}>
                     {p.status}
                   </Badge>
-                  {p.status === 'draft' && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (window.confirm('Delete this draft proposal?')) {
-                          deleteProposal(p.id).then(() => {
-                            toast.success('Draft deleted');
-                          }).catch(() => {
-                            toast.error('Failed to delete');
-                          });
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
                 </div>
               </div>
             ))}
