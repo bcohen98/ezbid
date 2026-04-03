@@ -5,7 +5,7 @@ import AppLayout from '@/components/AppLayout';
 import ProposalDocument from '@/components/proposal/ProposalDocument';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Send, Mail, Sparkles, Loader2, Download, FileText, History } from 'lucide-react';
+import { ArrowLeft, Send, Mail, Sparkles, Loader2, Download, FileText } from 'lucide-react';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -272,19 +272,6 @@ export default function ProposalPreview() {
                 <Sparkles className="h-4 w-4" /> AI Revision
               </h3>
 
-              {/* Revision history summary */}
-              {revisionHistory.length > 0 && (
-                <div className="bg-muted/50 rounded-md p-2 max-h-32 overflow-y-auto">
-                  <p className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1">
-                    <History className="h-3 w-3" /> Previous revisions ({revisionHistory.length})
-                  </p>
-                  {revisionHistory.slice(-3).map((entry, i) => (
-                    <p key={i} className="text-xs text-muted-foreground truncate">
-                      • {entry.request}
-                    </p>
-                  ))}
-                </div>
-              )}
 
               <Textarea
                 value={revisionNote}
