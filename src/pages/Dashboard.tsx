@@ -32,6 +32,26 @@ export default function Dashboard() {
   const { profileCompletion, isLoading: profileLoading } = useCompanyProfile();
   const [activeTab, setActiveTab] = useState<TabKey>('all');
 
+  // Check for unsaved draft in localStorage
+  const [draftDismissed, setDraftDismissed] = useState(false);
+  const unsavedDraft = useMemo(() => {
+    if (draftDismissed) return null;
+    try {
+      const saved = localStorage.getItem('ezbid_proposal_draft');
+      if (!saved) return null;
+      const parsed = JSON.parse(saved);
+      // Only show if there's meaningful content
+      const hasContent = parsed.client_name || parsed.title || parsed.job_description ||
+        parsed.line_items?.some((li: any) => li.description);
+      return hasContent ? parsed : null;
+    } catch { return null; }
+  }, [draftDismissed]);
+
+  const discardDraft = () => {
+    localStorage.removeItem('ezbid_proposal_draft');
+    setDraftDismissed(true);
+  };
+
   const isActive = subscription?.status === 'active';
   const proposalsUsed = subscription?.proposals_used ?? 0;
 
