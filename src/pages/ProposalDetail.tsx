@@ -6,10 +6,11 @@ import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, Eye, Copy, Send, Pencil } from 'lucide-react';
+import { ArrowLeft, Eye, Copy, Send, Pencil, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/formatCurrency';
 import EditClientDialog from '@/components/EditClientDialog';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function ProposalDetail() {
   const { id } = useParams();
