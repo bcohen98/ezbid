@@ -1,6 +1,6 @@
 import type { Database } from '@/integrations/supabase/types';
 import { formatCurrency } from '@/lib/formatCurrency';
-import EditableSection from './EditableSection';
+import EditableSection, { EditableLineItemRow } from './EditableSection';
 
 type Proposal = Database['public']['Tables']['proposals']['Row'];
 type LineItem = Database['public']['Tables']['proposal_line_items']['Row'];
@@ -11,6 +11,7 @@ interface Props {
   lineItems: LineItem[];
   profile: CompanyProfile | null | undefined;
   onFieldEdit?: (field: string, value: string) => void;
+  onLineItemEdit?: (id: string, updates: { description: string; quantity: number; unit: string; unit_price: number; subtotal: number }) => void;
 }
 
 export default function ProposalDocument({ proposal, lineItems, profile, onFieldEdit }: Props) {
