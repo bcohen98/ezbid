@@ -182,8 +182,12 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabaseUser.auth.getUser();
     if (authError || !user) throw new Error("Unauthorized");
 
-    // ── Request body ──
-    const { proposal_id, send_to_self } = await req.json();
+    const {
+      proposal_id,
+      send_to_self,
+      recipient_email,
+      recipient_name,
+    } = await req.json();
     if (!proposal_id) throw new Error("Missing proposal_id");
 
     const supabaseAdmin = createClient(supabaseUrl, serviceKey);
