@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Navigate } from 'react-router-dom';
 import EZBidLogo from '@/components/EZBidLogo';
 import { Button } from '@/components/ui/button';
+import heroBg from '@/assets/hero-bg.jpg';
 import { FileText, Sparkles, Send, CheckCircle, ArrowRight } from 'lucide-react';
 
 const testimonials = [
