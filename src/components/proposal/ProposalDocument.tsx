@@ -15,7 +15,7 @@ interface Props {
   onTotalsEdit?: (updates: { tax_rate: number; deposit_mode: string; deposit_value: number }) => void;
 }
 
-export default function ProposalDocument({ proposal, lineItems, profile, onFieldEdit, onLineItemEdit }: Props) {
+export default function ProposalDocument({ proposal, lineItems, profile, onFieldEdit, onLineItemEdit, onTotalsEdit }: Props) {
   const template = proposal.template || 'classic';
   const brandColor = profile?.brand_color || '#000000';
 
