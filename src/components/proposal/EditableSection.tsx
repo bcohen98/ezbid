@@ -114,7 +114,7 @@ export function EditableLineItemRow({ item, onSave }: EditableLineItemProps) {
           <Input value={desc} onChange={e => setDesc(e.target.value)} className="h-7 text-sm" />
         </td>
         <td className="py-2 px-1">
-          <Input type="number" value={qty} onChange={e => setQty(Number(e.target.value))} className="h-7 text-sm text-right w-16" min={0} step="any" />
+          <Input type="number" value={qty || ''} onChange={e => setQty(Number(e.target.value))} onFocus={e => e.target.select()} className="h-7 text-sm text-right w-16" min={0} step="any" />
         </td>
         <td className="py-2 px-1">
           <select value={unit} onChange={e => setUnit(e.target.value)} className="h-7 text-xs border rounded px-1 bg-background w-16 text-right">
@@ -136,7 +136,7 @@ export function EditableLineItemRow({ item, onSave }: EditableLineItemProps) {
           </select>
         </td>
         <td className="py-2 px-1">
-          <Input type="number" value={price} onChange={e => setPrice(Number(e.target.value))} className="h-7 text-sm text-right w-24" min={0} step="0.01" />
+          <Input type="number" value={price || ''} onChange={e => setPrice(Number(e.target.value))} onFocus={e => e.target.select()} className="h-7 text-sm text-right w-24" min={0} step="0.01" />
         </td>
         <td className="py-2 px-1 text-right text-sm font-medium">${fmt(subtotal)}</td>
         <td className="py-2 px-1 text-right whitespace-nowrap">
@@ -210,7 +210,7 @@ export function EditableTotals({ subtotal, taxRate, depositMode, depositValue, o
         <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>${fmt(subtotal)}</span></div>
         <div className="flex items-center justify-between gap-2">
           <span className="text-muted-foreground">Tax rate (%)</span>
-          <Input type="number" value={draftTaxRate} onChange={e => setDraftTaxRate(Number(e.target.value))} className="h-7 text-sm text-right w-20" min={0} step="0.1" />
+          <Input type="number" value={draftTaxRate || ''} onChange={e => setDraftTaxRate(Number(e.target.value))} onFocus={e => e.target.select()} className="h-7 text-sm text-right w-20" min={0} step="0.1" />
         </div>
         <div className="flex justify-between text-xs text-muted-foreground"><span>Tax amount</span><span>${fmt(taxAmount)}</span></div>
         <div className="flex justify-between font-semibold text-base border-t pt-1"><span>Total</span><span>${fmt(total)}</span></div>
@@ -225,7 +225,7 @@ export function EditableTotals({ subtotal, taxRate, depositMode, depositValue, o
               <option value="percentage">%</option>
               <option value="flat">$</option>
             </select>
-            <Input type="number" value={draftDepositValue} onChange={e => setDraftDepositValue(Number(e.target.value))} className="h-7 text-sm text-right w-20" min={0} step="0.01" />
+            <Input type="number" value={draftDepositValue || ''} onChange={e => setDraftDepositValue(Number(e.target.value))} onFocus={e => e.target.select()} className="h-7 text-sm text-right w-20" min={0} step="0.01" />
           </div>
         </div>
         <div className="flex justify-between text-xs text-muted-foreground"><span>Deposit amount</span><span>${fmt(depositAmount)}</span></div>

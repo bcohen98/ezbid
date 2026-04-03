@@ -187,7 +187,7 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
               {form.line_items.map((item, i) => (
                 <div key={i} className="grid grid-cols-[1fr_80px_60px_100px_90px_40px] gap-2 px-3 py-2 border-t items-center">
                   <Input value={item.description} onChange={(e) => updateLineItem(i, 'description', e.target.value)} placeholder="Description" className="h-8 text-sm" />
-                  <Input type="number" value={item.quantity} onChange={(e) => updateLineItem(i, 'quantity', parseFloat(e.target.value) || 0)} className="h-8 text-sm" min={0} />
+                  <Input type="number" value={item.quantity || ''} onChange={(e) => updateLineItem(i, 'quantity', parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} className="h-8 text-sm" min={0} />
                   <select value={item.unit} onChange={(e) => updateLineItem(i, 'unit', e.target.value)} className="h-8 text-sm border rounded px-1 bg-background w-full">
                     <option value="ea">ea</option>
                     <option value="hr">hr</option>
@@ -205,7 +205,7 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
                     <option value="box">box</option>
                     <option value="pallet">pallet</option>
                   </select>
-                  <Input type="number" value={item.unit_price} onChange={(e) => updateLineItem(i, 'unit_price', parseFloat(e.target.value) || 0)} className="h-8 text-sm" min={0} step="0.01" />
+                  <Input type="number" value={item.unit_price || ''} onChange={(e) => updateLineItem(i, 'unit_price', parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} className="h-8 text-sm" min={0} step="0.01" />
                   <span className="text-sm font-medium text-right">${formatCurrency(item.quantity * item.unit_price)}</span>
                   <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeLineItem(i)} disabled={form.line_items.length <= 1}>
                     <Trash2 className="h-3.5 w-3.5" />
@@ -224,7 +224,7 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
             <div className="flex justify-between items-center">
               <span className="text-muted-foreground flex items-center gap-2">
                 Tax rate
-                <Input type="number" value={form.tax_rate} onChange={(e) => handleChange('tax_rate', parseFloat(e.target.value) || 0)} className="h-7 w-16 text-sm" min={0} step="0.1" />%
+                <Input type="number" value={form.tax_rate || ''} onChange={(e) => handleChange('tax_rate', parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} className="h-7 w-16 text-sm" min={0} step="0.1" />%
               </span>
               <span className="font-medium">${formatCurrency(taxAmount)}</span>
             </div>
@@ -240,7 +240,7 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
                   <option value="percentage">%</option>
                   <option value="flat">$</option>
                 </select>
-                <Input type="number" value={form.deposit_value} onChange={(e) => handleChange('deposit_value', parseFloat(e.target.value) || 0)} className="h-7 w-20 text-sm" min={0} step="0.01" />
+                <Input type="number" value={form.deposit_value || ''} onChange={(e) => handleChange('deposit_value', parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} className="h-7 w-20 text-sm" min={0} step="0.01" />
               </span>
               <span className="font-medium">${formatCurrency(depositAmount)}</span>
             </div>
