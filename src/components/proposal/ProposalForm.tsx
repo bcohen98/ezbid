@@ -363,6 +363,13 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
           </div>
         </CardContent>
       </Card>
+      {/* AI Polish */}
+      <div className="flex justify-center pb-4">
+        <Button type="button" variant="outline" size="lg" onClick={handlePolish} disabled={isPolishing} className="gap-2">
+          {isPolishing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+          {isPolishing ? 'Polishing...' : 'Polish with AI'}
+        </Button>
+      </div>
 
     </form>
   );
