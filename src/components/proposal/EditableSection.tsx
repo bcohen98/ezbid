@@ -92,7 +92,7 @@ export function EditableLineItemRow({ item, onSave }: EditableLineItemProps) {
   const [price, setPrice] = useState(item.unit_price);
 
   const subtotal = qty * price;
-  const fmt = (n: number) => n.toFixed(2);
+  const fmt = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const handleSave = () => {
     onSave(item.id, { description: desc, quantity: qty, unit, unit_price: price, subtotal });
