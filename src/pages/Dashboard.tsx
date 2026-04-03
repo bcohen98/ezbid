@@ -152,7 +152,7 @@ export default function Dashboard() {
         {/* Proposals list */}
         {proposalsLoading ? (
           <p className="text-sm text-muted-foreground">Loading proposals...</p>
-        ) : filteredProposals.length === 0 ? (
+        ) : filteredProposals.length === 0 && !unsavedDraft ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12 text-center">
               <FileText className="h-10 w-10 text-muted-foreground/40 mb-3" />
@@ -170,6 +170,29 @@ export default function Dashboard() {
           </Card>
         ) : (
           <div className="border rounded-lg divide-y">
+            {/* Unsaved draft row */}
+            {unsavedDraft && (activeTab === 'all' || activeTab === 'draft') && (
+              <div className="flex items-center justify-between px-4 py-3 bg-muted/20">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground font-mono">DRAFT</span>
+                    <span className="text-sm font-medium truncate">{unsavedDraft.title || unsavedDraft.client_name || 'Untitled proposal'}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {unsavedDraft.client_name || 'No client'} · {unsavedDraft.template} template
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="bg-yellow-100 text-yellow-700">incomplete</Badge>
+                  <Button variant="outline" size="sm" onClick={() => navigate('/proposals/new')} className="gap-1.5">
+                    <PenLine className="h-3.5 w-3.5" /> Resume
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={discardDraft}>
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            )}
             {filteredProposals.map((p) => (
               <Link
                 key={p.id}
