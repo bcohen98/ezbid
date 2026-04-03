@@ -228,10 +228,10 @@ export function EditableTotals({ subtotal, taxRate, depositMode, depositValue, o
 
   return (
     <div
-      className={`border-t pt-2 mt-0 space-y-1 text-sm relative rounded-b-md transition-colors cursor-pointer ${isHovered ? 'bg-blue-50 dark:bg-blue-950/30' : ''}`}
+      className={`border-t pt-2 mt-0 space-y-1 text-sm relative rounded-b-md transition-colors cursor-pointer p-2 ${isHovered ? 'bg-blue-50 dark:bg-blue-950/30 ring-1 ring-blue-200 dark:ring-blue-800' : ''}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onClick={() => setIsEditing(true)}
+      onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
     >
       {isHovered && (
         <button
@@ -241,15 +241,15 @@ export function EditableTotals({ subtotal, taxRate, depositMode, depositValue, o
           <Pencil className="h-3.5 w-3.5" />
         </button>
       )}
-      <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>${fmt(subtotal)}</span></div>
+      <div className="flex justify-between pointer-events-none"><span className="text-muted-foreground">Subtotal</span><span>${fmt(subtotal)}</span></div>
       {taxRate > 0 && (
-        <div className="flex justify-between"><span className="text-muted-foreground">Tax ({taxRate}%)</span><span>${fmt(subtotal * taxRate / 100)}</span></div>
+        <div className="flex justify-between pointer-events-none"><span className="text-muted-foreground">Tax ({taxRate}%)</span><span>${fmt(subtotal * taxRate / 100)}</span></div>
       )}
-      <div className="flex justify-between font-semibold text-base border-t pt-1"><span>Total</span><span>${fmt(subtotal + subtotal * taxRate / 100)}</span></div>
+      <div className="flex justify-between font-semibold text-base border-t pt-1 pointer-events-none"><span>Total</span><span>${fmt(subtotal + subtotal * taxRate / 100)}</span></div>
       {depositAmount > 0 && (
         <>
-          <div className="flex justify-between text-muted-foreground"><span>Deposit required</span><span>${fmt(depositAmount)}</span></div>
-          <div className="flex justify-between font-medium"><span>Balance due</span><span>${fmt(balanceDue)}</span></div>
+          <div className="flex justify-between text-muted-foreground pointer-events-none"><span>Deposit required</span><span>${fmt(depositAmount)}</span></div>
+          <div className="flex justify-between font-medium pointer-events-none"><span>Balance due</span><span>${fmt(balanceDue)}</span></div>
         </>
       )}
     </div>
