@@ -42,8 +42,42 @@ export default function ProposalPreview() {
 
   const revisionHistory: RevisionEntry[] = Array.isArray((proposal as any).revision_history) ? (proposal as any).revision_history : [];
 
+  const saveSnapshot = () => {
+    lastSnapshot.current = { proposal: { ...proposal }, lineItems: [...lineItems] };
+  };
+
+  const handleUndo = async () => {
+    if (!lastSnapshot.current) {
+      toast({ title: 'Nothing to undo' });
+      return;
+    }
+    setIsUndoing(true);
+    try {
+      const snap = lastSnapshot.current;
+      const { id, created_at, updated_at, user_id, ...fields } = snap.proposal;
+      await updateProposal({ id: proposal.id, ...fields });
+      await upsertItems(snap.lineItems.map((li: any, i: number) => ({
+        proposal_id: proposal.id,
+        description: li.description,
+        quantity: li.quantity,
+        unit: li.unit || 'ea',
+        unit_price: li.unit_price,
+        subtotal: li.subtotal,
+        sort_order: i,
+      })));
+      lastSnapshot.current = null;
+      refetch();
+      toast({ title: 'Undone!', description: 'Reverted to previous state.' });
+    } catch (err: any) {
+      toast({ title: 'Undo failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsUndoing(false);
+    }
+  };
+
   const handleFieldEdit = async (field: string, value: string) => {
     try {
+      saveSnapshot();
       await updateProposal({ id: proposal.id, [field]: value });
       refetch();
       toast({ title: 'Section updated' });
