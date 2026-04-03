@@ -120,6 +120,7 @@ export function EditableLineItemRow({ item, onSave }: EditableLineItemProps) {
           <select value={unit} onChange={e => setUnit(e.target.value)} className="h-7 text-xs border rounded px-1 bg-background w-16 text-right">
             <option value="ea">ea</option>
             <option value="hr">hr</option>
+            <option value="ft">ft</option>
             <option value="sqft">sqft</option>
             <option value="lnft">lnft</option>
             <option value="lot">lot</option>
