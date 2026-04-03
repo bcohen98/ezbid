@@ -224,6 +224,10 @@ serve(async (req) => {
 
     // ── SCENARIO A: Send to self ──
     if (send_to_self) {
+      if (!contractorEmail) {
+        return createErrorResponse("Your account email is missing. Add an email to your account before sending test emails.");
+      }
+
       const proposalUrl = `${origin}/proposals/${proposal_id}`;
       console.log(`[send-proposal-email] Scenario A: sending to contractor ${contractorEmail}`);
 
@@ -244,12 +248,19 @@ serve(async (req) => {
     }
 
     // ── SCENARIO B: Send to client for e-signature ──
-    if (!clientEmail) throw new Error("Client email is required to send proposal");
+    if (!clientEmail) {
+      return createErrorResponse("Client email is required to send proposal");
+    }
+
+    if (sandboxMode) {
+      return createErrorResponse(
+        `Resend sandbox mode is active. You can only send to ${contractorEmail}. Verify your sending domain, then replace onboarding@resend.dev with your real sender domain in supabase/functions/send-proposal-email/index.ts.`
+      );
+    }
 
     const signUrl = `${origin}/sign/${proposal_id}`;
     console.log(`[send-proposal-email] Scenario B: sending to client ${clientEmail}`);
 
-    // 1) Email to client
     await sendEmail(RESEND_API_KEY, {
       from: FROM_ADDRESS,
       to: [clientEmail],
@@ -257,16 +268,16 @@ serve(async (req) => {
       html: clientEmailHtml(companyName, ownerName, logoUrl, proposalNumber, jobTitle, total, signUrl),
     });
 
-    // 2) Confirmation email to contractor
-    console.log(`[send-proposal-email] Sending confirmation to contractor ${contractorEmail}`);
-    await sendEmail(RESEND_API_KEY, {
-      from: FROM_ADDRESS,
-      to: [contractorEmail],
-      subject: `Proposal sent to ${clientName}`,
-      html: confirmationEmailHtml(clientName, clientEmail),
-    });
+    if (contractorEmail) {
+      console.log(`[send-proposal-email] Sending confirmation to contractor ${contractorEmail}`);
+      await sendEmail(RESEND_API_KEY, {
+        from: FROM_ADDRESS,
+        to: [contractorEmail],
+        subject: `Proposal sent to ${clientName}`,
+        html: confirmationEmailHtml(clientName, clientEmail),
+      });
+    }
 
-    // 3) Update proposal status
     const { error: updateErr } = await supabaseAdmin
       .from("proposals")
       .update({ status: "sent", sent_at: new Date().toISOString(), delivery_method: "email_client" })
