@@ -128,7 +128,7 @@ async function getOverview(client: ReturnType<typeof createClient>) {
     .eq("status", "active");
 
   // MRR
-  const mrr = (activeSubscribers || 0) * 29;
+  const mrr = (activeSubscribers || 0) * 39;
 
   // Total proposals
   const { count: totalProposals } = await client
