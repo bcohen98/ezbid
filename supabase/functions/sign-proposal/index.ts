@@ -1,9 +1,9 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 serve(async (req) => {
@@ -12,7 +12,9 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, serviceKey);
+    const supabase = createClient(supabaseUrl, serviceKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
 
     const { proposal_id, signing_token, signature_data } = await req.json();
 
@@ -39,6 +41,7 @@ serve(async (req) => {
       .single();
 
     if (pErr || !proposal) {
+      console.error("[sign-proposal] Proposal lookup error:", pErr);
       return new Response(JSON.stringify({ error: "Invalid proposal or token" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -63,15 +66,19 @@ serve(async (req) => {
     const fileName = `signing/${proposal_id}-${Date.now()}.png`;
     const { error: uploadErr } = await supabase.storage
       .from("signatures")
-      .upload(fileName, bytes, { contentType: "image/png" });
-    if (uploadErr) throw uploadErr;
+      .upload(fileName, bytes, { contentType: "image/png", upsert: true });
+
+    if (uploadErr) {
+      console.error("[sign-proposal] Upload error:", uploadErr);
+      throw new Error(`Signature upload failed: ${uploadErr.message}`);
+    }
 
     const { data: urlData, error: urlErr } = await supabase.storage
       .from("signatures")
-      .createSignedUrl(fileName, 60 * 60 * 24 * 365 * 10); // 10 year signed URL
+      .createSignedUrl(fileName, 60 * 60 * 24 * 365 * 10);
     if (urlErr) throw urlErr;
 
-    // Update proposal via direct update (service role bypasses RLS)
+    // Update proposal (service role bypasses RLS)
     const { error: updateErr } = await supabase
       .from("proposals")
       .update({
@@ -83,7 +90,10 @@ serve(async (req) => {
       .eq("signing_token", signing_token)
       .eq("status", "sent");
 
-    if (updateErr) throw updateErr;
+    if (updateErr) {
+      console.error("[sign-proposal] Update error:", updateErr);
+      throw new Error(`Proposal update failed: ${updateErr.message}`);
+    }
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
