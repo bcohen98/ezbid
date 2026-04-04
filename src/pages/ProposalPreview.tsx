@@ -328,7 +328,7 @@ export default function ProposalPreview() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
           {/* Preview */}
           <div className="border rounded-lg overflow-hidden bg-background shadow-sm">
-            <ProposalDocument proposal={proposal} lineItems={lineItems} profile={profile} onFieldEdit={handleFieldEdit} onLineItemEdit={handleLineItemEdit} onTotalsEdit={handleTotalsEdit} />
+            <ProposalDocument proposal={proposal} lineItems={lineItems} profile={profile} exhibits={exhibits} onFieldEdit={handleFieldEdit} onLineItemEdit={handleLineItemEdit} onTotalsEdit={handleTotalsEdit} />
           </div>
 
           {/* Side panel */}
