@@ -26,6 +26,7 @@ export default function ProposalPreview() {
   const { lineItems, upsertItems } = useProposalLineItems(id);
   const { profile } = useCompanyProfile();
   const { updateProposal } = useProposals();
+  const { exhibits, isAdding, addExhibit, updateCaption, removeExhibit } = useProposalExhibits(id);
   const [revisionNote, setRevisionNote] = useState('');
   const [isRevising, setIsRevising] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
