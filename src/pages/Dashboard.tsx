@@ -282,7 +282,13 @@ export default function Dashboard() {
                     {p.status}
                   </Badge>
                   {p.status === 'signed' && p.client_signature_url && !(p as any).contractor_signature_url && (
-                    <Badge variant="outline" className="border-amber-400 text-amber-700 bg-amber-50 text-[10px]">Countersign</Badge>
+                    <Badge
+                      variant="outline"
+                      className="border-amber-400 text-amber-700 bg-amber-50 text-[10px] cursor-pointer hover:bg-amber-100"
+                      onClick={(e) => { e.preventDefault(); navigate(`/proposals/${p.id}/preview`); }}
+                    >
+                      Countersign
+                    </Badge>
                   )}
                 </div>
               </div>
