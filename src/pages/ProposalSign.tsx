@@ -55,9 +55,16 @@ export default function ProposalSign() {
         .eq('user_id', p.user_id)
         .single();
 
+      const { data: exhibitData } = await supabase
+        .from('proposal_exhibits')
+        .select('*')
+        .eq('proposal_id', id)
+        .order('sort_order');
+
       setProposal(p);
       setLineItems(items || []);
       setProfile(prof || null);
+      setExhibits(exhibitData || []);
       setLoading(false);
     })();
   }, [id]);
