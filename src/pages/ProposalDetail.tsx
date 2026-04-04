@@ -89,6 +89,12 @@ export default function ProposalDetail() {
             <div className="flex items-center gap-2 mb-1">
               <span className="text-xs text-muted-foreground font-mono">PRO-{String(proposal.proposal_number).padStart(4, '0')}</span>
               <Badge variant="outline">{proposal.status}</Badge>
+              {proposal.status === 'signed' && proposal.client_signature_url && !(proposal as any).contractor_signature_url && (
+                <Badge variant="outline" className="border-amber-400 text-amber-700 bg-amber-50">Countersign Required</Badge>
+              )}
+              {(proposal as any).contractor_signature_url && (
+                <Badge variant="outline" className="border-green-400 text-green-700 bg-green-50">Fully Executed</Badge>
+              )}
             </div>
             <h1 className="text-2xl font-semibold">{proposal.title || 'Untitled Proposal'}</h1>
             <p className="text-sm text-muted-foreground mt-1">
