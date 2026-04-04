@@ -141,7 +141,6 @@ export default function ProposalSign() {
     try {
       const dataUrl = canvasRef.current.toDataURL('image/png');
       
-      // Use edge function for unauthenticated signing
       const { data: result, error: signErr } = await supabase.functions.invoke('sign-proposal', {
         body: {
           proposal_id: data.proposal.id,
@@ -150,12 +149,14 @@ export default function ProposalSign() {
         },
       });
 
-      if (signErr) throw signErr;
+      if (signErr) {
+        throw new Error(signErr.message || 'Failed to sign proposal');
+      }
       if (result?.error) throw new Error(result.error);
 
       setSigned(true);
     } catch (err: any) {
-      setError(err.message || 'Failed to sign proposal');
+      setError(err?.message || err?.context?.error || 'Failed to sign proposal');
     } finally {
       setSigning(false);
     }
