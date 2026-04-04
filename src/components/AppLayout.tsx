@@ -50,6 +50,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     { href: '/dashboard', label: 'Proposals', icon: FileText },
     { href: '/clients', label: 'Clients', icon: Users },
     { href: '/company-profile', label: companyLabel, icon: Settings },
+    { href: '/tutorial', label: 'Tutorial', icon: HelpCircle },
   ];
 
   return (
