@@ -353,6 +353,27 @@ export default function ProposalSign() {
           )}
         </div>
 
+        {/* Exhibits */}
+        {exhibits.length > 0 && (
+          <div className="bg-background rounded-lg border shadow-sm p-8 space-y-4">
+            <h3 className="text-sm font-semibold">Exhibits & Attachments</h3>
+            <div className="grid grid-cols-2 gap-4">
+              {exhibits.map((exhibit: any, i: number) => (
+                <div key={exhibit.id} className="space-y-1">
+                  <img
+                    src={exhibit.file_url}
+                    alt={exhibit.caption || `Exhibit ${i + 1}`}
+                    className="w-full rounded border object-contain max-h-64"
+                  />
+                  <p className="text-xs text-muted-foreground text-center italic">
+                    {exhibit.caption || `Exhibit ${i + 1}`}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Signature section */}
         <div className="bg-background rounded-lg border shadow-sm p-8">
           <h2 className="text-lg font-semibold mb-1">Sign This Proposal</h2>
