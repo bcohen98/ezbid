@@ -49,6 +49,9 @@ export default function LandingPage() {
         <div className="container flex h-14 items-center justify-between">
           <EZBidLogo size="md" />
           <div className="flex items-center gap-3">
+            <Link to="/tutorial">
+              <Button variant="ghost" size="sm">How It Works</Button>
+            </Link>
             <a href="#testimonials">
               <Button variant="ghost" size="sm">Testimonials</Button>
             </a>
