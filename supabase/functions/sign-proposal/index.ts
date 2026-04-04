@@ -7,11 +7,14 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
     const supabase = createClient(supabaseUrl, serviceKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
@@ -32,16 +35,15 @@ serve(async (req) => {
       });
     }
 
-    // Validate proposal exists and token matches
-    const { data: proposal, error: pErr } = await supabase
+    const { data: proposal, error: proposalError } = await supabase
       .from("proposals")
-      .select("id, status, signing_token")
+      .select("id, status")
       .eq("id", proposal_id)
       .eq("signing_token", signing_token)
       .single();
 
-    if (pErr || !proposal) {
-      console.error("[sign-proposal] Proposal lookup error:", pErr);
+    if (proposalError || !proposal) {
+      console.error("[sign-proposal] Proposal lookup error:", proposalError);
       return new Response(JSON.stringify({ error: "Invalid proposal or token" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -55,28 +57,20 @@ serve(async (req) => {
       });
     }
 
-    // Decode base64 signature and upload
-    const base64Data = signature_data.replace(/^data:image\/png;base64,/, "");
-    const binaryString = atob(base64Data);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-
-    const fileName = `signing/${proposal_id}-${Date.now()}.png`;
-    const { error: rpcErr } = await supabase.rpc("sign_proposal", {
+    const { error: signError } = await supabase.rpc("sign_proposal", {
       p_proposal_id: proposal_id,
       p_signature_url: signature_data,
       p_signing_token: signing_token,
     });
 
-    if (rpcErr) {
-      console.error("[sign-proposal] RPC error:", rpcErr);
-      throw new Error(`Proposal signing failed: ${rpcErr.message}`);
+    if (signError) {
+      console.error("[sign-proposal] RPC error:", signError);
+      throw new Error(`Proposal signing failed: ${signError.message}`);
     }
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200,
     });
   } catch (e) {
     console.error("[sign-proposal] Error:", e);
