@@ -2,8 +2,9 @@ import { ReactNode, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
+import { useAdminCheck } from '@/hooks/useAdminData';
 import { Button } from '@/components/ui/button';
-import { FileText, Settings, LogOut, Plus, Users } from 'lucide-react';
+import { FileText, Settings, LogOut, Plus, Users, Shield } from 'lucide-react';
 import EZBidLogo from '@/components/EZBidLogo';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
