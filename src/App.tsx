@@ -18,6 +18,7 @@ import AdminUsers from "./pages/admin/AdminUsers";
 import AdminProposals from "./pages/admin/AdminProposals";
 import AdminRevenue from "./pages/admin/AdminRevenue";
 import NotFound from "./pages/NotFound";
+import HelpChatWidget from "./components/HelpChatWidget";
 
 const queryClient = new QueryClient();
 
