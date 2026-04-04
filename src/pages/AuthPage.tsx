@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import EZBidLogo from '@/components/EZBidLogo';
-import tradePattern from '@/assets/trade-tools-pattern.png';
+import heroBg from '@/assets/hero-bg.jpg';
 
 export default function AuthPage() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -38,15 +38,11 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background px-4 relative overflow-hidden">
-      <div
-        className="absolute inset-0 opacity-[0.04]"
-        style={{
-          backgroundImage: `url(${tradePattern})`,
-          backgroundSize: '400px 400px',
-          backgroundRepeat: 'repeat',
-        }}
-      />
+    <div
+      className="min-h-screen px-4 relative overflow-hidden bg-cover bg-center"
+      style={{ backgroundImage: `url(${heroBg})` }}
+    >
+      <div className="absolute inset-0 bg-background/90" />
       <div className="absolute top-4 left-4">
         <Link to="/">
           <EZBidLogo size="md" />
