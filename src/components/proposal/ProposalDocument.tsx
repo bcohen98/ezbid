@@ -370,9 +370,19 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
       {/* Signature Block */}
       <div className="mt-12 grid grid-cols-2 gap-12">
         <div>
-          <div className="border-b mb-1 pb-8"></div>
+          {proposal.client_signature_url ? (
+            <div className="mb-1 pb-2">
+              <img src={proposal.client_signature_url} alt="Client signature" className="h-16 object-contain" />
+            </div>
+          ) : (
+            <div className="border-b mb-1 pb-8"></div>
+          )}
           <div className="text-xs text-muted-foreground">Client Signature</div>
-          <div className="text-xs text-muted-foreground mt-1">Date: _______________</div>
+          <div className="text-xs text-muted-foreground mt-1">
+            {proposal.client_signed_at
+              ? `Date: ${new Date(proposal.client_signed_at).toLocaleDateString()}`
+              : 'Date: _______________'}
+          </div>
         </div>
         <div>
           <div className="border-b mb-1 pb-8"></div>
