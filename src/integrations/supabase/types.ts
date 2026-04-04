@@ -311,6 +311,41 @@ export type Database = {
           },
         ]
       }
+      proposal_exhibits: {
+        Row: {
+          caption: string | null
+          created_at: string
+          file_url: string
+          id: string
+          proposal_id: string
+          sort_order: number
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          file_url: string
+          id?: string
+          proposal_id: string
+          sort_order?: number
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          file_url?: string
+          id?: string
+          proposal_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_exhibits_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       proposal_line_items: {
         Row: {
           created_at: string
