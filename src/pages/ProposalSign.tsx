@@ -155,7 +155,7 @@ export default function ProposalSign() {
 
       setSigned(true);
     } catch (err: any) {
-      setError(err.message || 'Failed to sign proposal');
+      setError(err?.message || err?.context?.error || 'Failed to sign proposal');
     } finally {
       setSigning(false);
     }
