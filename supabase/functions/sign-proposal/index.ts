@@ -57,7 +57,7 @@ serve(async (req) => {
       });
     }
 
-    const { error: signError } = await supabase
+    const { data: signedProposal, error: signError } = await supabase
       .from("proposals")
       .update({
         client_signature_url: signature_data,
@@ -66,11 +66,20 @@ serve(async (req) => {
       })
       .eq("id", proposal_id)
       .eq("signing_token", signing_token)
-      .eq("status", "sent");
+      .eq("status", "sent")
+      .select("id")
+      .maybeSingle();
 
     if (signError) {
       console.error("[sign-proposal] Update error:", signError);
       throw new Error(`Proposal signing failed: ${signError.message}`);
+    }
+
+    if (!signedProposal) {
+      return new Response(JSON.stringify({ error: "Proposal is no longer available for signing" }), {
+        status: 409,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     return new Response(JSON.stringify({ success: true }), {
