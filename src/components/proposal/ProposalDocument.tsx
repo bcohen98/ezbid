@@ -385,6 +385,32 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
       <div className="mt-8 pt-4 border-t text-xs text-muted-foreground text-center">
         {profile?.company_name} {profile?.license_numbers?.length ? `· Lic# ${profile.license_numbers.join(', ')}` : ''}
       </div>
+
+      {/* Exhibits Page */}
+      {exhibits && exhibits.length > 0 && (
+        <div className="mt-8 pt-8 border-t-2 border-dashed">
+          <div className="text-center mb-6">
+            <SectionHeading template={template} color={brandColor}>Exhibits & Attachments</SectionHeading>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {exhibits.map((exhibit, i) => (
+              <div key={exhibit.id} className="space-y-1">
+                <img
+                  src={exhibit.file_url}
+                  alt={exhibit.caption || `Exhibit ${i + 1}`}
+                  className="w-full rounded border object-contain max-h-64"
+                />
+                {exhibit.caption && (
+                  <p className="text-xs text-muted-foreground text-center italic">{exhibit.caption}</p>
+                )}
+                {!exhibit.caption && (
+                  <p className="text-xs text-muted-foreground text-center">Exhibit {i + 1}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
