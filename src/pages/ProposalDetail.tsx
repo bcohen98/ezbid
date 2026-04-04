@@ -149,6 +149,17 @@ export default function ProposalDetail() {
             )}
           </CardContent>
         </Card>
+
+        {/* Exhibits */}
+        <div className="mt-6">
+          <ExhibitsUpload
+            exhibits={exhibits}
+            isAdding={isAdding}
+            onAdd={addExhibit}
+            onUpdateCaption={updateCaption}
+            onRemove={removeExhibit}
+          />
+        </div>
         {proposal && (
           <EditClientDialog
             open={editClientOpen}
