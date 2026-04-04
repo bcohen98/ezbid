@@ -45,6 +45,7 @@ const App = () => (
             <Route path="/admin/revenue" element={<AdminRevenue />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <HelpChatWidget />
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>
