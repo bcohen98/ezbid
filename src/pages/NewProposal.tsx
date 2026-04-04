@@ -70,14 +70,15 @@ export default function NewProposal() {
   });
 
   // Only show upgrade after subscription data has loaded and user truly can't create
-  const showUpgrade = !subLoading && !canCreateProposal;
+  const [dismissed, setDismissed] = useState(false);
+  const showUpgrade = !subLoading && !canCreateProposal && !dismissed;
 
   if (showUpgrade) {
     return (
       <AppLayout>
         <UpgradePrompt
           proposalsUsed={subscription?.proposals_used ?? 0}
-          onContinue={() => setShowUpgrade(false)}
+          onContinue={() => setDismissed(true)}
         />
       </AppLayout>
     );
