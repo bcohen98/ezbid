@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useProposal, useProposalLineItems, useProposals } from '@/hooks/useProposals';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
+import { useProposalExhibits } from '@/hooks/useProposalExhibits';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +11,7 @@ import { ArrowLeft, Eye, Copy, Send, Pencil, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/formatCurrency';
 import EditClientDialog from '@/components/EditClientDialog';
+import ExhibitsUpload from '@/components/proposal/ExhibitsUpload';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function ProposalDetail() {
