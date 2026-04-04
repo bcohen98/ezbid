@@ -6,6 +6,7 @@ import ProposalDocument from '@/components/proposal/ProposalDocument';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, Send, Mail, Sparkles, Loader2, Download, FileText, Undo2 } from 'lucide-react';
+import CountersignBanner from '@/components/proposal/CountersignBanner';
 import ExhibitsUpload from '@/components/proposal/ExhibitsUpload';
 import { useProposalExhibits } from '@/hooks/useProposalExhibits';
 import { useState, useRef } from 'react';
@@ -340,6 +341,15 @@ export default function ProposalPreview() {
 
           {/* Side panel */}
           <div className="space-y-4">
+            {/* Countersign prompt */}
+            {proposal.status === 'signed' && proposal.client_signature_url && !(proposal as any).contractor_signature_url && (
+              <CountersignBanner
+                proposalId={proposal.id}
+                clientName={proposal.client_name}
+                onSigned={() => refetch()}
+              />
+            )}
+
             {/* AI Revision */}
             <div className="border rounded-lg p-4 space-y-3">
               <h3 className="text-sm font-medium flex items-center gap-2">

@@ -435,6 +435,8 @@ export type Database = {
           client_phone: string | null
           client_signature_url: string | null
           client_signed_at: string | null
+          contractor_signature_url: string | null
+          contractor_signed_at: string | null
           created_at: string
           delivery_method: string | null
           deposit_amount: number | null
@@ -485,6 +487,8 @@ export type Database = {
           client_phone?: string | null
           client_signature_url?: string | null
           client_signed_at?: string | null
+          contractor_signature_url?: string | null
+          contractor_signed_at?: string | null
           created_at?: string
           delivery_method?: string | null
           deposit_amount?: number | null
@@ -535,6 +539,8 @@ export type Database = {
           client_phone?: string | null
           client_signature_url?: string | null
           client_signed_at?: string | null
+          contractor_signature_url?: string | null
+          contractor_signed_at?: string | null
           created_at?: string
           delivery_method?: string | null
           deposit_amount?: number | null

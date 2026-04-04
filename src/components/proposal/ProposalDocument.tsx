@@ -385,9 +385,19 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
           </div>
         </div>
         <div>
-          <div className="border-b mb-1 pb-8"></div>
+          {(proposal as any).contractor_signature_url ? (
+            <div className="mb-1 pb-2">
+              <img src={(proposal as any).contractor_signature_url} alt="Contractor signature" className="h-16 object-contain" />
+            </div>
+          ) : (
+            <div className="border-b mb-1 pb-8"></div>
+          )}
           <div className="text-xs text-muted-foreground">Contractor Signature</div>
-          <div className="text-xs text-muted-foreground mt-1">Date: _______________</div>
+          <div className="text-xs text-muted-foreground mt-1">
+            {(proposal as any).contractor_signed_at
+              ? `Date: ${new Date((proposal as any).contractor_signed_at).toLocaleDateString()}`
+              : 'Date: _______________'}
+          </div>
         </div>
       </div>
 
