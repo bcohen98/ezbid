@@ -47,20 +47,50 @@ serve(async (req) => {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
-        if (session.mode === "subscription" && session.customer_email) {
-          const { data: users } = await supabase.auth.admin.listUsers();
-          const user = users?.users?.find((u) => u.email === session.customer_email);
-          if (user) {
+        if (session.mode === "subscription") {
+          const customerId = session.customer as string;
+          const subscriptionId = session.subscription as string;
+
+          // Try to find user by stripe_customer_id first
+          const { data: existingSubs } = await supabase
+            .from("user_subscriptions")
+            .select("user_id")
+            .eq("stripe_customer_id", customerId)
+            .limit(1);
+
+          let userId: string | null = existingSubs?.[0]?.user_id ?? null;
+
+          // Fallback: look up by email from session or Stripe customer
+          if (!userId) {
+            const email = session.customer_email
+              || (session as any).customer_details?.email;
+            let lookupEmail = email;
+            if (!lookupEmail && customerId) {
+              const customer = await stripe.customers.retrieve(customerId);
+              if (customer && !customer.deleted) {
+                lookupEmail = (customer as Stripe.Customer).email;
+              }
+            }
+            if (lookupEmail) {
+              const { data: users } = await supabase.auth.admin.listUsers();
+              const user = users?.users?.find((u) => u.email === lookupEmail);
+              userId = user?.id ?? null;
+            }
+          }
+
+          if (userId) {
             await supabase
               .from("user_subscriptions")
               .update({
                 status: "active",
                 plan: "pro",
-                stripe_customer_id: session.customer as string,
-                stripe_subscription_id: session.subscription as string,
+                stripe_customer_id: customerId,
+                stripe_subscription_id: subscriptionId,
               })
-              .eq("user_id", user.id);
-            console.log(`[STRIPE-WEBHOOK] Activated subscription for ${user.email}`);
+              .eq("user_id", userId);
+            console.log(`[STRIPE-WEBHOOK] Activated subscription for user ${userId}`);
+          } else {
+            console.error(`[STRIPE-WEBHOOK] Could not find user for customer ${customerId}`);
           }
         }
         break;
