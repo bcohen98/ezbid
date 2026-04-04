@@ -38,17 +38,23 @@ export default function AuthPage() {
   };
 
   return (
-    <div
-      className="min-h-screen px-4 relative overflow-hidden bg-cover bg-center"
-      style={{ backgroundImage: `url(${heroBg})` }}
-    >
+    <div className="min-h-screen px-4 relative overflow-hidden">
+      {/* Background image with opacity overlay — only affects the photo */}
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: `url(${heroBg})` }}
+      />
       <div className="absolute inset-0 bg-background/90" />
-      <div className="absolute top-4 left-4">
+
+      {/* Logo — sits above the overlay, fully opaque */}
+      <div className="absolute top-4 left-4 z-10">
         <Link to="/">
           <EZBidLogo size="md" />
         </Link>
       </div>
-      <div className="min-h-screen flex items-center justify-center">
+
+      {/* Form — sits above the overlay, fully opaque */}
+      <div className="min-h-screen flex items-center justify-center relative z-10">
         <div className="w-full max-w-sm animate-fade-in">
           <div className="mb-8 text-center">
             <EZBidLogo size="lg" className="justify-center" />
