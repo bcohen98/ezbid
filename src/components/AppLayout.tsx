@@ -2,7 +2,8 @@ import { ReactNode, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
-import { useAdminCheck } from '@/hooks/useAdminData';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { FileText, Settings, LogOut, Plus, Users, Shield } from 'lucide-react';
 import EZBidLogo from '@/components/EZBidLogo';
@@ -10,8 +11,20 @@ import EZBidLogo from '@/components/EZBidLogo';
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, loading, signOut } = useAuth();
   const { profile } = useCompanyProfile();
-  const { data: adminData } = useAdminCheck();
-  const isAdmin = !!adminData?.is_admin;
+  const { data: isAdmin } = useQuery({
+    queryKey: ['is-admin', user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user!.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!user,
+    staleTime: 60_000,
+  });
   const navigate = useNavigate();
   const location = useLocation();
 
