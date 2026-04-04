@@ -50,7 +50,7 @@ Return ONLY a JSON object with these keys: title, job_description, scope_of_work
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-opus-4-6",
+        model: "claude-sonnet-4-6",
         max_tokens: 4096,
         messages: [
           { role: "user", content: prompt },
