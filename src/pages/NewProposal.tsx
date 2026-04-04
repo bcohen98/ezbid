@@ -52,7 +52,7 @@ export default function NewProposal() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { createProposal, isCreating } = useProposals();
-  const { subscription, canCreateProposal, incrementProposalCount } = useSubscription();
+  const { subscription, canCreateProposal, isLoading: subLoading, incrementProposalCount } = useSubscription();
   const { profile } = useCompanyProfile();
   const [step, setStep] = useState<'template' | 'form'>(() => {
     try {
@@ -68,14 +68,17 @@ export default function NewProposal() {
     } catch {}
     return 'classic';
   });
-  const [showUpgrade, setShowUpgrade] = useState(!canCreateProposal);
+
+  // Only show upgrade after subscription data has loaded and user truly can't create
+  const [dismissed, setDismissed] = useState(false);
+  const showUpgrade = !subLoading && !canCreateProposal && !dismissed;
 
   if (showUpgrade) {
     return (
       <AppLayout>
         <UpgradePrompt
           proposalsUsed={subscription?.proposals_used ?? 0}
-          onContinue={() => setShowUpgrade(false)}
+          onContinue={() => setDismissed(true)}
         />
       </AppLayout>
     );
