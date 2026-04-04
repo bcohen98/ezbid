@@ -47,7 +47,7 @@ Deno.serve(async (req: Request) => {
   const { data: roleData } = await adminClient
     .from("user_roles")
     .select("role")
-    .eq("user_id", userData.user.id)
+    .eq("user_id", userId)
     .eq("role", "admin")
     .maybeSingle();
 
