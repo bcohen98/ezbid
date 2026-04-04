@@ -253,7 +253,7 @@ serve(async (req) => {
       );
     }
 
-    const signUrl = `https://www.ezbid.pro/proposals/${proposal_id}/sign`;
+    const signUrl = `https://www.ezbid.pro/proposals/${proposal_id}/sign?token=${proposal.signing_token}`;
     console.log(`[send-proposal-email] Scenario B: sending to client ${clientEmail}`);
 
     await sendEmail(RESEND_API_KEY, {

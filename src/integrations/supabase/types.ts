@@ -465,6 +465,7 @@ export type Database = {
           revision_history: Json | null
           scope_of_work: string | null
           sent_at: string | null
+          signing_token: string
           special_conditions: string | null
           status: Database["public"]["Enums"]["proposal_status"]
           subtotal: number | null
@@ -517,6 +518,7 @@ export type Database = {
           revision_history?: Json | null
           scope_of_work?: string | null
           sent_at?: string | null
+          signing_token?: string
           special_conditions?: string | null
           status?: Database["public"]["Enums"]["proposal_status"]
           subtotal?: number | null
@@ -569,6 +571,7 @@ export type Database = {
           revision_history?: Json | null
           scope_of_work?: string | null
           sent_at?: string | null
+          signing_token?: string
           special_conditions?: string | null
           status?: Database["public"]["Enums"]["proposal_status"]
           subtotal?: number | null
@@ -668,6 +671,10 @@ export type Database = {
     }
     Functions: {
       get_next_proposal_number: { Args: { p_user_id: string }; Returns: number }
+      get_proposal_for_signing: {
+        Args: { p_proposal_id: string; p_signing_token: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -675,10 +682,19 @@ export type Database = {
         }
         Returns: boolean
       }
-      sign_proposal: {
-        Args: { p_proposal_id: string; p_signature_url: string }
-        Returns: undefined
-      }
+      sign_proposal:
+        | {
+            Args: { p_proposal_id: string; p_signature_url: string }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_proposal_id: string
+              p_signature_url: string
+              p_signing_token?: string
+            }
+            Returns: undefined
+          }
     }
     Enums: {
       app_role: "admin" | "user"

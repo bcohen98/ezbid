@@ -78,7 +78,10 @@ export default function CountersignBanner({ proposalId, clientName, onSigned }: 
     try {
       const dataUrl = canvasRef.current.toDataURL('image/png');
       const blob = await (await fetch(dataUrl)).blob();
-      const fileName = `contractor-${proposalId}-${Date.now()}.png`;
+      // Get current user for folder scoping
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id || 'unknown';
+      const fileName = `${userId}/contractor-${proposalId}-${Date.now()}.png`;
       const { error: uploadErr } = await supabase.storage
         .from('signatures')
         .upload(fileName, blob, { contentType: 'image/png' });
