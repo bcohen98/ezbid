@@ -75,7 +75,7 @@ serve(async (req) => {
     const { error: updateErr } = await supabase
       .from("proposals")
       .update({
-        client_signature_url: urlData.publicUrl,
+        client_signature_url: urlData.signedUrl,
         client_signed_at: new Date().toISOString(),
         status: "signed",
       })

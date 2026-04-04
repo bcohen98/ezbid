@@ -95,7 +95,7 @@ export default function CountersignBanner({ proposalId, clientName, onSigned }: 
       const { error: updateErr } = await supabase
         .from('proposals')
         .update({
-          contractor_signature_url: urlData.publicUrl,
+          contractor_signature_url: urlData.signedUrl,
           contractor_signed_at: new Date().toISOString(),
         })
         .eq('id', proposalId);
