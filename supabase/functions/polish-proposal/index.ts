@@ -10,11 +10,15 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { proposal, line_items } = await req.json();
+    const { proposal, line_items, trade_type, company_name } = await req.json();
     const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
     if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not configured");
 
-    const prompt = `You are a professional proposal writer for contractors and tradespeople. Polish and improve the following proposal content to sound more professional, clear, and persuasive. Fix grammar, spelling, and punctuation. Make descriptions more compelling. Keep the same meaning and scope.
+    const tradeLabel = trade_type ? trade_type.replace(/_/g, ' ') : 'general contractor';
+
+    const prompt = `You are a professional proposal writer specializing in the ${tradeLabel} trade${company_name ? ` for ${company_name}` : ''}. Polish and improve the following proposal content to sound more professional, clear, and persuasive. Use industry-specific terminology and phrasing appropriate for a ${tradeLabel} professional.
+
+Consider the full context of the job — the title, description, and scope of work — to ensure polished text is coherent and tailored to this specific type of work. For example, a roofing proposal should reference roofing-specific best practices, while a plumbing proposal should use plumbing terminology.
 
 IMPORTANT RULES:
 - Do NOT change any numbers (quantities, prices, amounts)
@@ -23,6 +27,7 @@ IMPORTANT RULES:
 - Polish text fields: title, job_description, scope_of_work, materials_included, materials_excluded, payment_terms, warranty_terms, disclosures, special_conditions
 - Polish line item descriptions only (keep qty, unit, unit_price unchanged)
 - If a field is empty or null, leave it empty
+- Use trade-appropriate language for the ${tradeLabel} industry
 - Return the polished version as a JSON object with the same field names
 
 Current proposal:

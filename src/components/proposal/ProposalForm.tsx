@@ -124,7 +124,12 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
     setIsPolishing(true);
     try {
       const { data, error } = await supabase.functions.invoke('polish-proposal', {
-        body: { proposal: form, line_items: form.line_items },
+        body: {
+          proposal: form,
+          line_items: form.line_items,
+          trade_type: profile?.trade_type || null,
+          company_name: profile?.company_name || null,
+        },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
