@@ -12,6 +12,7 @@ interface Props {
   proposal: Proposal;
   lineItems: LineItem[];
   profile: CompanyProfile | null | undefined;
+  exhibits?: ProposalExhibit[];
   onFieldEdit?: (field: string, value: string) => void;
   onLineItemEdit?: (id: string, updates: { description: string; quantity: number; unit: string; unit_price: number; subtotal: number }) => void;
   onTotalsEdit?: (updates: { tax_rate: number; deposit_mode: string; deposit_value: number }) => void;
