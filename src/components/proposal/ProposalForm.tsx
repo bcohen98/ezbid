@@ -360,27 +360,6 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
               <Input type="date" value={form.valid_until} onChange={(e) => handleChange('valid_until', e.target.value)} />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label>Delivery method</Label>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant={form.delivery_method === 'email_self' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleChange('delivery_method', 'email_self')}
-              >
-                Send to my email
-              </Button>
-              <Button
-                type="button"
-                variant={form.delivery_method === 'email_client' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleChange('delivery_method', 'email_client')}
-              >
-                Send to client for e-signature
-              </Button>
-            </div>
-          </div>
         </CardContent>
       </Card>
       {/* AI Polish - floating button */}
