@@ -2,6 +2,7 @@ import type { Database } from '@/integrations/supabase/types';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { formatPhone } from '@/lib/formatPhone';
 import EditableSection, { EditableLineItemRow, EditableTotals } from './EditableSection';
+import type { ProposalExhibit } from '@/hooks/useProposalExhibits';
 
 type Proposal = Database['public']['Tables']['proposals']['Row'];
 type LineItem = Database['public']['Tables']['proposal_line_items']['Row'];
