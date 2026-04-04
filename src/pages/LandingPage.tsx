@@ -190,7 +190,7 @@ export default function LandingPage() {
 
             {/* Pro Annual */}
             <div className="rounded-lg border bg-card p-6 relative">
-              <span className="absolute -top-3 left-4 bg-green-600 text-white text-xs font-medium px-2.5 py-0.5 rounded-full">
+              <span className="absolute -top-3 left-4 bg-primary text-primary-foreground text-xs font-medium px-2.5 py-0.5 rounded-full">
                 Save 15%
               </span>
               <h3 className="text-lg font-semibold">Pro Annual</h3>
