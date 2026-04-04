@@ -236,17 +236,24 @@ export default function ProposalPreview() {
       });
       if (error) throw error;
       if (data?.html) {
-        const container = document.createElement('div');
-        container.style.position = 'absolute';
-        container.style.left = '-9999px';
-        container.style.top = '0';
-        container.style.width = '816px'; // 8.5in at 96dpi
-        container.style.background = '#fff';
-        container.innerHTML = data.html;
-        document.body.appendChild(container);
+        // Use a hidden iframe so <html>/<head>/<style> tags are preserved
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'absolute';
+        iframe.style.left = '-9999px';
+        iframe.style.top = '0';
+        iframe.style.width = '816px';
+        iframe.style.height = '1056px';
+        iframe.style.border = 'none';
+        document.body.appendChild(iframe);
 
-        // Wait for images and layout to settle
-        await new Promise(resolve => setTimeout(resolve, 500));
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (!iframeDoc) throw new Error('Could not access iframe document');
+        iframeDoc.open();
+        iframeDoc.write(data.html);
+        iframeDoc.close();
+
+        // Wait for fonts and layout to settle
+        await new Promise(resolve => setTimeout(resolve, 800));
 
         const html2pdf = (await import('html2pdf.js')).default;
         const fileName = data.fileName || `Proposal-PRO-${String(proposal.proposal_number).padStart(4, '0')}.pdf`;
@@ -259,10 +266,10 @@ export default function ProposalPreview() {
             html2canvas: { scale: 2, useCORS: true, letterRendering: true, windowWidth: 816 },
             jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
           })
-          .from(container)
+          .from(iframeDoc.body)
           .save();
 
-        document.body.removeChild(container);
+        document.body.removeChild(iframe);
         toast({ title: 'PDF downloaded', description: fileName });
       }
     } catch (err: any) {
