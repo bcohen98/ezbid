@@ -3,15 +3,14 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useProposals } from '@/hooks/useProposals';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import AppLayout from '@/components/AppLayout';
+import SubscriptionCard from '@/components/SubscriptionCard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Plus, FileText, AlertCircle, PenLine, X, Search, ArrowUpDown, ChevronUp, ChevronDown, ArrowRight, Loader2, Crown } from 'lucide-react';
+import { Plus, FileText, AlertCircle, PenLine, X, Search, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
 
 import { formatCurrency } from '@/lib/formatCurrency';
 
