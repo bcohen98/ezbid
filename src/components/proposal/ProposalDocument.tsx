@@ -2,6 +2,7 @@ import type { Database } from '@/integrations/supabase/types';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { formatPhone } from '@/lib/formatPhone';
 import EditableSection, { EditableLineItemRow, EditableTotals } from './EditableSection';
+import type { ProposalExhibit } from '@/hooks/useProposalExhibits';
 
 type Proposal = Database['public']['Tables']['proposals']['Row'];
 type LineItem = Database['public']['Tables']['proposal_line_items']['Row'];
@@ -11,12 +12,13 @@ interface Props {
   proposal: Proposal;
   lineItems: LineItem[];
   profile: CompanyProfile | null | undefined;
+  exhibits?: ProposalExhibit[];
   onFieldEdit?: (field: string, value: string) => void;
   onLineItemEdit?: (id: string, updates: { description: string; quantity: number; unit: string; unit_price: number; subtotal: number }) => void;
   onTotalsEdit?: (updates: { tax_rate: number; deposit_mode: string; deposit_value: number }) => void;
 }
 
-export default function ProposalDocument({ proposal, lineItems, profile, onFieldEdit, onLineItemEdit, onTotalsEdit }: Props) {
+export default function ProposalDocument({ proposal, lineItems, profile, exhibits, onFieldEdit, onLineItemEdit, onTotalsEdit }: Props) {
   const template = proposal.template || 'classic';
   const brandColor = profile?.brand_color || '#000000';
   const logoSize = (proposal as any).logo_size || 'medium';
@@ -383,6 +385,32 @@ export default function ProposalDocument({ proposal, lineItems, profile, onField
       <div className="mt-8 pt-4 border-t text-xs text-muted-foreground text-center">
         {profile?.company_name} {profile?.license_numbers?.length ? `· Lic# ${profile.license_numbers.join(', ')}` : ''}
       </div>
+
+      {/* Exhibits Page */}
+      {exhibits && exhibits.length > 0 && (
+        <div className="mt-8 pt-8 border-t-2 border-dashed">
+          <div className="text-center mb-6">
+            <SectionHeading template={template} color={brandColor}>Exhibits & Attachments</SectionHeading>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {exhibits.map((exhibit, i) => (
+              <div key={exhibit.id} className="space-y-1">
+                <img
+                  src={exhibit.file_url}
+                  alt={exhibit.caption || `Exhibit ${i + 1}`}
+                  className="w-full rounded border object-contain max-h-64"
+                />
+                {exhibit.caption && (
+                  <p className="text-xs text-muted-foreground text-center italic">{exhibit.caption}</p>
+                )}
+                {!exhibit.caption && (
+                  <p className="text-xs text-muted-foreground text-center">Exhibit {i + 1}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -16,6 +16,7 @@ export default function ProposalSign() {
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [profile, setProfile] = useState<CompanyProfile | null>(null);
+  const [exhibits, setExhibits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [signing, setSigning] = useState(false);
@@ -54,9 +55,16 @@ export default function ProposalSign() {
         .eq('user_id', p.user_id)
         .single();
 
+      const { data: exhibitData } = await supabase
+        .from('proposal_exhibits')
+        .select('*')
+        .eq('proposal_id', id)
+        .order('sort_order');
+
       setProposal(p);
       setLineItems(items || []);
       setProfile(prof || null);
+      setExhibits(exhibitData || []);
       setLoading(false);
     })();
   }, [id]);
@@ -344,6 +352,27 @@ export default function ProposalSign() {
             </div>
           )}
         </div>
+
+        {/* Exhibits */}
+        {exhibits.length > 0 && (
+          <div className="bg-background rounded-lg border shadow-sm p-8 space-y-4">
+            <h3 className="text-sm font-semibold">Exhibits & Attachments</h3>
+            <div className="grid grid-cols-2 gap-4">
+              {exhibits.map((exhibit: any, i: number) => (
+                <div key={exhibit.id} className="space-y-1">
+                  <img
+                    src={exhibit.file_url}
+                    alt={exhibit.caption || `Exhibit ${i + 1}`}
+                    className="w-full rounded border object-contain max-h-64"
+                  />
+                  <p className="text-xs text-muted-foreground text-center italic">
+                    {exhibit.caption || `Exhibit ${i + 1}`}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Signature section */}
         <div className="bg-background rounded-lg border shadow-sm p-8">

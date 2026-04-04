@@ -6,6 +6,8 @@ import ProposalDocument from '@/components/proposal/ProposalDocument';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, Send, Mail, Sparkles, Loader2, Download, FileText, Undo2 } from 'lucide-react';
+import ExhibitsUpload from '@/components/proposal/ExhibitsUpload';
+import { useProposalExhibits } from '@/hooks/useProposalExhibits';
 import { useState, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,6 +26,7 @@ export default function ProposalPreview() {
   const { lineItems, upsertItems } = useProposalLineItems(id);
   const { profile } = useCompanyProfile();
   const { updateProposal } = useProposals();
+  const { exhibits, isAdding, addExhibit, updateCaption, removeExhibit } = useProposalExhibits(id);
   const [revisionNote, setRevisionNote] = useState('');
   const [isRevising, setIsRevising] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
@@ -325,7 +328,7 @@ export default function ProposalPreview() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
           {/* Preview */}
           <div className="border rounded-lg overflow-hidden bg-background shadow-sm">
-            <ProposalDocument proposal={proposal} lineItems={lineItems} profile={profile} onFieldEdit={handleFieldEdit} onLineItemEdit={handleLineItemEdit} onTotalsEdit={handleTotalsEdit} />
+            <ProposalDocument proposal={proposal} lineItems={lineItems} profile={profile} exhibits={exhibits} onFieldEdit={handleFieldEdit} onLineItemEdit={handleLineItemEdit} onTotalsEdit={handleTotalsEdit} />
           </div>
 
           {/* Side panel */}
@@ -410,6 +413,15 @@ export default function ProposalPreview() {
                 <p className="text-xs text-muted-foreground">Add a client email in the proposal form to enable sending.</p>
               )}
             </div>
+
+            {/* Exhibits */}
+            <ExhibitsUpload
+              exhibits={exhibits}
+              isAdding={isAdding}
+              onAdd={addExhibit}
+              onUpdateCaption={updateCaption}
+              onRemove={removeExhibit}
+            />
           </div>
         </div>
       </div>
