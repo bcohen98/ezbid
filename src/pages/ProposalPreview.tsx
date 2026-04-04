@@ -371,6 +371,15 @@ export default function ProposalPreview() {
               </div>
             </div>
 
+            {/* Exhibits */}
+            <ExhibitsUpload
+              exhibits={exhibits}
+              isAdding={isAdding}
+              onAdd={addExhibit}
+              onUpdateCaption={updateCaption}
+              onRemove={removeExhibit}
+            />
+
             {/* Download & Send */}
             <div className="border rounded-lg p-4 space-y-3">
               <h3 className="text-sm font-medium flex items-center gap-2">
@@ -413,15 +422,6 @@ export default function ProposalPreview() {
                 <p className="text-xs text-muted-foreground">Add a client email in the proposal form to enable sending.</p>
               )}
             </div>
-
-            {/* Exhibits */}
-            <ExhibitsUpload
-              exhibits={exhibits}
-              isAdding={isAdding}
-              onAdd={addExhibit}
-              onUpdateCaption={updateCaption}
-              onRemove={removeExhibit}
-            />
           </div>
         </div>
       </div>
