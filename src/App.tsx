@@ -17,6 +17,7 @@ import AdminOverview from "./pages/admin/AdminOverview";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminProposals from "./pages/admin/AdminProposals";
 import AdminRevenue from "./pages/admin/AdminRevenue";
+import Tutorial from "./pages/Tutorial";
 import NotFound from "./pages/NotFound";
 import HelpChatWidget from "./components/HelpChatWidget";
 
