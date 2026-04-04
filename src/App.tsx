@@ -23,6 +23,13 @@ import HelpChatWidget from "./components/HelpChatWidget";
 
 const queryClient = new QueryClient();
 
+function HelpChatWidgetWrapper() {
+  const location = useLocation();
+  // Hide chat widget on proposal signing pages
+  if (location.pathname.includes('/sign')) return null;
+  return <HelpChatWidget />;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
