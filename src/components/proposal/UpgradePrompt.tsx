@@ -11,13 +11,15 @@ interface Props {
 }
 
 export default function UpgradePrompt({ proposalsUsed, onContinue }: Props) {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<'monthly' | 'annual' | null>(null);
   const { toast } = useToast();
 
-  const handleUpgrade = async () => {
-    setLoading(true);
+  const handleUpgrade = async (plan: 'monthly' | 'annual') => {
+    setLoading(plan);
     try {
-      const { data, error } = await supabase.functions.invoke('create-pro-checkout');
+      const { data, error } = await supabase.functions.invoke('create-pro-checkout', {
+        body: { plan },
+      });
       if (error) throw error;
       if (data?.url) {
         window.open(data.url, '_blank');
@@ -27,12 +29,12 @@ export default function UpgradePrompt({ proposalsUsed, onContinue }: Props) {
     } catch (e: any) {
       toast({ title: 'Error', description: e.message || 'Could not start checkout', variant: 'destructive' });
     } finally {
-      setLoading(false);
+      setLoading(null);
     }
   };
 
   return (
-    <div className="container max-w-md py-16 animate-fade-in">
+    <div className="container max-w-lg py-16 animate-fade-in">
       <Card>
         <CardContent className="p-8 text-center">
           <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
@@ -40,11 +42,14 @@ export default function UpgradePrompt({ proposalsUsed, onContinue }: Props) {
           </div>
           <h2 className="text-xl font-semibold mb-2">You've used all 3 free proposals</h2>
           <p className="text-sm text-muted-foreground mb-6">
-            Upgrade to unlimited proposals for $39/month. Cancel anytime.
+            Upgrade to unlimited proposals. Cancel anytime.
           </p>
           <div className="space-y-3">
-            <Button className="w-full gap-2" onClick={handleUpgrade} disabled={loading}>
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Upgrade to Pro <ArrowRight className="h-4 w-4" /></>}
+            <Button className="w-full gap-2" onClick={() => handleUpgrade('monthly')} disabled={!!loading}>
+              {loading === 'monthly' ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Pro Monthly · $39/mo <ArrowRight className="h-4 w-4" /></>}
+            </Button>
+            <Button variant="outline" className="w-full gap-2" onClick={() => handleUpgrade('annual')} disabled={!!loading}>
+              {loading === 'annual' ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Pro Annual · $399/yr (save 15%) <ArrowRight className="h-4 w-4" /></>}
             </Button>
             <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={onContinue}>
               Maybe later

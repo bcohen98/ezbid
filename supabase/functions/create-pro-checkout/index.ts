@@ -7,6 +7,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const PRICES: Record<string, string> = {
+  monthly: "price_1TIMiWFZyh1CtRKqejBgLSCh",
+  annual: "price_1TIdLuFZyh1CtRKqypjIkb0C",
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -24,6 +29,16 @@ serve(async (req) => {
     const user = data.user;
     if (!user?.email) throw new Error("User not authenticated");
 
+    // Read optional plan from body (default monthly)
+    let plan = "monthly";
+    try {
+      const body = await req.json();
+      if (body?.plan === "annual") plan = "annual";
+    } catch { /* no body = default monthly */ }
+
+    const priceId = PRICES[plan];
+    if (!priceId) throw new Error("Invalid plan");
+
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
     });
@@ -37,12 +52,7 @@ serve(async (req) => {
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
-      line_items: [
-        {
-          price: "price_1TIMiWFZyh1CtRKqejBgLSCh",
-          quantity: 1,
-        },
-      ],
+      line_items: [{ price: priceId, quantity: 1 }],
       mode: "subscription",
       success_url: `${req.headers.get("origin")}/dashboard?upgrade=success`,
       cancel_url: `${req.headers.get("origin")}/proposals/new?upgrade=cancelled`,
