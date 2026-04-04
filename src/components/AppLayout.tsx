@@ -10,6 +10,8 @@ import EZBidLogo from '@/components/EZBidLogo';
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, loading, signOut } = useAuth();
   const { profile } = useCompanyProfile();
+  const { data: adminData } = useAdminCheck();
+  const isAdmin = !!adminData?.is_admin;
   const navigate = useNavigate();
   const location = useLocation();
 
