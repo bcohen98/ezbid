@@ -1,22 +1,24 @@
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { formatPhone } from '@/lib/formatPhone';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Loader2 } from 'lucide-react';
-import type { Database } from '@/integrations/supabase/types';
 
-type Proposal = Database['public']['Tables']['proposals']['Row'];
-type LineItem = Database['public']['Tables']['proposal_line_items']['Row'];
-type CompanyProfile = Database['public']['Tables']['company_profiles']['Row'];
+interface ProposalData {
+  proposal: any;
+  line_items: any[];
+  company_profile: any;
+  exhibits: any[];
+}
 
 export default function ProposalSign() {
   const { id } = useParams();
-  const [proposal, setProposal] = useState<Proposal | null>(null);
-  const [lineItems, setLineItems] = useState<LineItem[]>([]);
-  const [profile, setProfile] = useState<CompanyProfile | null>(null);
-  const [exhibits, setExhibits] = useState<any[]>([]);
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get('token');
+
+  const [data, setData] = useState<ProposalData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [signing, setSigning] = useState(false);
@@ -26,48 +28,41 @@ export default function ProposalSign() {
   const [hasSignature, setHasSignature] = useState(false);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || !token) {
+      setError('Invalid signing link');
+      setLoading(false);
+      return;
+    }
     (async () => {
       setLoading(true);
-      const { data: p, error: pErr } = await supabase
-        .from('proposals')
-        .select('*')
-        .eq('id', id)
-        .single();
-      if (pErr || !p) { setError('Proposal not found'); setLoading(false); return; }
+      try {
+        const { data: result, error: rpcErr } = await supabase.rpc('get_proposal_for_signing', {
+          p_proposal_id: id,
+          p_signing_token: token,
+        });
 
-      if (p.status === 'signed' || p.client_signature_url) {
-        setProposal(p);
-        setSigned(true);
-        setLoading(false);
-        return;
+        if (rpcErr || !result) {
+          setError('Proposal not found or invalid link');
+          setLoading(false);
+          return;
+        }
+
+        const parsed = typeof result === 'string' ? JSON.parse(result) : result;
+        
+        if (parsed.proposal.status === 'signed' || parsed.proposal.client_signature_url) {
+          setData(parsed);
+          setSigned(true);
+          setLoading(false);
+          return;
+        }
+
+        setData(parsed);
+      } catch {
+        setError('Failed to load proposal');
       }
-
-      const { data: items } = await supabase
-        .from('proposal_line_items')
-        .select('*')
-        .eq('proposal_id', id)
-        .order('sort_order');
-
-      const { data: prof } = await supabase
-        .from('company_profiles')
-        .select('*')
-        .eq('user_id', p.user_id)
-        .single();
-
-      const { data: exhibitData } = await supabase
-        .from('proposal_exhibits')
-        .select('*')
-        .eq('proposal_id', id)
-        .order('sort_order');
-
-      setProposal(p);
-      setLineItems(items || []);
-      setProfile(prof || null);
-      setExhibits(exhibitData || []);
       setLoading(false);
     })();
-  }, [id]);
+  }, [id, token]);
 
   // Canvas drawing
   useEffect(() => {
@@ -141,28 +136,22 @@ export default function ProposalSign() {
   };
 
   const handleSign = async () => {
-    if (!canvasRef.current || !proposal) return;
+    if (!canvasRef.current || !data?.proposal || !token) return;
     setSigning(true);
     try {
       const dataUrl = canvasRef.current.toDataURL('image/png');
-      // Upload signature to storage
-      const blob = await (await fetch(dataUrl)).blob();
-      const fileName = `${proposal.id}-${Date.now()}.png`;
-      const { error: uploadErr } = await supabase.storage
-        .from('signatures')
-        .upload(fileName, blob, { contentType: 'image/png' });
-      if (uploadErr) throw uploadErr;
-
-      const { data: urlData } = supabase.storage
-        .from('signatures')
-        .getPublicUrl(fileName);
-
-      // Call secure signing function
-      const { error: signErr } = await supabase.rpc('sign_proposal', {
-        p_proposal_id: proposal.id,
-        p_signature_url: urlData.publicUrl,
+      
+      // Use edge function for unauthenticated signing
+      const { data: result, error: signErr } = await supabase.functions.invoke('sign-proposal', {
+        body: {
+          proposal_id: data.proposal.id,
+          signing_token: token,
+          signature_data: dataUrl,
+        },
       });
+
       if (signErr) throw signErr;
+      if (result?.error) throw new Error(result.error);
 
       setSigned(true);
     } catch (err: any) {
@@ -180,7 +169,7 @@ export default function ProposalSign() {
     );
   }
 
-  if (error && !proposal) {
+  if (error && !data) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -190,6 +179,11 @@ export default function ProposalSign() {
       </div>
     );
   }
+
+  const proposal = data?.proposal;
+  const lineItems = data?.line_items || [];
+  const profile = data?.company_profile;
+  const exhibits = data?.exhibits || [];
 
   if (signed) {
     return (
@@ -232,12 +226,8 @@ export default function ProposalSign() {
       <div className="max-w-3xl mx-auto px-6 py-8 space-y-8">
         {/* Proposal details card */}
         <div className="bg-background rounded-lg border shadow-sm p-8 space-y-6">
-          {/* Title */}
-          {proposal.title && (
-            <h1 className="text-xl font-semibold">{proposal.title}</h1>
-          )}
+          {proposal.title && <h1 className="text-xl font-semibold">{proposal.title}</h1>}
 
-          {/* Client info */}
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <div className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Prepared for</div>
@@ -251,7 +241,6 @@ export default function ProposalSign() {
             </div>
           </div>
 
-          {/* Job site */}
           {proposal.job_site_street && (
             <div className="text-sm">
               <div className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Job Site</div>
@@ -259,7 +248,6 @@ export default function ProposalSign() {
             </div>
           )}
 
-          {/* Job description */}
           {(proposal.enhanced_job_description || proposal.job_description) && (
             <div>
               <h3 className="text-sm font-semibold mb-1">Job Description</h3>
@@ -267,7 +255,6 @@ export default function ProposalSign() {
             </div>
           )}
 
-          {/* Scope of work */}
           {(proposal.enhanced_scope_of_work || proposal.scope_of_work) && (
             <div>
               <h3 className="text-sm font-semibold mb-1">Scope of Work</h3>
@@ -275,7 +262,6 @@ export default function ProposalSign() {
             </div>
           )}
 
-          {/* Materials */}
           {proposal.materials_included && (
             <div>
               <h3 className="text-sm font-semibold mb-1">Materials Included</h3>
@@ -283,7 +269,6 @@ export default function ProposalSign() {
             </div>
           )}
 
-          {/* Line items */}
           {lineItems.length > 0 && (
             <div>
               <h3 className="text-sm font-semibold mb-2">Pricing</h3>
@@ -298,7 +283,7 @@ export default function ProposalSign() {
                   </tr>
                 </thead>
                 <tbody>
-                  {lineItems.map((item) => (
+                  {lineItems.map((item: any) => (
                     <tr key={item.id} className="border-b">
                       <td className="py-2">{item.description}</td>
                       <td className="text-right py-2">{item.quantity}</td>
@@ -325,7 +310,6 @@ export default function ProposalSign() {
             </div>
           )}
 
-          {/* Warranty */}
           {proposal.warranty_terms && (
             <div>
               <h3 className="text-sm font-semibold mb-1">Warranty</h3>
@@ -333,7 +317,6 @@ export default function ProposalSign() {
             </div>
           )}
 
-          {/* Payment terms */}
           {proposal.payment_terms && (
             <div>
               <h3 className="text-sm font-semibold mb-1">Payment Terms</h3>
@@ -344,7 +327,6 @@ export default function ProposalSign() {
             </div>
           )}
 
-          {/* Disclosures */}
           {proposal.disclosures && (
             <div>
               <h3 className="text-sm font-semibold mb-1">Disclosures</h3>
