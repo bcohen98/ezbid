@@ -22,6 +22,7 @@ export default function ProposalDetail() {
   const { lineItems } = useProposalLineItems(id);
   const { createProposal, updateProposal } = useProposals();
   const { profile } = useCompanyProfile();
+  const { exhibits, isAdding, addExhibit, updateCaption, removeExhibit } = useProposalExhibits(id);
   const [editClientOpen, setEditClientOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
 
