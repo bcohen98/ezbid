@@ -148,7 +148,7 @@ export default function LandingPage() {
           <h2 className="text-2xl md:text-3xl font-bold text-center">Simple pricing</h2>
           <p className="mt-2 text-center text-muted-foreground">Start free, upgrade when you're ready</p>
 
-          <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+          <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
             {/* Free */}
             <div className="rounded-lg border bg-card p-6">
               <h3 className="text-lg font-semibold">Free Trial</h3>
@@ -167,16 +167,37 @@ export default function LandingPage() {
               </Link>
             </div>
 
-            {/* Pro */}
+            {/* Pro Monthly */}
             <div className="rounded-lg border-2 border-foreground bg-card p-6 relative">
               <span className="absolute -top-3 left-4 bg-foreground text-background text-xs font-medium px-2.5 py-0.5 rounded-full">
                 Most popular
               </span>
-              <h3 className="text-lg font-semibold">Pro</h3>
+              <h3 className="text-lg font-semibold">Pro Monthly</h3>
               <p className="mt-1 text-3xl font-bold">$39<span className="text-sm font-normal text-muted-foreground">/mo</span></p>
               <p className="text-xs text-muted-foreground">Unlimited proposals</p>
               <ul className="mt-5 space-y-2">
                 {["Unlimited proposals", "All templates", "AI-enhanced descriptions", "PDF export", "Email delivery", "E-signatures", "Priority support"].map((f) => (
+                  <li key={f} className="flex items-start gap-2 text-sm">
+                    <CheckCircle className="h-4 w-4 text-foreground shrink-0 mt-0.5" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Link to="/auth" className="block mt-6">
+                <Button className="w-full">Start free trial</Button>
+              </Link>
+            </div>
+
+            {/* Pro Annual */}
+            <div className="rounded-lg border bg-card p-6 relative">
+              <span className="absolute -top-3 left-4 bg-green-600 text-white text-xs font-medium px-2.5 py-0.5 rounded-full">
+                Save 15%
+              </span>
+              <h3 className="text-lg font-semibold">Pro Annual</h3>
+              <p className="mt-1 text-3xl font-bold">$399<span className="text-sm font-normal text-muted-foreground">/yr</span></p>
+              <p className="text-xs text-muted-foreground">~$33/mo · Unlimited proposals</p>
+              <ul className="mt-5 space-y-2">
+                {["Everything in Pro Monthly", "2 months free", "Locked-in pricing", "Priority support"].map((f) => (
                   <li key={f} className="flex items-start gap-2 text-sm">
                     <CheckCircle className="h-4 w-4 text-foreground shrink-0 mt-0.5" />
                     {f}
