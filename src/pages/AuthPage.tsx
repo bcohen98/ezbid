@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import EZBidLogo from '@/components/EZBidLogo';
-import tradePattern from '@/assets/trade-tools-pattern.png';
+import heroBg from '@/assets/hero-bg.jpg';
 
 export default function AuthPage() {
   const [isSignUp, setIsSignUp] = useState(false);
