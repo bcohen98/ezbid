@@ -9,7 +9,7 @@ const corsHeaders = {
 
 const PRICES: Record<string, string> = {
   monthly: "price_1TIMiWFZyh1CtRKqejBgLSCh",
-  annual: "price_1TIdLuFZyh1CtRKqypjIkb0C",
+  annual: "price_1TIdopFZyh1CtRKqVRwwRqZJ",
 };
 
 serve(async (req) => {
