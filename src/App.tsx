@@ -47,7 +47,7 @@ const App = () => (
             <Route path="/tutorial" element={<Tutorial />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
-          <HelpChatWidget />
+          <HelpChatWidgetWrapper />
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>
