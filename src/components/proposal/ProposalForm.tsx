@@ -363,7 +363,7 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
         </CardContent>
       </Card>
       {/* AI Polish - floating button */}
-      <div className="fixed top-14 right-6 z-50">
+      <div className="fixed top-4 right-6 z-50">
         <Button type="button" variant="default" size="sm" onClick={handlePolish} disabled={isPolishing} className="gap-2 shadow-lg">
           {isPolishing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
           {isPolishing ? 'Polishing...' : 'Polish with AI'}
