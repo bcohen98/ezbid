@@ -66,9 +66,10 @@ serve(async (req) => {
       .upload(fileName, bytes, { contentType: "image/png" });
     if (uploadErr) throw uploadErr;
 
-    const { data: urlData } = supabase.storage
+    const { data: urlData, error: urlErr } = await supabase.storage
       .from("signatures")
-      .getPublicUrl(fileName);
+      .createSignedUrl(fileName, 60 * 60 * 24 * 365 * 10); // 10 year signed URL
+    if (urlErr) throw urlErr;
 
     // Update proposal via direct update (service role bypasses RLS)
     const { error: updateErr } = await supabase
