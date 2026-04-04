@@ -4,6 +4,7 @@ import { useProposals } from '@/hooks/useProposals';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import AppLayout from '@/components/AppLayout';
+import SubscriptionCard from '@/components/SubscriptionCard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -142,16 +143,7 @@ export default function Dashboard() {
               )}
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Subscription</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Badge variant={isActive ? 'default' : 'secondary'}>
-                {isActive ? 'Active — $39/mo' : 'Free tier'}
-              </Badge>
-            </CardContent>
-          </Card>
+          <SubscriptionCard subscription={subscription} isActive={isActive} />
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Profile</CardTitle>
