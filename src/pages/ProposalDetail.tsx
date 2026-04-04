@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useProposal, useProposalLineItems, useProposals } from '@/hooks/useProposals';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
+import { useProposalExhibits } from '@/hooks/useProposalExhibits';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +11,7 @@ import { ArrowLeft, Eye, Copy, Send, Pencil, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/formatCurrency';
 import EditClientDialog from '@/components/EditClientDialog';
+import ExhibitsUpload from '@/components/proposal/ExhibitsUpload';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function ProposalDetail() {
@@ -20,6 +22,7 @@ export default function ProposalDetail() {
   const { lineItems } = useProposalLineItems(id);
   const { createProposal, updateProposal } = useProposals();
   const { profile } = useCompanyProfile();
+  const { exhibits, isAdding, addExhibit, updateCaption, removeExhibit } = useProposalExhibits(id);
   const [editClientOpen, setEditClientOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
 
@@ -146,6 +149,17 @@ export default function ProposalDetail() {
             )}
           </CardContent>
         </Card>
+
+        {/* Exhibits */}
+        <div className="mt-6">
+          <ExhibitsUpload
+            exhibits={exhibits}
+            isAdding={isAdding}
+            onAdd={addExhibit}
+            onUpdateCaption={updateCaption}
+            onRemove={removeExhibit}
+          />
+        </div>
         {proposal && (
           <EditClientDialog
             open={editClientOpen}
