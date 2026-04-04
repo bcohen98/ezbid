@@ -150,7 +150,7 @@ export default function ProposalSign() {
       });
 
       if (signErr) {
-        throw new Error(signErr.message || 'Failed to sign proposal');
+        throw new Error(signErr.context?.error || signErr.message || 'Failed to sign proposal');
       }
       if (result?.error) throw new Error(result.error);
 

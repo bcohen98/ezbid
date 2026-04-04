@@ -57,15 +57,29 @@ serve(async (req) => {
       });
     }
 
-    const { error: signError } = await supabase.rpc("sign_proposal", {
-      p_proposal_id: proposal_id,
-      p_signature_url: signature_data,
-      p_signing_token: signing_token,
-    });
+    const { data: signedProposal, error: signError } = await supabase
+      .from("proposals")
+      .update({
+        client_signature_url: signature_data,
+        client_signed_at: new Date().toISOString(),
+        status: "signed",
+      })
+      .eq("id", proposal_id)
+      .eq("signing_token", signing_token)
+      .eq("status", "sent")
+      .select("id")
+      .maybeSingle();
 
     if (signError) {
-      console.error("[sign-proposal] RPC error:", signError);
+      console.error("[sign-proposal] Update error:", signError);
       throw new Error(`Proposal signing failed: ${signError.message}`);
+    }
+
+    if (!signedProposal) {
+      return new Response(JSON.stringify({ error: "Proposal is no longer available for signing" }), {
+        status: 409,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     return new Response(JSON.stringify({ success: true }), {
