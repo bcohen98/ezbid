@@ -16,6 +16,7 @@ export default function ProposalSign() {
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [profile, setProfile] = useState<CompanyProfile | null>(null);
+  const [exhibits, setExhibits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [signing, setSigning] = useState(false);
