@@ -87,14 +87,15 @@ export default function CountersignBanner({ proposalId, clientName, onSigned }: 
         .upload(fileName, blob, { contentType: 'image/png' });
       if (uploadErr) throw uploadErr;
 
-      const { data: urlData } = supabase.storage
+      const { data: urlData, error: urlErr } = await supabase.storage
         .from('signatures')
-        .getPublicUrl(fileName);
+        .createSignedUrl(fileName, 60 * 60 * 24 * 365 * 10); // 10 year signed URL
+      if (urlErr) throw urlErr;
 
       const { error: updateErr } = await supabase
         .from('proposals')
         .update({
-          contractor_signature_url: urlData.publicUrl,
+          contractor_signature_url: urlData.signedUrl,
           contractor_signed_at: new Date().toISOString(),
         })
         .eq('id', proposalId);

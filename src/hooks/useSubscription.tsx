@@ -29,11 +29,8 @@ export function useSubscription() {
 
   const incrementProposalCount = useMutation({
     mutationFn: async () => {
-      if (!user || !query.data) throw new Error('Not ready');
-      const { error } = await supabase
-        .from('user_subscriptions')
-        .update({ proposals_used: query.data.proposals_used + 1 })
-        .eq('user_id', user.id);
+      if (!user) throw new Error('Not ready');
+      const { error } = await (supabase.rpc as any)('increment_proposals_used', { p_user_id: user.id });
       if (error) throw error;
     },
     onSuccess: () => {
