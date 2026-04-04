@@ -144,16 +144,7 @@ export default function Dashboard() {
               )}
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Subscription</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Badge variant={isActive ? 'default' : 'secondary'}>
-                {isActive ? 'Active — $39/mo' : 'Free tier'}
-              </Badge>
-            </CardContent>
-          </Card>
+          <SubscriptionCard subscription={subscription} isActive={isActive} />
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Profile</CardTitle>
