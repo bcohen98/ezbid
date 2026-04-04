@@ -64,35 +64,15 @@ serve(async (req) => {
     }
 
     const fileName = `signing/${proposal_id}-${Date.now()}.png`;
-    const { error: uploadErr } = await supabase.storage
-      .from("signatures")
-      .upload(fileName, bytes, { contentType: "image/png", upsert: true });
+    const { error: rpcErr } = await supabase.rpc("sign_proposal", {
+      p_proposal_id: proposal_id,
+      p_signature_url: signature_data,
+      p_signing_token: signing_token,
+    });
 
-    if (uploadErr) {
-      console.error("[sign-proposal] Upload error:", uploadErr);
-      throw new Error(`Signature upload failed: ${uploadErr.message}`);
-    }
-
-    const { data: urlData, error: urlErr } = await supabase.storage
-      .from("signatures")
-      .createSignedUrl(fileName, 60 * 60 * 24 * 365 * 10);
-    if (urlErr) throw urlErr;
-
-    // Update proposal (service role bypasses RLS)
-    const { error: updateErr } = await supabase
-      .from("proposals")
-      .update({
-        client_signature_url: urlData.signedUrl,
-        client_signed_at: new Date().toISOString(),
-        status: "signed",
-      })
-      .eq("id", proposal_id)
-      .eq("signing_token", signing_token)
-      .eq("status", "sent");
-
-    if (updateErr) {
-      console.error("[sign-proposal] Update error:", updateErr);
-      throw new Error(`Proposal update failed: ${updateErr.message}`);
+    if (rpcErr) {
+      console.error("[sign-proposal] RPC error:", rpcErr);
+      throw new Error(`Proposal signing failed: ${rpcErr.message}`);
     }
 
     return new Response(JSON.stringify({ success: true }), {
