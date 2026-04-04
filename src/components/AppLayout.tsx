@@ -73,6 +73,14 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             </nav>
           </div>
           <div className="flex items-center gap-2">
+            {isAdmin && (
+              <Link to="/admin">
+                <Button variant="outline" size="sm" className="gap-2 text-sm">
+                  <Shield className="h-4 w-4" />
+                  Admin
+                </Button>
+              </Link>
+            )}
             <Button variant="ghost" size="sm" className="gap-2" onClick={() => signOut()}>
               <LogOut className="h-4 w-4" />
               Log out
