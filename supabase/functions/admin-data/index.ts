@@ -401,3 +401,58 @@ async function getAnalytics(client: ReturnType<typeof createClient>, range: stri
     rangeLabel,
   };
 }
+
+// ── Referrals ─────────────────────────────────────────────
+async function getReferrals(client: ReturnType<typeof createClient>) {
+  const { data: allReferrals } = await client
+    .from("referrals")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  const { data: allCredits } = await client
+    .from("referral_credits")
+    .select("*");
+
+  const { data: profiles } = await client
+    .from("company_profiles")
+    .select("user_id, email");
+
+  const profileMap = new Map((profiles || []).map((p) => [p.user_id, p.email]));
+
+  const referrals = (allReferrals || []).map((r) => ({
+    ...r,
+    referrer_email: profileMap.get(r.referrer_user_id) || "Unknown",
+  }));
+
+  const totalReferrals = referrals.length;
+  const totalConverted = referrals.filter((r) => r.status === "converted").length;
+  const totalCreditsIssued = (allCredits || []).length;
+  const totalCreditsApplied = (allCredits || []).filter((c) => c.applied_at).length;
+
+  // Top referrers
+  const referrerCounts: Record<string, { totalReferrals: number; converted: number; email: string }> = {};
+  for (const r of referrals) {
+    if (!referrerCounts[r.referrer_user_id]) {
+      referrerCounts[r.referrer_user_id] = {
+        totalReferrals: 0,
+        converted: 0,
+        email: r.referrer_email,
+      };
+    }
+    referrerCounts[r.referrer_user_id].totalReferrals++;
+    if (r.status === "converted") referrerCounts[r.referrer_user_id].converted++;
+  }
+
+  const topReferrers = Object.values(referrerCounts)
+    .sort((a, b) => b.converted - a.converted || b.totalReferrals - a.totalReferrals)
+    .slice(0, 10);
+
+  return {
+    referrals,
+    totalReferrals,
+    totalConverted,
+    totalCreditsIssued,
+    totalCreditsApplied,
+    topReferrers,
+  };
+}
