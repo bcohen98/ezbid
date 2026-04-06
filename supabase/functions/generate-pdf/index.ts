@@ -27,6 +27,9 @@ const TRADES: Record<string, { bg: string; label: string }> = {
   pressure_washing:   { bg: '#475569', label: 'Pressure Washing' },
   foundation:         { bg: '#6B7280', label: 'Foundation' },
   flooring:           { bg: '#78350F', label: 'Flooring' },
+  cabinetry:          { bg: '#5D4037', label: 'Cabinetry' },
+  carpentry:          { bg: '#4E342E', label: 'Carpentry' },
+  masonry:            { bg: '#795548', label: 'Masonry' },
   other:              { bg: '#374151', label: '' },
 };
 
