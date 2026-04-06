@@ -44,6 +44,9 @@ export default function Dashboard() {
   const [search, setSearch] = useState('');
 
   const [draftDismissed, setDraftDismissed] = useState(false);
+  const [promoDismissed, setPromoDismissed] = useState(() => {
+    try { return localStorage.getItem('ezbid_referral_promo_dismissed') === 'true'; } catch { return false; }
+  });
   const unsavedDraft = useMemo(() => {
     if (draftDismissed) return null;
     try {
