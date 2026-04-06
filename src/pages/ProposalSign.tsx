@@ -4,7 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { formatPhone } from '@/lib/formatPhone';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Loader2 } from 'lucide-react';
+import { CheckCircle, Download, Loader2 } from 'lucide-react';
+import html2pdf from 'html2pdf.js';
 
 interface ProposalData {
   proposal: any;
@@ -186,19 +187,209 @@ export default function ProposalSign() {
   const profile = data?.company_profile;
   const exhibits = data?.exhibits || [];
 
+  const handleDownloadPdf = async () => {
+    const el = document.getElementById('signed-proposal-content');
+    if (!el) return;
+    const proposalNum = String(proposal?.proposal_number || 0).padStart(4, '0');
+    await html2pdf().set({
+      margin: [0.5, 0.5, 0.5, 0.5],
+      filename: `Proposal-PRO-${proposalNum}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
+    }).from(el).save();
+  };
+
   if (signed) {
+    const isFullyExecuted = !!proposal?.contractor_signature_url;
+
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto px-6">
-          <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="h-8 w-8 text-success" />
+      <div className="min-h-screen bg-muted/30">
+        {/* Success banner */}
+        <div className="bg-background border-b">
+          <div className="max-w-3xl mx-auto px-6 py-4">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold">
+                  {isFullyExecuted ? 'Proposal Fully Executed' : 'Proposal Signed'}
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  {isFullyExecuted
+                    ? 'Both parties have signed. This proposal is now a binding agreement.'
+                    : `Thank you for signing the proposal from ${profile?.company_name || 'your contractor'}.`}
+                </p>
+              </div>
+            </div>
+            <Button onClick={handleDownloadPdf} variant="outline" size="sm" className="gap-2 mt-2">
+              <Download className="h-4 w-4" />
+              Download as PDF
+            </Button>
           </div>
-          <h1 className="text-2xl font-semibold mb-2">Proposal Signed!</h1>
-          <p className="text-muted-foreground mb-4">
-            Thank you for signing the proposal from <strong>{profile?.company_name || 'your contractor'}</strong>.
-            A copy has been recorded and the contractor has been notified.
-          </p>
-          <p className="text-sm text-muted-foreground">You can close this page.</p>
+        </div>
+
+        {/* Full proposal content */}
+        <div id="signed-proposal-content" className="max-w-3xl mx-auto px-6 py-8 space-y-8">
+          <div className="bg-background rounded-lg border shadow-sm p-8 space-y-6">
+            {/* Header with company info */}
+            {profile?.logo_url && (
+              <img src={profile.logo_url} alt={profile.company_name || ''} className="max-h-12 max-w-[180px]" />
+            )}
+            {proposal.title && <h1 className="text-xl font-semibold">{proposal.title}</h1>}
+
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <div className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Prepared for</div>
+                <div className="font-medium">{proposal.client_name}</div>
+                {proposal.client_email && <div className="text-muted-foreground">{proposal.client_email}</div>}
+                {proposal.client_phone && <div className="text-muted-foreground">{formatPhone(proposal.client_phone)}</div>}
+              </div>
+              <div className="text-right">
+                <div className="text-muted-foreground text-xs uppercase tracking-wider mb-1">From</div>
+                <div className="font-medium">{profile?.company_name}</div>
+                {profile?.email && <div className="text-muted-foreground">{profile.email}</div>}
+                {profile?.phone && <div className="text-muted-foreground">{formatPhone(profile.phone)}</div>}
+                <div className="text-muted-foreground text-xs mt-2">PRO-{String(proposal.proposal_number).padStart(4, '0')}</div>
+                <div className="text-muted-foreground text-xs">Date: {proposal.proposal_date}</div>
+              </div>
+            </div>
+
+            {proposal.job_site_street && (
+              <div className="text-sm">
+                <div className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Job Site</div>
+                <div>{[proposal.job_site_street, proposal.job_site_city, proposal.job_site_state, proposal.job_site_zip].filter(Boolean).join(', ')}</div>
+              </div>
+            )}
+
+            {(proposal.enhanced_job_description || proposal.job_description) && (
+              <div>
+                <h3 className="text-sm font-semibold mb-1">Job Description</h3>
+                <p className="text-sm whitespace-pre-wrap text-muted-foreground">{proposal.enhanced_job_description || proposal.job_description}</p>
+              </div>
+            )}
+
+            {(proposal.enhanced_scope_of_work || proposal.scope_of_work) && (
+              <div>
+                <h3 className="text-sm font-semibold mb-1">Scope of Work</h3>
+                <p className="text-sm whitespace-pre-wrap text-muted-foreground">{proposal.enhanced_scope_of_work || proposal.scope_of_work}</p>
+              </div>
+            )}
+
+            {proposal.materials_included && (
+              <div>
+                <h3 className="text-sm font-semibold mb-1">Materials Included</h3>
+                <p className="text-sm whitespace-pre-wrap text-muted-foreground">{proposal.materials_included}</p>
+              </div>
+            )}
+
+            {lineItems.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold mb-2">Pricing</h3>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-xs text-muted-foreground">
+                      <th className="text-left py-2">Description</th>
+                      <th className="text-right py-2 w-16">Qty</th>
+                      <th className="text-right py-2 w-16">Unit</th>
+                      <th className="text-right py-2 w-24">Unit Price</th>
+                      <th className="text-right py-2 w-24">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lineItems.map((item: any) => (
+                      <tr key={item.id} className="border-b">
+                        <td className="py-2">{item.description}</td>
+                        <td className="text-right py-2">{item.quantity}</td>
+                        <td className="text-right py-2">{item.unit}</td>
+                        <td className="text-right py-2">${formatCurrency(item.unit_price)}</td>
+                        <td className="text-right py-2">${formatCurrency(item.subtotal)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="border-t pt-2 mt-0 space-y-1 text-sm">
+                  <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>${formatCurrency(proposal.subtotal)}</span></div>
+                  {Number(proposal.tax_rate) > 0 && (
+                    <div className="flex justify-between"><span className="text-muted-foreground">Tax ({proposal.tax_rate}%)</span><span>${formatCurrency(proposal.tax_amount)}</span></div>
+                  )}
+                  <div className="flex justify-between font-semibold text-base border-t pt-1"><span>Total</span><span>${formatCurrency(proposal.total)}</span></div>
+                  {Number(proposal.deposit_amount) > 0 && (
+                    <>
+                      <div className="flex justify-between text-muted-foreground"><span>Deposit required</span><span>${formatCurrency(proposal.deposit_amount)}</span></div>
+                      <div className="flex justify-between font-medium"><span>Balance due</span><span>${formatCurrency(proposal.balance_due)}</span></div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {proposal.warranty_terms && (
+              <div>
+                <h3 className="text-sm font-semibold mb-1">Warranty</h3>
+                <p className="text-sm whitespace-pre-wrap text-muted-foreground">{proposal.warranty_terms}</p>
+              </div>
+            )}
+
+            {proposal.payment_terms && (
+              <div>
+                <h3 className="text-sm font-semibold mb-1">Payment Terms</h3>
+                <p className="text-sm text-muted-foreground">{proposal.payment_terms}</p>
+              </div>
+            )}
+
+            {proposal.disclosures && (
+              <div>
+                <h3 className="text-sm font-semibold mb-1">Disclosures</h3>
+                <p className="text-sm whitespace-pre-wrap text-muted-foreground">{proposal.disclosures}</p>
+              </div>
+            )}
+
+            {/* Signatures section */}
+            <div className="border-t pt-6 mt-6">
+              <h3 className="text-sm font-semibold mb-4">Signatures</h3>
+              <div className="grid grid-cols-2 gap-8">
+                {proposal.client_signature_url && (
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-1">Client Signature</div>
+                    <img src={proposal.client_signature_url} alt="Client signature" className="max-h-16 border-b pb-1" />
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {proposal.client_name} — {proposal.client_signed_at ? new Date(proposal.client_signed_at).toLocaleDateString() : ''}
+                    </div>
+                  </div>
+                )}
+                {proposal.contractor_signature_url && (
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-1">Contractor Signature</div>
+                    <img src={proposal.contractor_signature_url} alt="Contractor signature" className="max-h-16 border-b pb-1" />
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {profile?.owner_name || profile?.company_name} — {proposal.contractor_signed_at ? new Date(proposal.contractor_signed_at).toLocaleDateString() : ''}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Exhibits */}
+          {exhibits.length > 0 && (
+            <div className="bg-background rounded-lg border shadow-sm p-8 space-y-4">
+              <h3 className="text-sm font-semibold">Exhibits & Attachments</h3>
+              <div className="grid grid-cols-2 gap-4">
+                {exhibits.map((exhibit: any, i: number) => (
+                  <div key={exhibit.id} className="space-y-1">
+                    <img src={exhibit.file_url} alt={exhibit.caption || `Exhibit ${i + 1}`} className="w-full rounded border object-contain max-h-64" />
+                    <p className="text-xs text-muted-foreground text-center italic">{exhibit.caption || `Exhibit ${i + 1}`}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="text-center text-xs text-muted-foreground pb-8">
+            Powered by <span className="font-medium">EZ-Bid</span>
+          </div>
         </div>
       </div>
     );
