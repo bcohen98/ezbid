@@ -12,3 +12,5 @@ Free tier: 3 proposals, then $29/mo Stripe subscription.
 - [Proposal flow](mem://features/proposals) — Template selection → form → AI enhance → preview → send
 - [Upcoming phases](mem://features/roadmap) — AI enhancement, PDF gen, email (Resend), e-signature, Stripe
 - [Referral program](mem://features/referrals) — Codes, invite emails, Stripe credit on conversion, admin view
+- [Lifecycle emails](mem://features/lifecycle-emails) — 4 plain-text emails from Brett via Resend: welcome, day1 nudge, free limit, day10 inactive
+- [Admin panel](mem://features/admin) — Admin dashboard with user/proposal/revenue analytics
