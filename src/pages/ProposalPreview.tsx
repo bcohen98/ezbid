@@ -364,6 +364,12 @@ export default function ProposalPreview() {
 
           {/* Side panel */}
           <div className="space-y-4">
+            {/* Template Switcher */}
+            <TemplateSwitcher
+              current={activeTemplate}
+              accentColor={tradeStyle?.accentColor || '#374151'}
+              onSelect={handleTemplateChange}
+            />
             {/* Countersign prompt */}
             {proposal.status === 'signed' && proposal.client_signature_url && !(proposal as any).contractor_signature_url && (
               <CountersignBanner
