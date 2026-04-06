@@ -682,6 +682,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_proposals_used: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
       sign_proposal:
         | {
             Args: { p_proposal_id: string; p_signature_url: string }
