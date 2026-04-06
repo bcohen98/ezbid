@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BarChart3, Users, FileText, DollarSign, ChevronLeft, Activity } from 'lucide-react';
+import { BarChart3, Users, FileText, DollarSign, ChevronLeft, Activity, Gift } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -10,6 +10,7 @@ const navItems = [
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/proposals', label: 'Proposals', icon: FileText },
   { href: '/admin/revenue', label: 'Revenue', icon: DollarSign },
+  { href: '/admin/referrals', label: 'Referrals', icon: Gift },
 ];
 
 export default function AdminSidebar() {

@@ -18,6 +18,8 @@ import AdminUsers from "./pages/admin/AdminUsers";
 import AdminProposals from "./pages/admin/AdminProposals";
 import AdminRevenue from "./pages/admin/AdminRevenue";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
+import AdminReferrals from "./pages/admin/AdminReferrals";
+import ReferAndEarn from "./pages/ReferAndEarn";
 import Tutorial from "./pages/Tutorial";
 import NotFound from "./pages/NotFound";
 import HelpChatWidget from "./components/HelpChatWidget";
@@ -60,6 +62,8 @@ const App = () => (
             <Route path="/admin/proposals" element={<AdminProposals />} />
             <Route path="/admin/revenue" element={<AdminRevenue />} />
             <Route path="/admin/analytics" element={<AdminAnalytics />} />
+            <Route path="/admin/referrals" element={<AdminReferrals />} />
+            <Route path="/referrals" element={<ReferAndEarn />} />
             <Route path="/tutorial" element={<Tutorial />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
