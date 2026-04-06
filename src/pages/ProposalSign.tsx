@@ -310,6 +310,7 @@ export default function ProposalSign() {
                     ))}
                   </tbody>
                 </table>
+                </div>
                 <div className="border-t pt-2 mt-0 space-y-1 text-sm">
                   <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>${formatCurrency(proposal.subtotal)}</span></div>
                   {Number(proposal.tax_rate) > 0 && (
