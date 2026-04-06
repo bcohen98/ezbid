@@ -77,6 +77,27 @@ const TRADE_STYLES: Record<string, TradeStyle> = {
     accentColor: '#78350F',
     iconSvg: '<rect x="3" y="3" width="7" height="7" stroke="currentColor" stroke-width="2" fill="none"/><rect x="14" y="3" width="7" height="7" stroke="currentColor" stroke-width="2" fill="none"/><rect x="3" y="14" width="7" height="7" stroke="currentColor" stroke-width="2" fill="none"/><rect x="14" y="14" width="7" height="7" stroke="currentColor" stroke-width="2" fill="none"/>',
   },
+  cabinetry: {
+    label: 'Cabinetry',
+    headerBg: '#5D4037',
+    headerText: '#FFFFFF',
+    accentColor: '#5D4037',
+    iconSvg: '<rect x="4" y="3" width="16" height="18" rx="1" stroke="currentColor" stroke-width="2" fill="none"/><path d="M4 12h16" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="7.5" r="1" fill="currentColor"/><circle cx="9" cy="16.5" r="1" fill="currentColor"/>',
+  },
+  carpentry: {
+    label: 'Carpentry',
+    headerBg: '#4E342E',
+    headerText: '#FFFFFF',
+    accentColor: '#4E342E',
+    iconSvg: '<path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.8-3.8a3 3 0 00-4.2-4.2L14.7 3" stroke="currentColor" stroke-width="2" fill="none"/><path d="M15.7 7.3L3 20l4 0 0-4L20.3 2.7" stroke="currentColor" stroke-width="2" fill="none"/>',
+  },
+  masonry: {
+    label: 'Masonry',
+    headerBg: '#795548',
+    headerText: '#FFFFFF',
+    accentColor: '#795548',
+    iconSvg: '<rect x="2" y="4" width="9" height="5" stroke="currentColor" stroke-width="2" fill="none"/><rect x="13" y="4" width="9" height="5" stroke="currentColor" stroke-width="2" fill="none"/><rect x="6" y="11" width="9" height="5" stroke="currentColor" stroke-width="2" fill="none"/><rect x="2" y="18" width="9" height="5" stroke="currentColor" stroke-width="2" fill="none"/>',
+  },
   other: {
     label: 'Other',
     headerBg: '#374151',

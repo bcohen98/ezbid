@@ -17,6 +17,9 @@ const tradeSections: Record<string, string> = {
   pressure_washing: "scope of work, surfaces to be cleaned, cleaning agents and equipment, project timeline, payment terms",
   foundation: "scope of work, site preparation details, materials and structural specifications, excavation and concrete details, waterproofing notes, project timeline, warranty, permit notes, payment terms",
   flooring: "scope of work, flooring material and finish details, subfloor preparation notes, removal and disposal of existing flooring, installation method, project timeline, warranty, payment terms",
+  cabinetry: "scope of work, cabinet specifications and dimensions, hardware and finish details, countertop materials, removal of existing cabinetry, installation method, project timeline, warranty, payment terms",
+  carpentry: "scope of work, lumber and materials list, joinery and structural details, finish specifications, project timeline, warranty, payment terms",
+  masonry: "scope of work, brick or stone specifications, mortar and structural details, foundation preparation, scaffolding notes, project timeline, warranty, payment terms",
   other: "scope of work, materials and labor breakdown, project timeline, payment terms",
 };
 

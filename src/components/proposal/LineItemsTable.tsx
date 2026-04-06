@@ -84,6 +84,26 @@ const tradeDefaults: Record<TradeType, { description: string; unit: string }[]> 
     { description: 'Labor', unit: 'hr' },
     { description: 'Removal and Disposal', unit: 'ea' },
   ],
+  cabinetry: [
+    { description: 'Cabinets', unit: 'ea' },
+    { description: 'Hardware', unit: 'ea' },
+    { description: 'Countertop', unit: 'lf' },
+    { description: 'Labor', unit: 'hr' },
+    { description: 'Removal and Disposal', unit: 'ea' },
+  ],
+  carpentry: [
+    { description: 'Lumber', unit: 'bf' },
+    { description: 'Fasteners and Hardware', unit: 'ea' },
+    { description: 'Finish Materials', unit: 'ea' },
+    { description: 'Labor', unit: 'hr' },
+  ],
+  masonry: [
+    { description: 'Brick / Block', unit: 'ea' },
+    { description: 'Mortar', unit: 'bag' },
+    { description: 'Rebar', unit: 'lf' },
+    { description: 'Labor', unit: 'hr' },
+    { description: 'Scaffolding', unit: 'ea' },
+  ],
   other: [],
 };
 
