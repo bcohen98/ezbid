@@ -9,6 +9,8 @@ import { ArrowLeft, Send, Mail, Sparkles, Loader2, Download, FileText, Undo2 } f
 import CountersignBanner from '@/components/proposal/CountersignBanner';
 import ExhibitsUpload from '@/components/proposal/ExhibitsUpload';
 import { useProposalExhibits } from '@/hooks/useProposalExhibits';
+import TemplateSwitcher, { type TemplateId } from '@/components/proposal/TemplateSwitcher';
+import { getTradeStyle } from '@/components/proposal/tradeStyles';
 import { useState, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -35,6 +37,25 @@ export default function ProposalPreview() {
   const [isSendingClient, setIsSendingClient] = useState(false);
   const [isUndoing, setIsUndoing] = useState(false);
   const lastSnapshot = useRef<{ proposal: any; lineItems: any[] } | null>(null);
+
+  // Template switching
+  const getDefaultTemplate = (): TemplateId => {
+    const saved = localStorage.getItem('ezbid_default_template');
+    if (saved && ['modern', 'classic', 'bold', 'minimal'].includes(saved)) return saved as TemplateId;
+    return ((proposal?.template as TemplateId) || 'modern');
+  };
+  const [activeTemplate, setActiveTemplate] = useState<TemplateId>(getDefaultTemplate);
+
+  const handleTemplateChange = async (t: TemplateId) => {
+    setActiveTemplate(t);
+    localStorage.setItem('ezbid_default_template', t);
+    if (proposal) {
+      await updateProposal({ id: proposal.id, template: t as any });
+    }
+  };
+
+  const tradeStyle = proposal ? getTradeStyle((proposal as any).trade_type || profile?.trade_type) : null;
+
 
   if (isLoading) {
     return <AppLayout><div className="container py-8"><p className="text-sm text-muted-foreground">Loading preview...</p></div></AppLayout>;
@@ -338,11 +359,17 @@ export default function ProposalPreview() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
           {/* Preview */}
           <div className="border rounded-lg overflow-x-auto bg-background shadow-sm">
-            <ProposalDocument proposal={proposal} lineItems={lineItems} profile={profile} exhibits={exhibits} onFieldEdit={isSigned ? undefined : handleFieldEdit} onLineItemEdit={isSigned ? undefined : handleLineItemEdit} onTotalsEdit={isSigned ? undefined : handleTotalsEdit} />
+            <ProposalDocument proposal={proposal} lineItems={lineItems} profile={profile} exhibits={exhibits} template={activeTemplate} onFieldEdit={isSigned ? undefined : handleFieldEdit} onLineItemEdit={isSigned ? undefined : handleLineItemEdit} onTotalsEdit={isSigned ? undefined : handleTotalsEdit} />
           </div>
 
           {/* Side panel */}
           <div className="space-y-4">
+            {/* Template Switcher */}
+            <TemplateSwitcher
+              current={activeTemplate}
+              accentColor={tradeStyle?.accentColor || '#374151'}
+              onSelect={handleTemplateChange}
+            />
             {/* Countersign prompt */}
             {proposal.status === 'signed' && proposal.client_signature_url && !(proposal as any).contractor_signature_url && (
               <CountersignBanner
