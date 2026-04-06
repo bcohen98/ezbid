@@ -39,8 +39,9 @@ export interface ProposalFormData {
   valid_until: string;
   delivery_method: 'email_self' | 'email_client';
 }
+
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Sparkles, Loader2, X, Check } from 'lucide-react';
 import { useProposals } from '@/hooks/useProposals';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
@@ -54,6 +55,15 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+
+interface AiSuggestion {
+  description: string;
+  quantity: number;
+  unit: string;
+  unit_price: number;
+  reason: string;
+  accepted: boolean;
+}
 
 export default function NewProposal() {
   const navigate = useNavigate();
@@ -75,13 +85,20 @@ export default function NewProposal() {
   // Line items
   const [items, setItems] = useState<LineItem[]>(() => makeDefaults(defaultTrade));
 
-  // Tax & Discount
+  // Tax, Discount, Deposit
   const [taxEnabled, setTaxEnabled] = useState(false);
   const [taxRate, setTaxRate] = useState(0);
   const [discountEnabled, setDiscountEnabled] = useState(false);
   const [discountMode, setDiscountMode] = useState<'flat' | 'percentage'>('flat');
   const [discountValue, setDiscountValue] = useState(0);
+  const [depositEnabled, setDepositEnabled] = useState(false);
+  const [depositMode, setDepositMode] = useState<'flat' | 'percentage'>('percentage');
+  const [depositValue, setDepositValue] = useState(50);
 
+  // AI suggestion review step
+  const [suggestions, setSuggestions] = useState<AiSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isSuggesting, setIsSuggesting] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
   const subtotal = useMemo(() => items.reduce((s, i) => s + i.quantity * i.unit_price, 0), [items]);
@@ -90,6 +107,10 @@ export default function NewProposal() {
     ? discountMode === 'percentage' ? subtotal * (discountValue / 100) : discountValue
     : 0;
   const grandTotal = subtotal + taxAmount - discountAmount;
+  const depositAmount = depositEnabled
+    ? depositMode === 'percentage' ? grandTotal * (depositValue / 100) : depositValue
+    : 0;
+  const balanceDue = grandTotal - depositAmount;
 
   const showUpgrade = !subLoading && !canCreateProposal;
 
@@ -104,34 +125,111 @@ export default function NewProposal() {
     );
   }
 
-  const handleBuildProposal = async () => {
+  const validate = () => {
     if (!clientName.trim()) {
       toast({ title: 'Client name is required', variant: 'destructive' });
-      return;
+      return false;
     }
     if (!jobDescription.trim()) {
       toast({ title: 'Please describe the job', variant: 'destructive' });
-      return;
+      return false;
     }
     if (items.length === 0 || items.every(i => !i.description.trim())) {
       toast({ title: 'Add at least one line item', variant: 'destructive' });
-      return;
+      return false;
     }
+    return true;
+  };
 
+  // Step 1: Get AI suggestions before generating proposal
+  const handleBuildClick = async () => {
+    if (!validate()) return;
+
+    setIsSuggesting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('suggest-line-items', {
+        body: {
+          trade,
+          job_description: jobDescription,
+          existing_items: items.filter(i => i.description.trim()),
+        },
+      });
+
+      if (error) throw error;
+
+      const sug = data?.suggestions || [];
+      if (sug.length > 0) {
+        setSuggestions(sug.map((s: any) => ({ ...s, accepted: true })));
+        setShowSuggestions(true);
+      } else {
+        // No suggestions — go straight to generate
+        await generateProposal(items);
+      }
+    } catch (err: any) {
+      console.error('Suggestion error:', err);
+      // On error, skip suggestions and generate directly
+      await generateProposal(items);
+    } finally {
+      setIsSuggesting(false);
+    }
+  };
+
+  // Step 2: Accept suggestions and generate
+  const handleAcceptSuggestions = async () => {
+    const accepted = suggestions.filter(s => s.accepted);
+    let idCounter = Date.now();
+    const newItems: LineItem[] = accepted.map(s => ({
+      id: `ai_${idCounter++}`,
+      description: s.description,
+      quantity: s.quantity,
+      unit: s.unit,
+      unit_price: s.unit_price,
+      aiSuggested: true,
+    }));
+
+    const allItems = [...items, ...newItems];
+    setItems(allItems);
+    setShowSuggestions(false);
+    setSuggestions([]);
+    await generateProposal(allItems);
+  };
+
+  const handleSkipSuggestions = async () => {
+    setShowSuggestions(false);
+    setSuggestions([]);
+    await generateProposal(items);
+  };
+
+  const generateProposal = async (finalItems: LineItem[]) => {
     setIsGenerating(true);
     try {
-      // 1. Call AI to generate proposal content
+      const finalSubtotal = finalItems.reduce((s, i) => s + i.quantity * i.unit_price, 0);
+      const finalTax = taxEnabled ? finalSubtotal * (taxRate / 100) : 0;
+      const finalDiscount = discountEnabled
+        ? discountMode === 'percentage' ? finalSubtotal * (discountValue / 100) : discountValue
+        : 0;
+      const finalGrandTotal = finalSubtotal + finalTax - finalDiscount;
+      const finalDepositAmount = depositEnabled
+        ? depositMode === 'percentage' ? finalGrandTotal * (depositValue / 100) : depositValue
+        : 0;
+      const finalBalance = finalGrandTotal - finalDepositAmount;
+
       const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-proposal', {
         body: {
           trade,
           client_name: clientName,
           job_address: jobAddress,
           job_description: jobDescription,
-          line_items: items.filter(i => i.description.trim()),
-          subtotal,
-          tax_amount: taxAmount,
-          discount_amount: discountAmount,
-          grand_total: grandTotal,
+          line_items: finalItems.filter(i => i.description.trim()),
+          subtotal: finalSubtotal,
+          tax_amount: finalTax,
+          discount_amount: finalDiscount,
+          grand_total: finalGrandTotal,
+          deposit_amount: finalDepositAmount,
+          deposit_label: depositEnabled
+            ? `${depositMode === 'percentage' ? `${depositValue}%` : `$${depositValue.toFixed(2)}`} due upon signing`
+            : null,
+          balance_due: finalBalance,
           company: profile,
         },
       });
@@ -139,7 +237,6 @@ export default function NewProposal() {
       if (aiError) throw new Error(aiError.message || 'AI generation failed');
       if (aiData?.error) throw new Error(aiData.error);
 
-      // 2. Save proposal to DB
       const proposal = await createProposal({
         template: 'clean' as any,
         client_name: clientName,
@@ -156,14 +253,14 @@ export default function NewProposal() {
         materials_excluded: aiData.materials_excluded || null,
         estimated_start_date: null,
         estimated_duration: aiData.project_timeline || '',
-        subtotal,
+        subtotal: finalSubtotal,
         tax_rate: taxEnabled ? taxRate : 0,
-        tax_amount: taxAmount,
-        total: grandTotal,
-        deposit_mode: 'percentage' as any,
-        deposit_value: 0,
-        deposit_amount: 0,
-        balance_due: grandTotal,
+        tax_amount: finalTax,
+        total: finalGrandTotal,
+        deposit_mode: depositEnabled ? depositMode as any : 'percentage' as any,
+        deposit_value: depositEnabled ? depositValue : 0,
+        deposit_amount: finalDepositAmount,
+        balance_due: finalBalance,
         payment_terms: aiData.payment_terms || '',
         accepted_payment_methods: [],
         warranty_terms: aiData.warranty_terms || '',
@@ -175,8 +272,7 @@ export default function NewProposal() {
         status: 'draft' as any,
       });
 
-      // 3. Save line items
-      const validItems = items.filter(i => i.description.trim());
+      const validItems = finalItems.filter(i => i.description.trim());
       if (validItems.length > 0) {
         await supabase.from('proposal_line_items').insert(
           validItems.map((item, i) => ({
@@ -201,6 +297,8 @@ export default function NewProposal() {
       setIsGenerating(false);
     }
   };
+
+  const isWorking = isSuggesting || isGenerating;
 
   return (
     <AppLayout>
@@ -258,34 +356,100 @@ export default function NewProposal() {
           discountEnabled={discountEnabled}
           discountMode={discountMode}
           discountValue={discountValue}
+          depositEnabled={depositEnabled}
+          depositMode={depositMode}
+          depositValue={depositValue}
           onTaxToggle={setTaxEnabled}
           onTaxRateChange={setTaxRate}
           onDiscountToggle={setDiscountEnabled}
           onDiscountModeChange={setDiscountMode}
           onDiscountValueChange={setDiscountValue}
+          onDepositToggle={setDepositEnabled}
+          onDepositModeChange={setDepositMode}
+          onDepositValueChange={setDepositValue}
         />
 
+        {/* AI Suggestions Review */}
+        {showSuggestions && suggestions.length > 0 && (
+          <div className="border-2 border-blue-200 rounded-lg p-5 bg-blue-50/30 space-y-4">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-blue-600" />
+              <h3 className="font-semibold text-foreground">AI-Suggested Line Items</h3>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Based on your job description, we found items that may be missing from your quote. Review and uncheck any you don't want.
+            </p>
+            <div className="space-y-2">
+              {suggestions.map((s, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-start gap-3 p-3 rounded-lg border bg-background"
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updated = [...suggestions];
+                      updated[idx] = { ...updated[idx], accepted: !updated[idx].accepted };
+                      setSuggestions(updated);
+                    }}
+                    className={`mt-0.5 shrink-0 h-5 w-5 rounded border flex items-center justify-center transition-colors ${
+                      s.accepted ? 'bg-foreground border-foreground text-background' : 'border-border'
+                    }`}
+                  >
+                    {s.accepted && <Check className="h-3 w-3" />}
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm">{s.description}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      {s.quantity} {s.unit} · {s.reason}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button onClick={handleAcceptSuggestions} disabled={isGenerating} className="flex-1 h-12">
+                {isGenerating ? (
+                  <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Building…</>
+                ) : (
+                  <><Check className="h-4 w-4 mr-2" /> Accept & Build Proposal</>
+                )}
+              </Button>
+              <Button variant="outline" onClick={handleSkipSuggestions} disabled={isGenerating} className="h-12">
+                Skip
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Step 4: Build */}
-        <div className="pt-4 pb-8">
-          <Button
-            onClick={handleBuildProposal}
-            disabled={isGenerating || isCreating}
-            className="w-full h-14 text-lg font-semibold"
-            size="lg"
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                Building Your Proposal…
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-5 w-5 mr-2" />
-                Build Proposal with AI
-              </>
-            )}
-          </Button>
-        </div>
+        {!showSuggestions && (
+          <div className="pt-4 pb-8">
+            <Button
+              onClick={handleBuildClick}
+              disabled={isWorking || isCreating}
+              className="w-full h-14 text-lg font-semibold"
+              size="lg"
+            >
+              {isSuggesting ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                  Analyzing Your Quote…
+                </>
+              ) : isGenerating ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                  Building Your Proposal…
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-5 w-5 mr-2" />
+                  Build Proposal with AI
+                </>
+              )}
+            </Button>
+          </div>
+        )}
       </div>
     </AppLayout>
   );
