@@ -528,6 +528,7 @@ export type Database = {
           template: Database["public"]["Enums"]["proposal_template"]
           title: string | null
           total: number | null
+          trade_type: Database["public"]["Enums"]["trade_type"] | null
           updated_at: string
           user_id: string
           valid_until: string | null
@@ -581,6 +582,7 @@ export type Database = {
           template?: Database["public"]["Enums"]["proposal_template"]
           title?: string | null
           total?: number | null
+          trade_type?: Database["public"]["Enums"]["trade_type"] | null
           updated_at?: string
           user_id: string
           valid_until?: string | null
@@ -634,6 +636,7 @@ export type Database = {
           template?: Database["public"]["Enums"]["proposal_template"]
           title?: string | null
           total?: number | null
+          trade_type?: Database["public"]["Enums"]["trade_type"] | null
           updated_at?: string
           user_id?: string
           valid_until?: string | null
