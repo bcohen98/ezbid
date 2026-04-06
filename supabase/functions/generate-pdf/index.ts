@@ -30,6 +30,8 @@ const TRADES: Record<string, { bg: string; label: string }> = {
   cabinetry:          { bg: '#5D4037', label: 'Cabinetry' },
   carpentry:          { bg: '#4E342E', label: 'Carpentry' },
   masonry:            { bg: '#795548', label: 'Masonry' },
+  asphalt:            { bg: '#1F2937', label: 'Asphalt' },
+  concrete:           { bg: '#4B5563', label: 'Concrete' },
   other:              { bg: '#374151', label: '' },
 };
 

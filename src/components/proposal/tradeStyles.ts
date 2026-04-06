@@ -98,6 +98,20 @@ const TRADE_STYLES: Record<string, TradeStyle> = {
     accentColor: '#795548',
     iconSvg: '<rect x="2" y="4" width="9" height="5" stroke="currentColor" stroke-width="2" fill="none"/><rect x="13" y="4" width="9" height="5" stroke="currentColor" stroke-width="2" fill="none"/><rect x="6" y="11" width="9" height="5" stroke="currentColor" stroke-width="2" fill="none"/><rect x="2" y="18" width="9" height="5" stroke="currentColor" stroke-width="2" fill="none"/>',
   },
+  asphalt: {
+    label: 'Asphalt',
+    headerBg: '#1F2937',
+    headerText: '#FFFFFF',
+    accentColor: '#1F2937',
+    iconSvg: '<path d="M4 20h16M4 20l2-8h12l2 8M8 12l1-4h6l1 4" stroke="currentColor" stroke-width="2" fill="none"/>',
+  },
+  concrete: {
+    label: 'Concrete',
+    headerBg: '#4B5563',
+    headerText: '#FFFFFF',
+    accentColor: '#4B5563',
+    iconSvg: '<rect x="3" y="8" width="18" height="12" rx="1" stroke="currentColor" stroke-width="2" fill="none"/><path d="M3 14h18M8 8v12M16 8v12" stroke="currentColor" stroke-width="1.5" opacity="0.5"/>',
+  },
   other: {
     label: 'Other',
     headerBg: '#374151',
