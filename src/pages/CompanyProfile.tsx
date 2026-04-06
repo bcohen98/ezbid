@@ -29,6 +29,8 @@ const tradeTypes = [
   { value: 'cabinetry', label: 'Cabinetry' },
   { value: 'carpentry', label: 'Carpentry' },
   { value: 'masonry', label: 'Masonry' },
+  { value: 'asphalt', label: 'Asphalt' },
+  { value: 'concrete', label: 'Concrete' },
   { value: 'other', label: 'Other' },
 ] as const;
 

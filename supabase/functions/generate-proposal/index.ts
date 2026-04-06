@@ -20,6 +20,8 @@ const tradeSections: Record<string, string> = {
   cabinetry: "scope of work, cabinet specifications and dimensions, hardware and finish details, countertop materials, removal of existing cabinetry, installation method, project timeline, warranty, payment terms",
   carpentry: "scope of work, lumber and materials list, joinery and structural details, finish specifications, project timeline, warranty, payment terms",
   masonry: "scope of work, brick or stone specifications, mortar and structural details, foundation preparation, scaffolding notes, project timeline, warranty, payment terms",
+  asphalt: "scope of work, surface preparation and grading, asphalt mix specifications, base layer details, compaction and finishing, sealcoat and striping, equipment list, project timeline, warranty, payment terms",
+  concrete: "scope of work, concrete mix specifications, forming and rebar details, gravel base preparation, pouring and finishing method, curing notes, project timeline, warranty, payment terms",
   other: "scope of work, materials and labor breakdown, project timeline, payment terms",
 };
 

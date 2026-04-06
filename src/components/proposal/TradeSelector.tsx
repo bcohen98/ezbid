@@ -2,13 +2,14 @@ import { cn } from '@/lib/utils';
 import {
   Home, Droplets, Wind, TreePine, Zap, Paintbrush,
   Hammer, Waves, Building, Layers, MoreHorizontal, LucideIcon,
-  DoorOpen, Wrench, Landmark
+  DoorOpen, Wrench, Landmark, Construction, HardHat
 } from 'lucide-react';
 
 export type TradeType =
   | 'roofing' | 'plumbing' | 'hvac' | 'landscaping' | 'electrical'
   | 'painting' | 'general_contractor' | 'pressure_washing'
-  | 'foundation' | 'flooring' | 'cabinetry' | 'carpentry' | 'masonry' | 'other';
+  | 'foundation' | 'flooring' | 'cabinetry' | 'carpentry' | 'masonry'
+  | 'asphalt' | 'concrete' | 'other';
 
 interface TradeOption {
   value: TradeType;
@@ -30,6 +31,8 @@ const trades: TradeOption[] = [
   { value: 'cabinetry', label: 'Cabinetry', icon: DoorOpen },
   { value: 'carpentry', label: 'Carpentry', icon: Wrench },
   { value: 'masonry', label: 'Masonry', icon: Landmark },
+  { value: 'asphalt', label: 'Asphalt', icon: Construction },
+  { value: 'concrete', label: 'Concrete', icon: HardHat },
   { value: 'other', label: 'Other', icon: MoreHorizontal },
 ];
 

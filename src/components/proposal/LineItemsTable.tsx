@@ -104,6 +104,22 @@ const tradeDefaults: Record<TradeType, { description: string; unit: string }[]> 
     { description: 'Labor', unit: 'hr' },
     { description: 'Scaffolding', unit: 'ea' },
   ],
+  asphalt: [
+    { description: 'Asphalt (Hot Mix)', unit: 'ton' },
+    { description: 'Gravel Base', unit: 'ton' },
+    { description: 'Sealcoat', unit: 'sq ft' },
+    { description: 'Striping', unit: 'lf' },
+    { description: 'Labor', unit: 'hr' },
+    { description: 'Equipment', unit: 'ea' },
+  ],
+  concrete: [
+    { description: 'Concrete', unit: 'cu yd' },
+    { description: 'Rebar / Wire Mesh', unit: 'lf' },
+    { description: 'Forms', unit: 'lf' },
+    { description: 'Gravel Base', unit: 'ton' },
+    { description: 'Finishing', unit: 'sq ft' },
+    { description: 'Labor', unit: 'hr' },
+  ],
   other: [],
 };
 
