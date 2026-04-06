@@ -17,15 +17,23 @@ import AdminOverview from "./pages/admin/AdminOverview";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminProposals from "./pages/admin/AdminProposals";
 import AdminRevenue from "./pages/admin/AdminRevenue";
+import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import Tutorial from "./pages/Tutorial";
 import NotFound from "./pages/NotFound";
 import HelpChatWidget from "./components/HelpChatWidget";
+import { usePageTracking } from "./hooks/usePageTracking";
+import { useErrorTracking } from "./hooks/useErrorTracking";
 
 const queryClient = new QueryClient();
 
+function AppTracking() {
+  usePageTracking();
+  useErrorTracking();
+  return null;
+}
+
 function HelpChatWidgetWrapper() {
   const location = useLocation();
-  // Hide chat widget on proposal signing pages
   if (location.pathname.includes('/sign')) return null;
   return <HelpChatWidget />;
 }
@@ -51,10 +59,12 @@ const App = () => (
             <Route path="/admin/users" element={<AdminUsers />} />
             <Route path="/admin/proposals" element={<AdminProposals />} />
             <Route path="/admin/revenue" element={<AdminRevenue />} />
+            <Route path="/admin/analytics" element={<AdminAnalytics />} />
             <Route path="/tutorial" element={<Tutorial />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <HelpChatWidgetWrapper />
+          <AppTracking />
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>
