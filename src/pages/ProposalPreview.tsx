@@ -359,7 +359,7 @@ export default function ProposalPreview() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
           {/* Preview */}
           <div className="border rounded-lg overflow-x-auto bg-background shadow-sm">
-            <ProposalDocument proposal={proposal} lineItems={lineItems} profile={profile} exhibits={exhibits} onFieldEdit={isSigned ? undefined : handleFieldEdit} onLineItemEdit={isSigned ? undefined : handleLineItemEdit} onTotalsEdit={isSigned ? undefined : handleTotalsEdit} />
+            <ProposalDocument proposal={proposal} lineItems={lineItems} profile={profile} exhibits={exhibits} template={activeTemplate} onFieldEdit={isSigned ? undefined : handleFieldEdit} onLineItemEdit={isSigned ? undefined : handleLineItemEdit} onTotalsEdit={isSigned ? undefined : handleTotalsEdit} />
           </div>
 
           {/* Side panel */}
