@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import EZBidLogo from '@/components/EZBidLogo';
 import heroBg from '@/assets/hero-bg.jpg';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function AuthPage() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -16,6 +17,16 @@ export default function AuthPage() {
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+
+  // Capture referral code from URL
+  useEffect(() => {
+    const ref = searchParams.get('ref');
+    if (ref) {
+      localStorage.setItem('ezbid_referral_code', ref);
+      setIsSignUp(true); // Default to signup when arriving via referral
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,6 +35,20 @@ export default function AuthPage() {
       if (isSignUp) {
         const { error } = await signUp(email, password);
         if (error) throw error;
+
+        // Link referral after signup
+        const refCode = localStorage.getItem('ezbid_referral_code');
+        if (refCode) {
+          try {
+            await supabase.functions.invoke('link-referral', {
+              body: { email, referralCode: refCode },
+            });
+          } catch {
+            // Non-blocking — referral linking can fail silently
+          }
+          localStorage.removeItem('ezbid_referral_code');
+        }
+
         toast({ title: 'Account created!', description: 'Check your email to confirm your account.' });
       } else {
         const { error } = await signIn(email, password);
