@@ -101,7 +101,16 @@ export default function CountersignBanner({ proposalId, clientName, onSigned }: 
         .eq('id', proposalId);
       if (updateErr) throw updateErr;
 
-      toast({ title: 'Countersigned!', description: 'Your signature has been added to the proposal.' });
+      // Send countersigned copy to client
+      try {
+        await supabase.functions.invoke('send-proposal-email', {
+          body: { proposal_id: proposalId, send_countersigned: true },
+        });
+      } catch (emailErr) {
+        console.error('[CountersignBanner] Failed to send countersigned email:', emailErr);
+      }
+
+      toast({ title: 'Countersigned!', description: 'Your signature has been added and a copy sent to the client.' });
       onSigned();
     } catch (err: any) {
       toast({ title: 'Signing failed', description: err.message, variant: 'destructive' });
