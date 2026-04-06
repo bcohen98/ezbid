@@ -3,11 +3,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const FROM_ADDRESS = "EZ-Bid <proposals@ezbid.pro>";
-
 const RESEND_API = "https://api.resend.com/emails";
 
 interface ResendPayload {
@@ -15,12 +14,6 @@ interface ResendPayload {
   to: string[];
   subject: string;
   html: string;
-}
-
-const SANDBOX_FROM_ADDRESS = "onboarding@resend.dev";
-
-function isSandboxSender(fromAddress: string) {
-  return fromAddress.includes(SANDBOX_FROM_ADDRESS);
 }
 
 function createErrorResponse(message: string, status = 400) {
@@ -154,11 +147,56 @@ function confirmationEmailHtml(clientName: string, clientEmail: string) {
 </html>`;
 }
 
+function countersignedEmailHtml(
+  companyName: string,
+  ownerName: string,
+  logoUrl: string | null,
+  proposalNumber: string,
+  jobTitle: string,
+  total: string,
+  viewUrl: string,
+) {
+  const logoBlock = logoUrl
+    ? `<img src="${logoUrl}" alt="${companyName}" style="max-height:40px;max-width:180px;"/>`
+    : `<span style="font-size:18px;font-weight:700;color:#1a1a1a;">${companyName}</span>`;
+
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"/></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:Inter,Arial,sans-serif;">
+  <div style="max-width:560px;margin:40px auto;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e4e4e7;">
+    <div style="padding:24px 32px;border-bottom:1px solid #e4e4e7;">
+      ${logoBlock}
+    </div>
+    <div style="padding:32px;">
+      <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;padding:16px;margin-bottom:24px;">
+        <h2 style="margin:0 0 4px;font-size:18px;color:#065f46;">✓ Proposal Fully Executed</h2>
+        <p style="margin:0;font-size:13px;color:#047857;">Both parties have signed. This proposal is now a binding agreement.</p>
+      </div>
+      <p style="color:#52525b;font-size:14px;line-height:1.6;margin:0 0 24px;">
+        <strong>${ownerName || companyName}</strong> has countersigned the proposal for <strong>${jobTitle}</strong>. Both signatures are now on file.
+      </p>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+        <tr><td style="padding:8px 0;color:#71717a;font-size:13px;">Proposal #</td><td style="padding:8px 0;text-align:right;font-size:13px;font-weight:600;color:#1a1a1a;">${proposalNumber}</td></tr>
+        <tr><td style="padding:8px 0;color:#71717a;font-size:13px;border-top:1px solid #f4f4f5;">Total</td><td style="padding:8px 0;text-align:right;font-size:13px;font-weight:600;color:#1a1a1a;border-top:1px solid #f4f4f5;">${total}</td></tr>
+      </table>
+      <a href="${viewUrl}" style="display:inline-block;background:#1a1a1a;color:#ffffff;padding:12px 28px;border-radius:6px;text-decoration:none;font-size:14px;font-weight:600;">
+        View Signed Proposal
+      </a>
+    </div>
+    <div style="padding:20px 32px;background:#fafafa;border-top:1px solid #e4e4e7;">
+      <p style="margin:0;font-size:12px;color:#a1a1aa;">Powered by EZ-Bid</p>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // ── Auth ──
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("Missing authorization");
 
@@ -168,7 +206,7 @@ serve(async (req) => {
     const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
     if (!RESEND_API_KEY) {
-      throw new Error("RESEND_API_KEY is not configured. Add it in project secrets.");
+      throw new Error("RESEND_API_KEY is not configured.");
     }
 
     const supabaseUser = createClient(supabaseUrl, supabaseKey, {
@@ -182,12 +220,12 @@ serve(async (req) => {
       send_to_self,
       recipient_email,
       recipient_name,
+      send_countersigned,
     } = await req.json();
     if (!proposal_id) throw new Error("Missing proposal_id");
 
     const supabaseAdmin = createClient(supabaseUrl, serviceKey);
 
-    // ── Fetch proposal ──
     const { data: proposal, error: pErr } = await supabaseAdmin
       .from("proposals")
       .select("*")
@@ -196,7 +234,6 @@ serve(async (req) => {
       .single();
     if (pErr || !proposal) throw new Error("Proposal not found");
 
-    // ── Fetch company profile ──
     const { data: profile } = await supabaseAdmin
       .from("company_profiles")
       .select("*")
@@ -214,13 +251,36 @@ serve(async (req) => {
     const clientEmail = recipient_email || proposal.client_email;
     const total = `$${Number(proposal.total || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
 
-    const origin = req.headers.get("origin") || "https://ez.bid";
-    const sandboxMode = isSandboxSender(FROM_ADDRESS);
+    const origin = req.headers.get("origin") || "https://www.ezbid.pro";
+
+    // ── SCENARIO C: Send countersigned copy to client ──
+    if (send_countersigned) {
+      if (!clientEmail) {
+        return createErrorResponse("Client email is required to send countersigned copy");
+      }
+
+      const viewUrl = `https://www.ezbid.pro/proposals/${proposal_id}/sign?token=${proposal.signing_token}`;
+      console.log(`[send-proposal-email] Scenario C: sending countersigned copy to ${clientEmail}`);
+
+      await sendEmail(RESEND_API_KEY, {
+        from: FROM_ADDRESS,
+        to: [clientEmail],
+        subject: `${companyName} — Proposal Fully Signed`,
+        html: countersignedEmailHtml(companyName, ownerName, logoUrl, proposalNumber, jobTitle, total, viewUrl),
+      });
+
+      return new Response(JSON.stringify({
+        success: true,
+        message: `Countersigned copy sent to ${clientEmail}`,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // ── SCENARIO A: Send to self ──
     if (send_to_self) {
       if (!contractorEmail) {
-        return createErrorResponse("Your account email is missing. Add an email to your account before sending test emails.");
+        return createErrorResponse("Your account email is missing.");
       }
 
       const proposalUrl = `${origin}/proposals/${proposal_id}`;
@@ -245,12 +305,6 @@ serve(async (req) => {
     // ── SCENARIO B: Send to client for e-signature ──
     if (!clientEmail) {
       return createErrorResponse("Client email is required to send proposal");
-    }
-
-    if (sandboxMode) {
-      return createErrorResponse(
-        `Resend sandbox mode is active. You can only send to ${contractorEmail}. Verify your sending domain, then replace onboarding@resend.dev with your real sender domain in supabase/functions/send-proposal-email/index.ts.`
-      );
     }
 
     const signUrl = `https://www.ezbid.pro/proposals/${proposal_id}/sign?token=${proposal.signing_token}`;
