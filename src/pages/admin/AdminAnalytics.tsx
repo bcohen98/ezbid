@@ -1,6 +1,14 @@
+import { useState } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useAdminAnalytics } from '@/hooks/useAdminData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Area,
   AreaChart,
@@ -14,13 +22,44 @@ import {
 } from 'recharts';
 import { AlertTriangle, Eye, Bug, Wifi } from 'lucide-react';
 
+const RANGE_OPTIONS = [
+  { value: 'hour', label: 'Past Hour' },
+  { value: 'day', label: 'Past Day' },
+  { value: 'week', label: 'Past Week' },
+  { value: 'month', label: 'Past Month' },
+  { value: 'year', label: 'Past Year' },
+] as const;
+
+function formatTick(value: string, range: string) {
+  if (range === 'hour') return value.slice(11, 16); // HH:MM
+  if (range === 'day') return value.slice(11, 13) + ':00'; // HH:00
+  if (range === 'year') return value.slice(0, 7); // YYYY-MM
+  return value.slice(5); // MM-DD
+}
+
 export default function AdminAnalytics() {
-  const { data, isLoading } = useAdminAnalytics();
+  const [range, setRange] = useState('month');
+  const { data, isLoading } = useAdminAnalytics(range);
+  const rangeLabel = data?.rangeLabel || '30d';
 
   return (
     <AdminLayout>
       <div className="space-y-6 animate-fade-in">
-        <h1 className="text-lg font-semibold">Site Analytics</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-lg font-semibold">Site Analytics</h1>
+          <Select value={range} onValueChange={setRange}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {RANGE_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Loading analytics...</p>
@@ -30,17 +69,17 @@ export default function AdminAnalytics() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <SummaryCard
                 icon={<Eye className="h-4 w-4" />}
-                label="Page Views (30d)"
+                label={`Page Views (${rangeLabel})`}
                 value={data.totalViews30d}
               />
               <SummaryCard
                 icon={<Bug className="h-4 w-4" />}
-                label="Errors (30d)"
+                label={`Errors (${rangeLabel})`}
                 value={data.totalErrors30d}
               />
               <SummaryCard
                 icon={<Wifi className="h-4 w-4" />}
-                label="Downtime Days"
+                label="Zero-Traffic Periods"
                 value={data.downtimeDays?.length || 0}
               />
               <SummaryCard
@@ -55,7 +94,7 @@ export default function AdminAnalytics() {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Site Visits — Last 30 Days
+                  Site Visits — {RANGE_OPTIONS.find((o) => o.value === range)?.label}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -65,12 +104,13 @@ export default function AdminAnalytics() {
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                       <XAxis
                         dataKey="date"
-                        tickFormatter={(v) => v.slice(5)}
+                        tickFormatter={(v) => formatTick(v, range)}
                         className="text-xs"
                         tick={{ fontSize: 11 }}
                       />
                       <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                       <Tooltip
+                        labelFormatter={(v) => formatTick(v as string, range)}
                         contentStyle={{
                           background: 'hsl(var(--popover))',
                           border: '1px solid hsl(var(--border))',
@@ -105,7 +145,7 @@ export default function AdminAnalytics() {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Client Errors — Last 30 Days
+                  Client Errors — {RANGE_OPTIONS.find((o) => o.value === range)?.label}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -115,11 +155,12 @@ export default function AdminAnalytics() {
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                       <XAxis
                         dataKey="date"
-                        tickFormatter={(v) => v.slice(5)}
+                        tickFormatter={(v) => formatTick(v, range)}
                         tick={{ fontSize: 11 }}
                       />
                       <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                       <Tooltip
+                        labelFormatter={(v) => formatTick(v as string, range)}
                         contentStyle={{
                           background: 'hsl(var(--popover))',
                           border: '1px solid hsl(var(--border))',
@@ -141,52 +182,40 @@ export default function AdminAnalytics() {
 
             {/* Downtime & Top Pages side by side */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Downtime */}
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium">
-                    Potential Downtime (last 14d)
+                    Zero-Traffic Periods
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   {data.downtimeDays?.length > 0 ? (
                     <ul className="space-y-1">
                       {data.downtimeDays.map((d: string) => (
-                        <li
-                          key={d}
-                          className="text-sm flex items-center gap-2 text-destructive"
-                        >
+                        <li key={d} className="text-sm flex items-center gap-2 text-destructive">
                           <AlertTriangle className="h-3 w-3" />
                           {d}
                         </li>
                       ))}
                     </ul>
                   ) : (
-                    <p className="text-sm text-muted-foreground">
-                      No downtime detected ✓
-                    </p>
+                    <p className="text-sm text-muted-foreground">No downtime detected ✓</p>
                   )}
                 </CardContent>
               </Card>
 
-              {/* Top Pages */}
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium">Top Pages</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-1">
-                    {(data.topPages || []).map(
-                      (p: { path: string; count: number }) => (
-                        <div
-                          key={p.path}
-                          className="flex items-center justify-between text-sm"
-                        >
-                          <span className="truncate max-w-[200px]">{p.path}</span>
-                          <span className="font-medium tabular-nums">{p.count}</span>
-                        </div>
-                      )
-                    )}
+                    {(data.topPages || []).map((p: { path: string; count: number }) => (
+                      <div key={p.path} className="flex items-center justify-between text-sm">
+                        <span className="truncate max-w-[200px]">{p.path}</span>
+                        <span className="font-medium tabular-nums">{p.count}</span>
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
@@ -195,9 +224,7 @@ export default function AdminAnalytics() {
             {/* Recent Errors */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Recent Errors
-                </CardTitle>
+                <CardTitle className="text-sm font-medium">Recent Errors</CardTitle>
               </CardHeader>
               <CardContent>
                 {data.recentErrors?.length > 0 ? (
@@ -212,24 +239,13 @@ export default function AdminAnalytics() {
                       </thead>
                       <tbody>
                         {data.recentErrors.map(
-                          (
-                            e: {
-                              timestamp: string;
-                              path: string;
-                              message: string;
-                            },
-                            i: number
-                          ) => (
+                          (e: { timestamp: string; path: string; message: string }, i: number) => (
                             <tr key={i} className="border-b last:border-0">
                               <td className="py-1.5 pr-4 whitespace-nowrap text-muted-foreground">
                                 {new Date(e.timestamp).toLocaleString()}
                               </td>
-                              <td className="py-1.5 pr-4 whitespace-nowrap">
-                                {e.path}
-                              </td>
-                              <td className="py-1.5 truncate max-w-[400px]">
-                                {e.message}
-                              </td>
+                              <td className="py-1.5 pr-4 whitespace-nowrap">{e.path}</td>
+                              <td className="py-1.5 truncate max-w-[400px]">{e.message}</td>
                             </tr>
                           )
                         )}
