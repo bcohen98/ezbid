@@ -81,7 +81,7 @@ export default function Tutorial() {
   const { user } = useAuth();
 
   const content = (
-    <div className="container max-w-3xl py-10 space-y-10 animate-fade-in">
+    <div className="container max-w-3xl px-4 py-10 space-y-10 animate-fade-in">
       {/* Header */}
       <div className="text-center space-y-3">
         <h1 className="text-3xl md:text-4xl font-bold tracking-tight">How to Use EZ-Bid</h1>
@@ -157,7 +157,7 @@ export default function Tutorial() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b">
-        <div className="container flex h-14 items-center justify-between">
+        <div className="container flex h-14 items-center justify-between px-4">
           <Link to="/"><EZBidLogo size="md" /></Link>
           <div className="flex items-center gap-3">
             <Link to="/auth"><Button variant="ghost" size="sm">Sign in</Button></Link>
