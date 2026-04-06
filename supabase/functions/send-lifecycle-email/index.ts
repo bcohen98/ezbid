@@ -185,7 +185,7 @@ serve(async (req) => {
         to: [recipient_email],
         subject: email.subject,
         text: email.text,
-        reply_to: "brett@ezbid.pro",
+        reply_to: "brett@cottagerosecapital.com",
         headers: {
           "List-Unsubscribe": `<${unsubUrl}>`,
           "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
