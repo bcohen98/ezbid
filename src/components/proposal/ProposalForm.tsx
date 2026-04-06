@@ -33,12 +33,10 @@ const AUTOSAVE_KEY = 'ezbid_proposal_draft';
 
 export default function ProposalForm({ template, profile, onSubmit, isSubmitting, onBack }: Props) {
   const [form, setForm] = useState<ProposalFormData>(() => {
-    // Try to restore from autosave
     try {
       const saved = localStorage.getItem(AUTOSAVE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Only restore if same template
         if (parsed.template === template) return parsed;
       }
     } catch {}
@@ -73,7 +71,6 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
     };
   });
 
-  // Autosave to localStorage on every change
   useEffect(() => {
     try {
       localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(form));
@@ -160,9 +157,9 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 pb-20">
+    <form onSubmit={handleSubmit} className="space-y-5 md:space-y-6 pb-24 px-4 md:px-0">
       <div className="flex items-center gap-3 mb-2">
-        <h1 className="text-2xl font-semibold">New Proposal</h1>
+        <h1 className="text-xl md:text-2xl font-semibold">New Proposal</h1>
       </div>
 
       <ProposalToolbar
@@ -177,7 +174,7 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
       <Card>
         <CardHeader><CardTitle className="text-base">Client Information</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Client name *</Label>
               <Input value={form.client_name} onChange={(e) => handleChange('client_name', e.target.value)} required />
@@ -193,7 +190,7 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
           </div>
           <div className="space-y-2"><Label>Job site address</Label></div>
           <Input placeholder="Street" value={form.job_site_street} onChange={(e) => handleChange('job_site_street', e.target.value)} />
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Input placeholder="City" value={form.job_site_city} onChange={(e) => handleChange('job_site_city', e.target.value)} />
             <Input placeholder="State" value={form.job_site_state} onChange={(e) => handleChange('job_site_state', e.target.value)} />
             <Input placeholder="ZIP" value={form.job_site_zip} onChange={(e) => handleChange('job_site_zip', e.target.value)} />
@@ -225,7 +222,7 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
             <Label>Materials excluded (optional)</Label>
             <Textarea value={form.materials_excluded} onChange={(e) => handleChange('materials_excluded', e.target.value)} rows={2} />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Estimated start date</Label>
               <Input type="date" value={form.estimated_start_date} onChange={(e) => handleChange('estimated_start_date', e.target.value)} />
@@ -244,7 +241,8 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label>Line items</Label>
-            <div className="border rounded-lg overflow-hidden">
+            {/* Desktop table layout */}
+            <div className="hidden md:block border rounded-lg overflow-hidden">
               <div className="grid grid-cols-[1fr_80px_60px_100px_90px_40px] gap-2 px-3 py-2 bg-muted text-xs font-medium text-muted-foreground">
                 <span>Description</span><span>Qty</span><span>Unit</span><span>Unit Price</span><span className="text-right">Total</span><span></span>
               </div>
@@ -253,21 +251,7 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
                   <Input value={item.description} onChange={(e) => updateLineItem(i, 'description', e.target.value)} placeholder="Description" className="h-8 text-sm" />
                   <Input type="number" value={item.quantity || ''} onChange={(e) => updateLineItem(i, 'quantity', parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} className="h-8 text-sm" min={0} />
                   <select value={item.unit} onChange={(e) => updateLineItem(i, 'unit', e.target.value)} className="h-8 text-sm border rounded px-1 bg-background w-full">
-                    <option value="ea">ea</option>
-                    <option value="hr">hr</option>
-                    <option value="ft">ft</option>
-                    <option value="sqft">sqft</option>
-                    <option value="lnft">lnft</option>
-                    <option value="lot">lot</option>
-                    <option value="day">day</option>
-                    <option value="wk">wk</option>
-                    <option value="mo">mo</option>
-                    <option value="ton">ton</option>
-                    <option value="yd">yd</option>
-                    <option value="gal">gal</option>
-                    <option value="bag">bag</option>
-                    <option value="box">box</option>
-                    <option value="pallet">pallet</option>
+                    <option value="ea">ea</option><option value="hr">hr</option><option value="ft">ft</option><option value="sqft">sqft</option><option value="lnft">lnft</option><option value="lot">lot</option><option value="day">day</option><option value="wk">wk</option><option value="mo">mo</option><option value="ton">ton</option><option value="yd">yd</option><option value="gal">gal</option><option value="bag">bag</option><option value="box">box</option><option value="pallet">pallet</option>
                   </select>
                   <Input type="number" value={item.unit_price || ''} onChange={(e) => updateLineItem(i, 'unit_price', parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} className="h-8 text-sm" min={0} step="0.01" />
                   <span className="text-sm font-medium text-right">${formatCurrency(item.quantity * item.unit_price)}</span>
@@ -277,7 +261,41 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
                 </div>
               ))}
             </div>
-            <Button type="button" variant="outline" size="sm" onClick={addLineItem} className="gap-1">
+            {/* Mobile stacked layout */}
+            <div className="md:hidden space-y-3">
+              {form.line_items.map((item, i) => (
+                <div key={i} className="border rounded-lg p-3 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-muted-foreground">Item {i + 1}</span>
+                    <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeLineItem(i)} disabled={form.line_items.length <= 1}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Description</Label>
+                    <Input value={item.description} onChange={(e) => updateLineItem(i, 'description', e.target.value)} placeholder="Description" />
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Qty</Label>
+                      <Input type="number" value={item.quantity || ''} onChange={(e) => updateLineItem(i, 'quantity', parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} min={0} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Unit</Label>
+                      <select value={item.unit} onChange={(e) => updateLineItem(i, 'unit', e.target.value)} className="h-11 w-full text-base border rounded px-2 bg-background">
+                        <option value="ea">ea</option><option value="hr">hr</option><option value="ft">ft</option><option value="sqft">sqft</option><option value="lnft">lnft</option><option value="lot">lot</option><option value="day">day</option><option value="wk">wk</option><option value="mo">mo</option><option value="ton">ton</option><option value="yd">yd</option><option value="gal">gal</option><option value="bag">bag</option><option value="box">box</option><option value="pallet">pallet</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Price</Label>
+                      <Input type="number" value={item.unit_price || ''} onChange={(e) => updateLineItem(i, 'unit_price', parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} min={0} step="0.01" />
+                    </div>
+                  </div>
+                  <div className="text-right text-sm font-medium">Total: ${formatCurrency(item.quantity * item.unit_price)}</div>
+                </div>
+              ))}
+            </div>
+            <Button type="button" variant="outline" size="sm" onClick={addLineItem} className="gap-1 w-full sm:w-auto">
               <Plus className="h-3.5 w-3.5" /> Add line item
             </Button>
           </div>
@@ -285,28 +303,28 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
           {/* Totals */}
           <div className="border rounded-lg p-4 space-y-2 text-sm">
             <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span className="font-medium">${formatCurrency(subtotal)}</span></div>
-            <div className="flex justify-between items-center">
-              <span className="text-muted-foreground flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row sm:justify-between gap-2">
+              <span className="text-muted-foreground flex items-center gap-2 flex-wrap">
                 Tax rate
-                <Input type="number" value={form.tax_rate || ''} onChange={(e) => handleChange('tax_rate', parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} className="h-7 w-16 text-sm" min={0} step="0.1" />%
+                <Input type="number" value={form.tax_rate || ''} onChange={(e) => handleChange('tax_rate', parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} className="h-9 w-20 text-sm" min={0} step="0.1" />%
               </span>
-              <span className="font-medium">${formatCurrency(taxAmount)}</span>
+              <span className="font-medium text-right">${formatCurrency(taxAmount)}</span>
             </div>
             <div className="flex justify-between border-t pt-2"><span className="font-medium">Total</span><span className="font-semibold text-base">${formatCurrency(total)}</span></div>
-            <div className="flex justify-between items-center">
-              <span className="text-muted-foreground flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row sm:justify-between gap-2">
+              <span className="text-muted-foreground flex items-center gap-2 flex-wrap">
                 Deposit
                 <select
                   value={form.deposit_mode}
                   onChange={(e) => handleChange('deposit_mode', e.target.value)}
-                  className="h-7 rounded border bg-background px-1 text-sm"
+                  className="h-9 rounded border bg-background px-2 text-base md:text-sm"
                 >
                   <option value="percentage">%</option>
                   <option value="flat">$</option>
                 </select>
-                <Input type="number" value={form.deposit_value || ''} onChange={(e) => handleChange('deposit_value', parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} className="h-7 w-20 text-sm" min={0} step="0.01" />
+                <Input type="number" value={form.deposit_value || ''} onChange={(e) => handleChange('deposit_value', parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} className="h-9 w-24 text-sm" min={0} step="0.01" />
               </span>
-              <span className="font-medium">${formatCurrency(depositAmount)}</span>
+              <span className="font-medium text-right">${formatCurrency(depositAmount)}</span>
             </div>
             <div className="flex justify-between border-t pt-2"><span className="font-medium">Balance due</span><span className="font-semibold">${formatCurrency(balanceDue)}</span></div>
           </div>
@@ -319,7 +337,7 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
             <Label>Accepted payment methods</Label>
             <div className="flex flex-wrap gap-3">
               {paymentMethods.map((method) => (
-                <label key={method} className="flex items-center gap-2 text-sm">
+                <label key={method} className="flex items-center gap-2 text-sm min-h-[44px]">
                   <Checkbox
                     checked={form.accepted_payment_methods.includes(method)}
                     onCheckedChange={() => togglePaymentMethod(method)}
@@ -355,7 +373,7 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
       <Card>
         <CardHeader><CardTitle className="text-base">Delivery</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Proposal date</Label>
               <Input type="date" value={form.proposal_date} onChange={(e) => handleChange('proposal_date', e.target.value)} />
@@ -367,14 +385,20 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
           </div>
         </CardContent>
       </Card>
+
       {/* AI Polish - floating button */}
-      <div className="fixed top-4 right-6 z-50">
-        <Button type="button" variant="default" size="sm" onClick={handlePolish} disabled={isPolishing} className="gap-2 shadow-lg">
+      <div className="fixed bottom-20 right-4 md:top-4 md:right-6 md:bottom-auto z-50">
+        <Button
+          type="button"
+          onClick={handlePolish}
+          disabled={isPolishing}
+          className="gap-2 rounded-full shadow-lg px-5"
+          size="lg"
+        >
           {isPolishing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
           {isPolishing ? 'Polishing...' : 'Polish with AI'}
         </Button>
       </div>
-
     </form>
   );
 }
