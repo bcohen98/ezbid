@@ -284,6 +284,51 @@ export type Database = {
           },
         ]
       }
+      lifecycle_email_logs: {
+        Row: {
+          created_at: string
+          email_type: string
+          id: string
+          recipient_email: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_type: string
+          id?: string
+          recipient_email: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_type?: string
+          id?: string
+          recipient_email?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      lifecycle_email_unsubs: {
+        Row: {
+          created_at: string
+          id: string
+          token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          token?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          token?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       page_views: {
         Row: {
           created_at: string
