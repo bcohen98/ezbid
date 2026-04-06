@@ -77,16 +77,16 @@ export default function ProposalDetail() {
 
   return (
     <AppLayout>
-      <div className="container max-w-2xl py-8 animate-fade-in">
+      <div className="container max-w-2xl px-4 py-6 md:py-8 animate-fade-in">
         <div className="flex items-center gap-3 mb-6">
           <Link to="/dashboard">
             <Button variant="ghost" size="sm"><ArrowLeft className="h-4 w-4 mr-1" /> Dashboard</Button>
           </Link>
         </div>
 
-        <div className="flex items-start justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-6 gap-3">
           <div>
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex flex-wrap items-center gap-2 mb-1">
               <span className="text-xs text-muted-foreground font-mono">PRO-{String(proposal.proposal_number).padStart(4, '0')}</span>
               <Badge variant="outline">{proposal.status}</Badge>
               {proposal.status === 'signed' && proposal.client_signature_url && !(proposal as any).contractor_signature_url && (
@@ -96,24 +96,24 @@ export default function ProposalDetail() {
                 <Badge variant="outline" className="border-green-400 text-green-700 bg-green-50">Fully Executed</Badge>
               )}
             </div>
-            <h1 className="text-2xl font-semibold">{proposal.title || 'Untitled Proposal'}</h1>
+            <h1 className="text-xl md:text-2xl font-semibold">{proposal.title || 'Untitled Proposal'}</h1>
             <p className="text-sm text-muted-foreground mt-1">
               {proposal.client_name} · {new Date(proposal.created_at).toLocaleDateString()}
             </p>
           </div>
-          <div className="text-right">
-            <div className="text-2xl font-semibold">${formatCurrency(proposal.total)}</div>
+          <div className="text-left sm:text-right">
+            <div className="text-xl md:text-2xl font-semibold">${formatCurrency(proposal.total)}</div>
           </div>
         </div>
 
-        <div className="flex gap-2 mb-6">
-          <Link to={`/proposals/${id}/preview`}>
-            <Button variant="outline" size="sm" className="gap-2"><Eye className="h-4 w-4" /> Preview</Button>
+        <div className="flex flex-wrap gap-2 mb-6">
+          <Link to={`/proposals/${id}/preview`} className="flex-1 sm:flex-none">
+            <Button variant="outline" size="sm" className="gap-2 w-full sm:w-auto"><Eye className="h-4 w-4" /> Preview</Button>
           </Link>
-          <Button variant="outline" size="sm" className="gap-2" onClick={handleDuplicate}>
+          <Button variant="outline" size="sm" className="gap-2 flex-1 sm:flex-none" onClick={handleDuplicate}>
             <Copy className="h-4 w-4" /> Duplicate
           </Button>
-          <Button variant="outline" size="sm" className="gap-2" onClick={handleResend} disabled={isSending}>
+          <Button variant="outline" size="sm" className="gap-2 flex-1 sm:flex-none" onClick={handleResend} disabled={isSending}>
             {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             {isSending ? 'Sending…' : 'Resend'}
           </Button>
@@ -128,7 +128,7 @@ export default function ProposalDetail() {
                 <Pencil className="h-3 w-3" /> Edit
               </Button>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
               <div><span className="text-muted-foreground">Client:</span> {proposal.client_name}</div>
               <div><span className="text-muted-foreground">Email:</span> {proposal.client_email}</div>
               <div><span className="text-muted-foreground">Phone:</span> {proposal.client_phone || '—'}</div>

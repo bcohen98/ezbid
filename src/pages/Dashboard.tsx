@@ -40,7 +40,6 @@ export default function Dashboard() {
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [search, setSearch] = useState('');
 
-  // Check for unsaved draft in localStorage
   const [draftDismissed, setDraftDismissed] = useState(false);
   const unsavedDraft = useMemo(() => {
     if (draftDismissed) return null;
@@ -65,7 +64,7 @@ export default function Dashboard() {
   const tabs: { key: TabKey; label: string }[] = [
     { key: 'all', label: 'All' },
     { key: 'signed', label: 'Signed' },
-    { key: 'sent', label: 'Pending Signature' },
+    { key: 'sent', label: 'Pending' },
     { key: 'draft', label: 'Incomplete' },
   ];
 
@@ -108,10 +107,10 @@ export default function Dashboard() {
 
   return (
     <AppLayout>
-      <div className="container py-8 space-y-6 animate-fade-in">
+      <div className="container px-4 py-6 md:py-8 space-y-5 md:space-y-6 animate-fade-in">
         {/* Profile completion banner */}
         {!profileLoading && profileCompletion < 100 && (
-          <div className="flex items-center gap-3 rounded-lg border border-warning/30 bg-warning/5 p-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 rounded-lg border border-warning/30 bg-warning/5 p-4">
             <AlertCircle className="h-5 w-5 text-warning shrink-0" />
             <div className="flex-1">
               <p className="text-sm font-medium">Complete your company profile</p>
@@ -119,11 +118,11 @@ export default function Dashboard() {
                 A complete profile makes your proposals look more professional.
               </p>
             </div>
-            <div className="flex items-center gap-3">
-              <Progress value={profileCompletion} className="w-24 h-2" />
-              <span className="text-xs text-muted-foreground font-medium">{profileCompletion}%</span>
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <Progress value={profileCompletion} className="w-full sm:w-24 h-2" />
+              <span className="text-xs text-muted-foreground font-medium shrink-0">{profileCompletion}%</span>
               <Link to="/company-profile">
-                <Button variant="outline" size="sm">Complete</Button>
+                <Button variant="outline" size="sm" className="shrink-0">Complete</Button>
               </Link>
             </div>
           </div>
@@ -158,13 +157,13 @@ export default function Dashboard() {
         </div>
 
         {/* Tabs + Create */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1 border rounded-lg p-1">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-1 border rounded-lg p-1 overflow-x-auto">
             {tabs.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors whitespace-nowrap ${
                   activeTab === tab.key
                     ? 'bg-foreground text-background font-medium'
                     : 'text-muted-foreground hover:text-foreground'
@@ -174,30 +173,30 @@ export default function Dashboard() {
               </button>
             ))}
           </div>
-          <Button onClick={() => navigate('/proposals/new')} className="gap-2">
+          <Button onClick={() => navigate('/proposals/new')} className="gap-2 w-full sm:w-auto">
             <Plus className="h-4 w-4" />
             Create New Proposal
           </Button>
         </div>
 
         {/* Search + Sort */}
-        <div className="flex items-center justify-between gap-3">
-          <div className="relative flex-1 max-w-xs">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="relative w-full sm:max-w-xs">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search proposals..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="pl-8 h-9 text-sm"
+              className="pl-8 h-9 text-sm w-full"
             />
           </div>
-          <div className="flex gap-1">
+          <div className="flex gap-1 overflow-x-auto">
             {(['date', 'client', 'total', 'status'] as SortKey[]).map(k => (
               <Button
                 key={k}
                 variant={sortKey === k ? 'default' : 'ghost'}
                 size="sm"
-                className="text-xs gap-1"
+                className="text-xs gap-1 shrink-0"
                 onClick={() => toggleSort(k)}
               >
                 {k.charAt(0).toUpperCase() + k.slice(1)}
@@ -219,7 +218,7 @@ export default function Dashboard() {
               </p>
               <p className="text-xs text-muted-foreground mt-1">Create your first professional proposal in minutes.</p>
               {activeTab === 'all' && !search && (
-                <Button onClick={() => navigate('/proposals/new')} className="mt-4 gap-2" size="sm">
+                <Button onClick={() => navigate('/proposals/new')} className="mt-4 gap-2 w-full sm:w-auto" size="sm">
                   <Plus className="h-4 w-4" />
                   Create Proposal
                 </Button>
@@ -230,7 +229,7 @@ export default function Dashboard() {
           <div className="border rounded-lg divide-y">
             {/* Unsaved draft row */}
             {unsavedDraft && (activeTab === 'all' || activeTab === 'draft') && (
-              <div className="flex items-center justify-between px-4 py-3 bg-muted/20">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-3 bg-muted/20 gap-2">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground font-mono">DRAFT</span>
@@ -254,7 +253,7 @@ export default function Dashboard() {
             {filteredProposals.map((p) => (
               <div
                 key={p.id}
-                className="flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
+                className="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors gap-2"
               >
                 <Link
                   to={`/proposals/${p.id}`}
