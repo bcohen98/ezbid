@@ -9,7 +9,9 @@ import { ArrowLeft, Send, Mail, Sparkles, Loader2, Download, FileText, Undo2 } f
 import CountersignBanner from '@/components/proposal/CountersignBanner';
 import ExhibitsUpload from '@/components/proposal/ExhibitsUpload';
 import { useProposalExhibits } from '@/hooks/useProposalExhibits';
-import { useState, useRef } from 'react';
+import TemplateSwitcher, { type TemplateId } from '@/components/proposal/TemplateSwitcher';
+import { getTradeStyle } from '@/components/proposal/tradeStyles';
+import { useState, useRef, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
