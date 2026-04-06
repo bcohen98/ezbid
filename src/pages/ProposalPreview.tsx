@@ -44,6 +44,8 @@ export default function ProposalPreview() {
     return <AppLayout><div className="container py-8"><p className="text-sm text-muted-foreground">Proposal not found</p></div></AppLayout>;
   }
 
+  const isSigned = ['signed', 'accepted', 'work_pending', 'payment_pending', 'closed'].includes(proposal.status);
+
   console.log('[ProposalPreview] render — client_email:', JSON.stringify(proposal.client_email), 'type:', typeof proposal.client_email, 'falsy:', !proposal.client_email);
 
   const revisionHistory: RevisionEntry[] = Array.isArray((proposal as any).revision_history) ? (proposal as any).revision_history : [];
@@ -336,7 +338,7 @@ export default function ProposalPreview() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
           {/* Preview */}
           <div className="border rounded-lg overflow-x-auto bg-background shadow-sm">
-            <ProposalDocument proposal={proposal} lineItems={lineItems} profile={profile} exhibits={exhibits} onFieldEdit={handleFieldEdit} onLineItemEdit={handleLineItemEdit} onTotalsEdit={handleTotalsEdit} />
+            <ProposalDocument proposal={proposal} lineItems={lineItems} profile={profile} exhibits={exhibits} onFieldEdit={isSigned ? undefined : handleFieldEdit} onLineItemEdit={isSigned ? undefined : handleLineItemEdit} onTotalsEdit={isSigned ? undefined : handleTotalsEdit} />
           </div>
 
           {/* Side panel */}
@@ -350,50 +352,60 @@ export default function ProposalPreview() {
               />
             )}
 
-            {/* AI Revision */}
-            <div className="border rounded-lg p-4 space-y-3">
-              <h3 className="text-sm font-medium flex items-center gap-2">
-                <Sparkles className="h-4 w-4" /> AI Revision
-              </h3>
+            {/* AI Revision — hidden when signed */}
+            {!isSigned && (
+              <div className="border rounded-lg p-4 space-y-3">
+                <h3 className="text-sm font-medium flex items-center gap-2">
+                  <Sparkles className="h-4 w-4" /> AI Revision
+                </h3>
 
-              <Textarea
-                value={revisionNote}
-                onChange={(e) => setRevisionNote(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleRevise(); } }}
-                placeholder="e.g. Switch to bold template, add a $500 line item for cleanup, change tax to 8.5%..."
-                rows={4}
-              />
-              <Button
-                variant="outline"
-                className="w-full gap-2"
-                disabled={!revisionNote.trim() || isRevising}
-                onClick={handleRevise}
-              >
-                {isRevising ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                {isRevising ? 'Revising...' : 'Submit revision'}
-              </Button>
-              <div className="flex gap-2">
+                <Textarea
+                  value={revisionNote}
+                  onChange={(e) => setRevisionNote(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleRevise(); } }}
+                  placeholder="e.g. Switch to bold template, add a $500 line item for cleanup, change tax to 8.5%..."
+                  rows={4}
+                />
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-1 text-xs"
-                  disabled={!lastSnapshot.current || isUndoing}
-                  onClick={handleUndo}
+                  variant="outline"
+                  className="w-full gap-2"
+                  disabled={!revisionNote.trim() || isRevising}
+                  onClick={handleRevise}
                 >
-                  {isUndoing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Undo2 className="h-3 w-3" />}
-                  Undo last edit
+                  {isRevising ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  {isRevising ? 'Revising...' : 'Submit revision'}
                 </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1 text-xs"
+                    disabled={!lastSnapshot.current || isUndoing}
+                    onClick={handleUndo}
+                  >
+                    {isUndoing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Undo2 className="h-3 w-3" />}
+                    Undo last edit
+                  </Button>
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Exhibits */}
-            <ExhibitsUpload
-              exhibits={exhibits}
-              isAdding={isAdding}
-              onAdd={addExhibit}
-              onUpdateCaption={updateCaption}
-              onRemove={removeExhibit}
-            />
+            {isSigned && (
+              <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                This proposal has been signed and cannot be edited.
+              </div>
+            )}
+
+            {/* Exhibits — read-only when signed */}
+            {!isSigned && (
+              <ExhibitsUpload
+                exhibits={exhibits}
+                isAdding={isAdding}
+                onAdd={addExhibit}
+                onUpdateCaption={updateCaption}
+                onRemove={removeExhibit}
+              />
+            )}
 
             {/* Download & Send */}
             <div className="border rounded-lg p-4 space-y-3">

@@ -60,9 +60,13 @@ export default function ProposalDetail() {
     return <AppLayout><div className="container py-8"><p className="text-sm text-muted-foreground">Proposal not found</p></div></AppLayout>;
   }
 
+  const isSigned = ['signed', 'accepted', 'work_pending', 'payment_pending', 'closed'].includes(proposal.status);
+
   const handleDuplicate = async () => {
     try {
-      const { id: _id, created_at, updated_at, proposal_number, user_id, ...rest } = proposal;
+      const { id: _id, created_at, updated_at, proposal_number, user_id,
+        client_signature_url, client_signed_at, contractor_signature_url, contractor_signed_at,
+        signing_token, sent_at, pdf_url, ...rest } = proposal;
       const newProposal = await createProposal({
         ...rest,
         title: `${proposal.title} (Copy)`,
@@ -106,6 +110,12 @@ export default function ProposalDetail() {
           </div>
         </div>
 
+        {isSigned && (
+          <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            This proposal has been signed and cannot be edited.
+          </div>
+        )}
+
         <div className="flex flex-wrap gap-2 mb-6">
           <Link to={`/proposals/${id}/preview`} className="flex-1 sm:flex-none">
             <Button variant="outline" size="sm" className="gap-2 w-full sm:w-auto"><Eye className="h-4 w-4" /> Preview</Button>
@@ -113,10 +123,12 @@ export default function ProposalDetail() {
           <Button variant="outline" size="sm" className="gap-2 flex-1 sm:flex-none" onClick={handleDuplicate}>
             <Copy className="h-4 w-4" /> Duplicate
           </Button>
-          <Button variant="outline" size="sm" className="gap-2 flex-1 sm:flex-none" onClick={handleResend} disabled={isSending}>
-            {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            {isSending ? 'Sending…' : 'Resend'}
-          </Button>
+          {!isSigned && (
+            <Button variant="outline" size="sm" className="gap-2 flex-1 sm:flex-none" onClick={handleResend} disabled={isSending}>
+              {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              {isSending ? 'Sending…' : 'Resend'}
+            </Button>
+          )}
         </div>
 
         {/* Summary */}
@@ -124,9 +136,11 @@ export default function ProposalDetail() {
           <CardContent className="p-6 space-y-4 text-sm">
             <div className="flex items-center justify-between mb-1">
               <h3 className="font-medium">Client Info</h3>
-              <Button variant="ghost" size="sm" className="gap-1 text-xs h-7" onClick={() => setEditClientOpen(true)}>
-                <Pencil className="h-3 w-3" /> Edit
-              </Button>
+              {!isSigned && (
+                <Button variant="ghost" size="sm" className="gap-1 text-xs h-7" onClick={() => setEditClientOpen(true)}>
+                  <Pencil className="h-3 w-3" /> Edit
+                </Button>
+              )}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
               <div><span className="text-muted-foreground">Client:</span> {proposal.client_name}</div>
@@ -157,15 +171,17 @@ export default function ProposalDetail() {
         </Card>
 
         {/* Exhibits */}
-        <div className="mt-6">
-          <ExhibitsUpload
-            exhibits={exhibits}
-            isAdding={isAdding}
-            onAdd={addExhibit}
-            onUpdateCaption={updateCaption}
-            onRemove={removeExhibit}
-          />
-        </div>
+        {!isSigned && (
+          <div className="mt-6">
+            <ExhibitsUpload
+              exhibits={exhibits}
+              isAdding={isAdding}
+              onAdd={addExhibit}
+              onUpdateCaption={updateCaption}
+              onRemove={removeExhibit}
+            />
+          </div>
+        )}
         {proposal && (
           <EditClientDialog
             open={editClientOpen}
