@@ -2,10 +2,11 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/formatCurrency';
-import { formatPhone } from '@/lib/formatPhone';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Download, Loader2 } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
+import ProposalDocument from '@/components/proposal/ProposalDocument';
+import type { TemplateId } from '@/components/proposal/TemplateSwitcher';
 
 interface ProposalData {
   proposal: any;
@@ -187,15 +188,18 @@ export default function ProposalSign() {
   const profile = data?.company_profile;
   const exhibits = data?.exhibits || [];
 
+  // Determine the template from the saved proposal
+  const templateId: TemplateId = (['modern', 'classic', 'bold', 'minimal'].includes(proposal?.template) ? proposal.template : 'modern') as TemplateId;
+
   const handleDownloadPdf = async () => {
-    const el = document.getElementById('signed-proposal-content');
+    const el = document.getElementById('proposal-document-content');
     if (!el) return;
     const proposalNum = String(proposal?.proposal_number || 0).padStart(4, '0');
     await html2pdf().set({
       margin: [0.5, 0.5, 0.5, 0.5],
       filename: `Proposal-PRO-${proposalNum}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
+      html2canvas: { scale: 2, useCORS: true, letterRendering: true, windowWidth: 816 },
       jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
     }).from(el).save();
   };
@@ -230,166 +234,19 @@ export default function ProposalSign() {
           </div>
         </div>
 
-        {/* Full proposal content */}
-        <div id="signed-proposal-content" className="max-w-3xl mx-auto px-6 py-8 space-y-8">
-          <div className="bg-background rounded-lg border shadow-sm p-8 space-y-6">
-            {/* Header with company info */}
-            {profile?.logo_url && (
-              <img src={profile.logo_url} alt={profile.company_name || ''} className="max-h-12 max-w-[180px]" />
-            )}
-            {proposal.title && <h1 className="text-xl font-semibold">{proposal.title}</h1>}
-
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <div className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Prepared for</div>
-                <div className="font-medium">{proposal.client_name}</div>
-                {proposal.client_email && <div className="text-muted-foreground">{proposal.client_email}</div>}
-                {proposal.client_phone && <div className="text-muted-foreground">{formatPhone(proposal.client_phone)}</div>}
-              </div>
-              <div className="text-right">
-                <div className="text-muted-foreground text-xs uppercase tracking-wider mb-1">From</div>
-                <div className="font-medium">{profile?.company_name}</div>
-                {profile?.email && <div className="text-muted-foreground">{profile.email}</div>}
-                {profile?.phone && <div className="text-muted-foreground">{formatPhone(profile.phone)}</div>}
-                <div className="text-muted-foreground text-xs mt-2">PRO-{String(proposal.proposal_number).padStart(4, '0')}</div>
-                <div className="text-muted-foreground text-xs">Date: {proposal.proposal_date}</div>
-              </div>
-            </div>
-
-            {proposal.job_site_street && (
-              <div className="text-sm">
-                <div className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Job Site</div>
-                <div>{[proposal.job_site_street, proposal.job_site_city, proposal.job_site_state, proposal.job_site_zip].filter(Boolean).join(', ')}</div>
-              </div>
-            )}
-
-            {(proposal.enhanced_job_description || proposal.job_description) && (
-              <div>
-                <h3 className="text-sm font-semibold mb-1">Job Description</h3>
-                <p className="text-sm whitespace-pre-wrap text-muted-foreground">{proposal.enhanced_job_description || proposal.job_description}</p>
-              </div>
-            )}
-
-            {(proposal.enhanced_scope_of_work || proposal.scope_of_work) && (
-              <div>
-                <h3 className="text-sm font-semibold mb-1">Scope of Work</h3>
-                <p className="text-sm whitespace-pre-wrap text-muted-foreground">{proposal.enhanced_scope_of_work || proposal.scope_of_work}</p>
-              </div>
-            )}
-
-            {proposal.materials_included && (
-              <div>
-                <h3 className="text-sm font-semibold mb-1">Materials Included</h3>
-                <p className="text-sm whitespace-pre-wrap text-muted-foreground">{proposal.materials_included}</p>
-              </div>
-            )}
-
-            {lineItems.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold mb-2">Pricing</h3>
-                <div className="overflow-x-auto">
-                <table className="w-full text-sm min-w-[400px]">
-                  <thead>
-                    <tr className="border-b text-xs text-muted-foreground">
-                      <th className="text-left py-2">Description</th>
-                      <th className="text-right py-2 w-16">Qty</th>
-                      <th className="text-right py-2 w-16">Unit</th>
-                      <th className="text-right py-2 w-24">Unit Price</th>
-                      <th className="text-right py-2 w-24">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {lineItems.map((item: any) => (
-                      <tr key={item.id} className="border-b">
-                        <td className="py-2">{item.description}</td>
-                        <td className="text-right py-2">{item.quantity}</td>
-                        <td className="text-right py-2">{item.unit}</td>
-                        <td className="text-right py-2">${formatCurrency(item.unit_price)}</td>
-                        <td className="text-right py-2">${formatCurrency(item.subtotal)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                </div>
-                <div className="border-t pt-2 mt-0 space-y-1 text-sm">
-                  <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>${formatCurrency(proposal.subtotal)}</span></div>
-                  {Number(proposal.tax_rate) > 0 && (
-                    <div className="flex justify-between"><span className="text-muted-foreground">Tax ({proposal.tax_rate}%)</span><span>${formatCurrency(proposal.tax_amount)}</span></div>
-                  )}
-                  <div className="flex justify-between font-semibold text-base border-t pt-1"><span>Total</span><span>${formatCurrency(proposal.total)}</span></div>
-                  {Number(proposal.deposit_amount) > 0 && (
-                    <>
-                      <div className="flex justify-between text-muted-foreground"><span>Deposit required</span><span>${formatCurrency(proposal.deposit_amount)}</span></div>
-                      <div className="flex justify-between font-medium"><span>Balance due</span><span>${formatCurrency(proposal.balance_due)}</span></div>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {proposal.warranty_terms && (
-              <div>
-                <h3 className="text-sm font-semibold mb-1">Warranty</h3>
-                <p className="text-sm whitespace-pre-wrap text-muted-foreground">{proposal.warranty_terms}</p>
-              </div>
-            )}
-
-            {proposal.payment_terms && (
-              <div>
-                <h3 className="text-sm font-semibold mb-1">Payment Terms</h3>
-                <p className="text-sm text-muted-foreground">{proposal.payment_terms}</p>
-              </div>
-            )}
-
-            {proposal.disclosures && (
-              <div>
-                <h3 className="text-sm font-semibold mb-1">Disclosures</h3>
-                <p className="text-sm whitespace-pre-wrap text-muted-foreground">{proposal.disclosures}</p>
-              </div>
-            )}
-
-            {/* Signatures section */}
-            <div className="border-t pt-6 mt-6">
-              <h3 className="text-sm font-semibold mb-4">Signatures</h3>
-              <div className="grid grid-cols-2 gap-8">
-                {proposal.client_signature_url && (
-                  <div>
-                    <div className="text-xs text-muted-foreground mb-1">Client Signature</div>
-                    <img src={proposal.client_signature_url} alt="Client signature" className="max-h-16 border-b pb-1" />
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {proposal.client_name} — {proposal.client_signed_at ? new Date(proposal.client_signed_at).toLocaleDateString() : ''}
-                    </div>
-                  </div>
-                )}
-                {proposal.contractor_signature_url && (
-                  <div>
-                    <div className="text-xs text-muted-foreground mb-1">Contractor Signature</div>
-                    <img src={proposal.contractor_signature_url} alt="Contractor signature" className="max-h-16 border-b pb-1" />
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {profile?.owner_name || profile?.company_name} — {proposal.contractor_signed_at ? new Date(proposal.contractor_signed_at).toLocaleDateString() : ''}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+        {/* Full styled proposal */}
+        <div className="max-w-3xl mx-auto px-6 py-8">
+          <div id="proposal-document-content" className="bg-white rounded-lg border shadow-sm overflow-hidden">
+            <ProposalDocument
+              proposal={proposal}
+              lineItems={lineItems}
+              profile={profile}
+              exhibits={exhibits}
+              template={templateId}
+            />
           </div>
 
-          {/* Exhibits */}
-          {exhibits.length > 0 && (
-            <div className="bg-background rounded-lg border shadow-sm p-8 space-y-4">
-              <h3 className="text-sm font-semibold">Exhibits & Attachments</h3>
-              <div className="grid grid-cols-2 gap-4">
-                {exhibits.map((exhibit: any, i: number) => (
-                  <div key={exhibit.id} className="space-y-1">
-                    <img src={exhibit.file_url} alt={exhibit.caption || `Exhibit ${i + 1}`} className="w-full rounded border object-contain max-h-64" />
-                    <p className="text-xs text-muted-foreground text-center italic">{exhibit.caption || `Exhibit ${i + 1}`}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="text-center text-xs text-muted-foreground pb-8">
+          <div className="text-center text-xs text-muted-foreground py-8">
             Powered by <span className="font-medium">EZ-Bid</span>
           </div>
         </div>
@@ -418,139 +275,16 @@ export default function ProposalSign() {
       </div>
 
       <div className="max-w-3xl mx-auto px-6 py-8 space-y-8">
-        {/* Proposal details card */}
-        <div className="bg-background rounded-lg border shadow-sm p-8 space-y-6">
-          {proposal.title && <h1 className="text-xl font-semibold">{proposal.title}</h1>}
-
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <div className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Prepared for</div>
-              <div className="font-medium">{proposal.client_name}</div>
-              {proposal.client_email && <div className="text-muted-foreground">{proposal.client_email}</div>}
-              {proposal.client_phone && <div className="text-muted-foreground">{formatPhone(proposal.client_phone)}</div>}
-            </div>
-            <div className="text-right">
-              <div className="text-muted-foreground text-xs">Date: {proposal.proposal_date}</div>
-              <div className="text-muted-foreground text-xs">Valid until: {proposal.valid_until}</div>
-            </div>
-          </div>
-
-          {proposal.job_site_street && (
-            <div className="text-sm">
-              <div className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Job Site</div>
-              <div>{[proposal.job_site_street, proposal.job_site_city, proposal.job_site_state, proposal.job_site_zip].filter(Boolean).join(', ')}</div>
-            </div>
-          )}
-
-          {(proposal.enhanced_job_description || proposal.job_description) && (
-            <div>
-              <h3 className="text-sm font-semibold mb-1">Job Description</h3>
-              <p className="text-sm whitespace-pre-wrap text-muted-foreground">{proposal.enhanced_job_description || proposal.job_description}</p>
-            </div>
-          )}
-
-          {(proposal.enhanced_scope_of_work || proposal.scope_of_work) && (
-            <div>
-              <h3 className="text-sm font-semibold mb-1">Scope of Work</h3>
-              <p className="text-sm whitespace-pre-wrap text-muted-foreground">{proposal.enhanced_scope_of_work || proposal.scope_of_work}</p>
-            </div>
-          )}
-
-          {proposal.materials_included && (
-            <div>
-              <h3 className="text-sm font-semibold mb-1">Materials Included</h3>
-              <p className="text-sm whitespace-pre-wrap text-muted-foreground">{proposal.materials_included}</p>
-            </div>
-          )}
-
-          {lineItems.length > 0 && (
-            <div>
-              <h3 className="text-sm font-semibold mb-2">Pricing</h3>
-              <div className="overflow-x-auto">
-              <table className="w-full text-sm min-w-[400px]">
-                <thead>
-                  <tr className="border-b text-xs text-muted-foreground">
-                    <th className="text-left py-2">Description</th>
-                    <th className="text-right py-2 w-16">Qty</th>
-                    <th className="text-right py-2 w-16">Unit</th>
-                    <th className="text-right py-2 w-24">Unit Price</th>
-                    <th className="text-right py-2 w-24">Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {lineItems.map((item: any) => (
-                    <tr key={item.id} className="border-b">
-                      <td className="py-2">{item.description}</td>
-                      <td className="text-right py-2">{item.quantity}</td>
-                      <td className="text-right py-2">{item.unit}</td>
-                      <td className="text-right py-2">${formatCurrency(item.unit_price)}</td>
-                      <td className="text-right py-2">${formatCurrency(item.subtotal)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              </div>
-              <div className="border-t pt-2 mt-0 space-y-1 text-sm">
-                <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>${formatCurrency(proposal.subtotal)}</span></div>
-                {Number(proposal.tax_rate) > 0 && (
-                  <div className="flex justify-between"><span className="text-muted-foreground">Tax ({proposal.tax_rate}%)</span><span>${formatCurrency(proposal.tax_amount)}</span></div>
-                )}
-                <div className="flex justify-between font-semibold text-base border-t pt-1"><span>Total</span><span>${formatCurrency(proposal.total)}</span></div>
-                {Number(proposal.deposit_amount) > 0 && (
-                  <>
-                    <div className="flex justify-between text-muted-foreground"><span>Deposit required</span><span>${formatCurrency(proposal.deposit_amount)}</span></div>
-                    <div className="flex justify-between font-medium"><span>Balance due</span><span>${formatCurrency(proposal.balance_due)}</span></div>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-
-          {proposal.warranty_terms && (
-            <div>
-              <h3 className="text-sm font-semibold mb-1">Warranty</h3>
-              <p className="text-sm whitespace-pre-wrap text-muted-foreground">{proposal.warranty_terms}</p>
-            </div>
-          )}
-
-          {proposal.payment_terms && (
-            <div>
-              <h3 className="text-sm font-semibold mb-1">Payment Terms</h3>
-              <p className="text-sm text-muted-foreground">{proposal.payment_terms}</p>
-              {proposal.accepted_payment_methods?.length ? (
-                <p className="text-xs text-muted-foreground mt-1">Accepted: {proposal.accepted_payment_methods.join(', ')}</p>
-              ) : null}
-            </div>
-          )}
-
-          {proposal.disclosures && (
-            <div>
-              <h3 className="text-sm font-semibold mb-1">Disclosures</h3>
-              <p className="text-sm whitespace-pre-wrap text-muted-foreground">{proposal.disclosures}</p>
-            </div>
-          )}
+        {/* Styled proposal document */}
+        <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
+          <ProposalDocument
+            proposal={proposal}
+            lineItems={lineItems}
+            profile={profile}
+            exhibits={exhibits}
+            template={templateId}
+          />
         </div>
-
-        {/* Exhibits */}
-        {exhibits.length > 0 && (
-          <div className="bg-background rounded-lg border shadow-sm p-8 space-y-4">
-            <h3 className="text-sm font-semibold">Exhibits & Attachments</h3>
-            <div className="grid grid-cols-2 gap-4">
-              {exhibits.map((exhibit: any, i: number) => (
-                <div key={exhibit.id} className="space-y-1">
-                  <img
-                    src={exhibit.file_url}
-                    alt={exhibit.caption || `Exhibit ${i + 1}`}
-                    className="w-full rounded border object-contain max-h-64"
-                  />
-                  <p className="text-xs text-muted-foreground text-center italic">
-                    {exhibit.caption || `Exhibit ${i + 1}`}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Signature section */}
         <div className="bg-background rounded-lg border shadow-sm p-8">
