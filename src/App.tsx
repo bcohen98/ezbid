@@ -20,12 +20,19 @@ import AdminRevenue from "./pages/admin/AdminRevenue";
 import Tutorial from "./pages/Tutorial";
 import NotFound from "./pages/NotFound";
 import HelpChatWidget from "./components/HelpChatWidget";
+import { usePageTracking } from "./hooks/usePageTracking";
+import { useErrorTracking } from "./hooks/useErrorTracking";
 
 const queryClient = new QueryClient();
 
+function AppTracking() {
+  usePageTracking();
+  useErrorTracking();
+  return null;
+}
+
 function HelpChatWidgetWrapper() {
   const location = useLocation();
-  // Hide chat widget on proposal signing pages
   if (location.pathname.includes('/sign')) return null;
   return <HelpChatWidget />;
 }

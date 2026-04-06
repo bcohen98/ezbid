@@ -68,3 +68,11 @@ export function useAdminRevenue() {
     staleTime: 30_000,
   });
 }
+
+export function useAdminAnalytics() {
+  return useQuery({
+    queryKey: ['admin-analytics'],
+    queryFn: () => fetchAdminSection('analytics'),
+    staleTime: 60_000,
+  });
+}
