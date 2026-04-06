@@ -275,13 +275,15 @@ export default function Dashboard() {
                     {p.status}
                   </Badge>
                   {p.status === 'signed' && p.client_signature_url && !(p as any).contractor_signature_url && (
-                    <Badge
+                    <Button
                       variant="outline"
-                      className="border-amber-400 text-amber-700 bg-amber-50 text-[10px] cursor-pointer hover:bg-amber-100"
-                      onClick={(e) => { e.preventDefault(); navigate(`/proposals/${p.id}/preview`); }}
+                      size="sm"
+                      className="border-amber-400 text-amber-700 bg-amber-50 hover:bg-amber-100 gap-1.5 text-xs font-medium"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/proposals/${p.id}/preview`); }}
                     >
+                      <PenLine className="h-3.5 w-3.5" />
                       Countersign
-                    </Badge>
+                    </Button>
                   )}
                   {p.status === 'draft' && (
                     <Button
