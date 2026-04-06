@@ -60,7 +60,7 @@ export default function ProposalDetail() {
     return <AppLayout><div className="container py-8"><p className="text-sm text-muted-foreground">Proposal not found</p></div></AppLayout>;
   }
 
-  const isSigned = ['signed', 'accepted', 'work_pending', 'payment_pending', 'closed'].includes(proposal.status);
+  const isSigned = ['signed', 'accepted', 'work_pending', 'payment_pending', 'closed'].includes(proposal.status) || !!proposal.client_signature_url;
 
   const handleDuplicate = async () => {
     try {

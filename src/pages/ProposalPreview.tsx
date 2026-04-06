@@ -44,7 +44,7 @@ export default function ProposalPreview() {
     return <AppLayout><div className="container py-8"><p className="text-sm text-muted-foreground">Proposal not found</p></div></AppLayout>;
   }
 
-  const isSigned = ['signed', 'accepted', 'work_pending', 'payment_pending', 'closed'].includes(proposal.status);
+  const isSigned = ['signed', 'accepted', 'work_pending', 'payment_pending', 'closed'].includes(proposal.status) || !!proposal.client_signature_url;
 
   console.log('[ProposalPreview] render — client_email:', JSON.stringify(proposal.client_email), 'type:', typeof proposal.client_email, 'falsy:', !proposal.client_email);
 
