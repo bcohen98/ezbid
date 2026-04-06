@@ -169,7 +169,8 @@ serve(async (req) => {
     unsubToken = user_id;
 
     const firstName = getFirstName(first_name);
-    const unsubUrl = `https://ezbid.pro/unsubscribe?uid=${user_id}`;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const unsubUrl = `${supabaseUrl}/functions/v1/handle-lifecycle-unsubscribe?uid=${user_id}`;
     const email = buildEmail(email_type, firstName, unsubUrl, checkout_url);
 
     // Send via Resend
