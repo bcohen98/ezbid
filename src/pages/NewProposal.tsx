@@ -77,7 +77,7 @@ export default function NewProposal() {
       <AppLayout>
         <UpgradePrompt
           proposalsUsed={subscription?.proposals_used ?? 0}
-          onContinue={() => setDismissed(true)}
+          onContinue={() => navigate('/dashboard')}
         />
       </AppLayout>
     );
