@@ -1,4 +1,44 @@
 import { useState, useMemo } from 'react';
+
+// Legacy type exports used by ProposalForm and TemplateSelector
+export type ProposalTemplate = 'classic' | 'modern' | 'minimal' | 'bold' | 'executive' | 'contractor' | 'premium' | 'clean';
+
+export interface LineItemData {
+  description: string;
+  quantity: number;
+  unit: string;
+  unit_price: number;
+}
+
+export interface ProposalFormData {
+  template: ProposalTemplate;
+  client_name: string;
+  client_email: string;
+  client_phone: string;
+  job_site_street: string;
+  job_site_city: string;
+  job_site_state: string;
+  job_site_zip: string;
+  title: string;
+  job_description: string;
+  scope_of_work: string;
+  materials_included: string;
+  materials_excluded: string;
+  estimated_start_date: string;
+  estimated_duration: string;
+  line_items: LineItemData[];
+  tax_rate: number;
+  deposit_mode: 'percentage' | 'flat';
+  deposit_value: number;
+  payment_terms: string;
+  accepted_payment_methods: string[];
+  warranty_terms: string;
+  disclosures: string;
+  special_conditions: string;
+  proposal_date: string;
+  valid_until: string;
+  delivery_method: 'email_self' | 'email_client';
+}
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { useProposals } from '@/hooks/useProposals';
