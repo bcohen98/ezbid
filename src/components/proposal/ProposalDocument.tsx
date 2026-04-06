@@ -5,6 +5,7 @@ import EditableSection, { EditableLineItemRow, EditableTotals } from './Editable
 import type { ProposalExhibit } from '@/hooks/useProposalExhibits';
 import { getTradeStyle } from './tradeStyles';
 import { Phone, Mail, MapPin } from 'lucide-react';
+import type { TemplateId } from './TemplateSwitcher';
 
 type Proposal = Database['public']['Tables']['proposals']['Row'];
 type LineItem = Database['public']['Tables']['proposal_line_items']['Row'];
@@ -15,12 +16,13 @@ interface Props {
   lineItems: LineItem[];
   profile: CompanyProfile | null | undefined;
   exhibits?: ProposalExhibit[];
+  template?: TemplateId;
   onFieldEdit?: (field: string, value: string) => void;
   onLineItemEdit?: (id: string, updates: { description: string; quantity: number; unit: string; unit_price: number; subtotal: number }) => void;
   onTotalsEdit?: (updates: { tax_rate: number; deposit_mode: string; deposit_value: number }) => void;
 }
 
-export default function ProposalDocument({ proposal, lineItems, profile, exhibits, onFieldEdit, onLineItemEdit, onTotalsEdit }: Props) {
+export default function ProposalDocument({ proposal, lineItems, profile, exhibits, template = 'modern', onFieldEdit, onLineItemEdit, onTotalsEdit }: Props) {
   const trade = getTradeStyle((proposal as any).trade_type || profile?.trade_type);
   const address = [profile?.street_address, profile?.city, profile?.state, profile?.zip].filter(Boolean).join(', ');
 
@@ -33,339 +35,556 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
     );
   };
 
-  return (
-    <div className="bg-white text-sm" style={{ fontFamily: "'Inter', sans-serif", minHeight: '800px', color: '#1a1a1a' }}>
-      {/* ─── Logo + Company Info (white background) ─── */}
-      <div className="px-10 pt-10 pb-6">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-4">
-            {profile?.logo_url && (
-              <img src={profile.logo_url} alt="Logo" className="h-14 w-auto object-contain" />
+  // Shared data
+  const proposalNumber = `PRO-${String(proposal.proposal_number).padStart(4, '0')}`;
+  const jobSiteAddress = [proposal.job_site_street, proposal.job_site_city, proposal.job_site_state, proposal.job_site_zip].filter(Boolean).join(', ');
+
+  // ─── Content sections (shared across templates) ───
+  const contentSections = (SectionComp: React.FC<{ title: string; children: React.ReactNode }>) => (
+    <>
+      {(proposal.enhanced_job_description || proposal.job_description) && (
+        <SectionComp title="Job Description">
+          {editable('job_description', proposal.enhanced_job_description || proposal.job_description,
+            <p className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: '#333' }}>{proposal.enhanced_job_description || proposal.job_description}</p>
+          )}
+        </SectionComp>
+      )}
+      {(proposal.enhanced_scope_of_work || proposal.scope_of_work) && (
+        <SectionComp title="Scope of Work">
+          {editable('scope_of_work', proposal.enhanced_scope_of_work || proposal.scope_of_work,
+            <p className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: '#333' }}>{proposal.enhanced_scope_of_work || proposal.scope_of_work}</p>
+          )}
+        </SectionComp>
+      )}
+      {proposal.materials_included && (
+        <SectionComp title="Materials Included">
+          {editable('materials_included', proposal.materials_included,
+            <p className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: '#333' }}>{proposal.materials_included}</p>
+          )}
+        </SectionComp>
+      )}
+      {proposal.materials_excluded && (
+        <SectionComp title="Materials Excluded">
+          {editable('materials_excluded', proposal.materials_excluded,
+            <p className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: '#333' }}>{proposal.materials_excluded}</p>
+          )}
+        </SectionComp>
+      )}
+      {(proposal.estimated_start_date || proposal.estimated_duration) && (
+        <SectionComp title="Timeline">
+          <div className="text-sm space-y-0.5" style={{ color: '#333' }}>
+            {proposal.estimated_start_date && <div>Start date: {proposal.estimated_start_date}</div>}
+            {proposal.estimated_duration && editable('estimated_duration', proposal.estimated_duration,
+              <div>Duration: {proposal.estimated_duration}</div>
             )}
-            <div>
-              <div className="text-xl font-extrabold tracking-tight" style={{ color: trade.accentColor }}>
-                {profile?.company_name || 'Company Name'}
-              </div>
-              {profile?.trade_type && (
-                <div className="text-xs uppercase tracking-widest mt-0.5" style={{ color: trade.accentColor, opacity: 0.7 }}>
-                  {trade.label}
+          </div>
+        </SectionComp>
+      )}
+    </>
+  );
+
+  const termsAndConditions = (SectionComp: React.FC<{ title: string; children: React.ReactNode }>) => (
+    <>
+      {proposal.payment_terms && (
+        <SectionComp title="Payment Terms">
+          {editable('payment_terms', proposal.payment_terms,
+            <p className="text-sm leading-relaxed" style={{ color: '#333' }}>{proposal.payment_terms}</p>
+          )}
+          {proposal.accepted_payment_methods?.length ? (
+            <p className="text-xs mt-2" style={{ color: '#888' }}>Accepted: {proposal.accepted_payment_methods.join(', ')}</p>
+          ) : null}
+        </SectionComp>
+      )}
+      {proposal.warranty_terms && (
+        <SectionComp title="Warranty">
+          {editable('warranty_terms', proposal.warranty_terms,
+            <p className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: '#333' }}>{proposal.warranty_terms}</p>
+          )}
+        </SectionComp>
+      )}
+      {proposal.disclosures && (
+        <SectionComp title="Disclosures">
+          {editable('disclosures', proposal.disclosures,
+            <p className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: '#333' }}>{proposal.disclosures}</p>
+          )}
+        </SectionComp>
+      )}
+      {proposal.special_conditions && (
+        <SectionComp title="Special Conditions">
+          {editable('special_conditions', proposal.special_conditions,
+            <p className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: '#333' }}>{proposal.special_conditions}</p>
+          )}
+        </SectionComp>
+      )}
+    </>
+  );
+
+  // ─── Line items table (shared) ───
+  const lineItemsTable = (headerStyle: 'filled' | 'outlined' | 'minimal') => {
+    if (lineItems.length === 0) return null;
+
+    const headerBg = headerStyle === 'filled' ? trade.accentColor : headerStyle === 'outlined' ? 'transparent' : 'transparent';
+    const headerTextColor = headerStyle === 'filled' ? '#fff' : '#1a1a1a';
+    const showTopBorder = headerStyle !== 'filled';
+
+    return (
+      <div className="mb-8">
+        {headerStyle === 'filled' && <div className="h-0.5" style={{ backgroundColor: trade.accentColor }} />}
+        {showTopBorder && <div className="h-px" style={{ backgroundColor: '#e0e0e0' }} />}
+        <table className="w-full text-sm">
+          <thead>
+            <tr style={{ backgroundColor: headerBg, borderBottom: headerStyle === 'outlined' ? `2px solid ${trade.accentColor}` : undefined }}>
+              <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider w-8" style={{ color: headerTextColor }}>#</th>
+              <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider" style={{ color: headerTextColor }}>Description</th>
+              <th className="text-center py-3 px-4 text-xs font-bold uppercase tracking-wider w-16" style={{ color: headerTextColor }}>Qty</th>
+              <th className="text-right py-3 px-4 text-xs font-bold uppercase tracking-wider w-20" style={{ color: headerTextColor }}>Unit</th>
+              <th className="text-right py-3 px-4 text-xs font-bold uppercase tracking-wider w-24" style={{ color: headerTextColor }}>Price</th>
+              <th className="text-right py-3 px-4 text-xs font-bold uppercase tracking-wider w-24" style={{ color: headerTextColor }}>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {lineItems.map((item, idx) => (
+              onLineItemEdit ? (
+                <EditableLineItemRow key={item.id} item={item} onSave={onLineItemEdit} />
+              ) : (
+                <tr key={item.id} className="border-b" style={{ borderColor: '#e8e8e8', borderStyle: headerStyle === 'minimal' ? 'solid' : 'dotted' }}>
+                  <td className="py-3 px-4 text-center" style={{ color: '#888' }}>{idx + 1}</td>
+                  <td className="py-3 px-4">{item.description}</td>
+                  <td className="text-center py-3 px-4">{item.quantity}</td>
+                  <td className="text-right py-3 px-4" style={{ color: '#555' }}>{item.unit}</td>
+                  <td className="text-right py-3 px-4">${formatCurrency(item.unit_price)}</td>
+                  <td className="text-right py-3 px-4 font-semibold">${formatCurrency(item.subtotal)}</td>
+                </tr>
+              )
+            ))}
+          </tbody>
+        </table>
+        {headerStyle === 'filled' && <div className="h-0.5" style={{ backgroundColor: trade.accentColor }} />}
+
+        {/* Totals */}
+        {onTotalsEdit ? (
+          <EditableTotals
+            subtotal={Number(proposal.subtotal) || 0}
+            taxRate={Number(proposal.tax_rate) || 0}
+            depositMode={proposal.deposit_mode || 'percentage'}
+            depositValue={Number(proposal.deposit_value) || 0}
+            onSave={onTotalsEdit}
+          />
+        ) : (
+          <div className="mt-4">
+            <div className="flex justify-end">
+              <div className="w-64 space-y-1.5">
+                <div className="flex justify-between text-sm">
+                  <span className="font-bold">Sub Total</span>
+                  <span className="font-bold">${formatCurrency(proposal.subtotal)}</span>
                 </div>
-              )}
+                {Number(proposal.tax_rate) > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="font-bold">Tax {proposal.tax_rate}%</span>
+                    <span className="font-bold">${formatCurrency(proposal.tax_amount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center text-white font-bold text-base px-4 py-2.5 rounded-sm mt-2" style={{ backgroundColor: trade.accentColor }}>
+                  <span>GRAND TOTAL</span>
+                  <span>${formatCurrency(proposal.total)}</span>
+                </div>
+                {Number(proposal.deposit_amount) > 0 && (
+                  <>
+                    <div className="flex justify-between text-sm mt-2">
+                      <span style={{ color: '#555' }}>Deposit Due Upon Signing</span>
+                      <span className="font-semibold">${formatCurrency(proposal.deposit_amount)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span style={{ color: '#555' }}>Balance Due Upon Completion</span>
+                      <span className="font-semibold">${formatCurrency(proposal.balance_due)}</span>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ─── Signature block (shared) ───
+  const signatureBlock = () => (
+    <div className="mt-14 grid grid-cols-2 gap-16">
+      <div>
+        {proposal.client_signature_url ? (
+          <div className="mb-1 pb-2"><img src={proposal.client_signature_url} alt="Client signature" className="h-16 object-contain" /></div>
+        ) : (
+          <div className="border-b mb-1 pb-12" style={{ borderColor: '#ccc' }} />
+        )}
+        <div className="text-sm font-bold mt-2">{proposal.client_name || '___________________________'}</div>
+        <div className="text-xs mt-0.5" style={{ color: trade.accentColor, fontWeight: 600 }}>Client</div>
+        <div className="text-xs mt-1" style={{ color: '#888' }}>
+          {proposal.client_signed_at ? `Date: ${new Date(proposal.client_signed_at).toLocaleDateString()}` : 'Date: _______________'}
+        </div>
+      </div>
+      <div>
+        {(proposal as any).contractor_signature_url ? (
+          <div className="mb-1 pb-2"><img src={(proposal as any).contractor_signature_url} alt="Contractor signature" className="h-16 object-contain" /></div>
+        ) : (
+          <div className="border-b mb-1 pb-12" style={{ borderColor: '#ccc' }} />
+        )}
+        <div className="text-sm font-bold mt-2">{profile?.company_name || '___________________________'}</div>
+        <div className="text-xs mt-0.5" style={{ color: trade.accentColor, fontWeight: 600 }}>Contractor</div>
+        <div className="text-xs mt-1" style={{ color: '#888' }}>
+          {(proposal as any).contractor_signed_at ? `Date: ${new Date((proposal as any).contractor_signed_at).toLocaleDateString()}` : 'Date: _______________'}
+        </div>
+      </div>
+    </div>
+  );
+
+  // ─── Footer (shared) ───
+  const footer = () => (
+    <div className="mt-12 mx-10">
+      <div className="h-px" style={{ backgroundColor: trade.accentColor }} />
+      <div className="flex justify-center gap-10 py-5">
+        {profile?.phone && (
+          <div className="flex items-center gap-2">
+            <Phone className="h-4 w-4" style={{ color: trade.accentColor }} />
+            <div>
+              <div className="text-xs font-bold" style={{ color: trade.accentColor }}>Phone</div>
+              <div className="text-xs" style={{ color: '#555' }}>{formatPhone(profile.phone)}</div>
+            </div>
+          </div>
+        )}
+        {profile?.email && (
+          <div className="flex items-center gap-2">
+            <Mail className="h-4 w-4" style={{ color: trade.accentColor }} />
+            <div>
+              <div className="text-xs font-bold" style={{ color: trade.accentColor }}>Email</div>
+              <div className="text-xs" style={{ color: '#555' }}>{profile.email}</div>
+            </div>
+          </div>
+        )}
+        {address && (
+          <div className="flex items-center gap-2">
+            <MapPin className="h-4 w-4" style={{ color: trade.accentColor }} />
+            <div>
+              <div className="text-xs font-bold" style={{ color: trade.accentColor }}>Address</div>
+              <div className="text-xs" style={{ color: '#555' }}>{address}</div>
+            </div>
+          </div>
+        )}
+      </div>
+      {profile?.license_numbers?.length ? (
+        <div className="text-center text-xs pb-4" style={{ color: '#888' }}>Lic# {profile.license_numbers.join(', ')}</div>
+      ) : null}
+    </div>
+  );
+
+  // ─── Exhibits (shared) ───
+  const exhibitsSection = () => {
+    if (!exhibits || exhibits.length === 0) return null;
+    return (
+      <div className="px-10 mt-8 pt-8 border-t-2 border-dashed">
+        <div className="mb-6">
+          <h3 className="text-sm font-bold mb-2" style={{ color: '#1a1a1a' }}>Exhibits & Attachments</h3>
+          <div className="grid grid-cols-2 gap-4">
+            {exhibits.map((exhibit, i) => (
+              <div key={exhibit.id} className="space-y-1">
+                <img src={exhibit.file_url} alt={exhibit.caption || `Exhibit ${i + 1}`} className="w-full rounded border object-contain max-h-64" />
+                <p className="text-xs text-center italic" style={{ color: '#888' }}>{exhibit.caption || `Exhibit ${i + 1}`}</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
+    );
+  };
 
-      {/* ─── PROPOSAL title with accent bar ─── */}
-      <div className="px-10 mb-8">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-10 rounded" style={{ backgroundColor: trade.accentColor }} />
-          <div>
+  // ════════════════════════════════════════
+  // TEMPLATE: MODERN (default — current design)
+  // ════════════════════════════════════════
+  if (template === 'modern') {
+    return (
+      <div className="bg-white text-sm" style={{ fontFamily: "'Inter', sans-serif", minHeight: '800px', color: '#1a1a1a' }}>
+        {/* Logo + Company */}
+        <div className="px-10 pt-10 pb-6">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-4">
+              {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className="h-14 w-auto object-contain" />}
+              <div>
+                <div className="text-xl font-extrabold tracking-tight" style={{ color: trade.accentColor }}>{profile?.company_name || 'Company Name'}</div>
+                {profile?.trade_type && <div className="text-xs uppercase tracking-widest mt-0.5" style={{ color: trade.accentColor, opacity: 0.7 }}>{trade.label}</div>}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="px-10 mb-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-10 rounded" style={{ backgroundColor: trade.accentColor }} />
             <div className="text-3xl font-black tracking-tight" style={{ color: '#1a1a1a' }}>PROPOSAL</div>
           </div>
+          <ClientInfoRow proposal={proposal} proposalNumber={proposalNumber} jobSiteAddress={jobSiteAddress} />
         </div>
 
-        {/* Client / Proposal info row */}
-        <div className="flex justify-between items-start">
-          <div>
-            <div className="text-xs font-medium uppercase tracking-wider mb-1" style={{ color: '#888' }}>To</div>
-            <div className="text-base font-bold">{proposal.client_name}</div>
-            {proposal.client_phone && <div className="text-sm" style={{ color: '#555' }}>{formatPhone(proposal.client_phone)}</div>}
-            {proposal.client_email && <div className="text-sm" style={{ color: '#555' }}>{proposal.client_email}</div>}
-            {proposal.job_site_street && (
-              <div className="text-sm mt-0.5" style={{ color: '#555' }}>
-                {proposal.job_site_street}{proposal.job_site_city ? `, ${proposal.job_site_city}` : ''}{proposal.job_site_state ? `, ${proposal.job_site_state}` : ''} {proposal.job_site_zip || ''}
+        {proposal.title && (
+          <div className="px-10 mb-6">
+            {editable('title', proposal.title, <h2 className="text-lg font-bold" style={{ color: '#1a1a1a' }}>{proposal.title}</h2>)}
+          </div>
+        )}
+
+        <div className="px-10">
+          {contentSections(ModernSection)}
+          {lineItemsTable('filled')}
+          {termsAndConditions(ModernSection)}
+          {signatureBlock()}
+        </div>
+        {footer()}
+        {exhibitsSection()}
+      </div>
+    );
+  }
+
+  // ════════════════════════════════════════
+  // TEMPLATE: CLASSIC
+  // ════════════════════════════════════════
+  if (template === 'classic') {
+    return (
+      <div className="bg-white text-sm" style={{ fontFamily: "'Inter', sans-serif", minHeight: '800px', color: '#1a1a1a' }}>
+        {/* Top accent line */}
+        <div className="h-1" style={{ backgroundColor: trade.accentColor }} />
+
+        <div className="px-10 pt-8 pb-6">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-4">
+              {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className="h-12 w-auto object-contain" />}
+              <div>
+                <div className="text-lg font-bold" style={{ color: '#1a1a1a' }}>{profile?.company_name || 'Company Name'}</div>
+                {address && <div className="text-xs" style={{ color: '#666' }}>{address}</div>}
+                {profile?.phone && <div className="text-xs" style={{ color: '#666' }}>{formatPhone(profile.phone)} • {profile.email}</div>}
               </div>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold tracking-tight" style={{ color: trade.accentColor }}>PROPOSAL</div>
+              <div className="text-xs mt-1" style={{ color: '#666' }}>{proposalNumber}</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mx-10 h-px" style={{ backgroundColor: trade.accentColor }} />
+
+        <div className="px-10 py-6">
+          <ClassicInfoGrid proposal={proposal} proposalNumber={proposalNumber} jobSiteAddress={jobSiteAddress} />
+        </div>
+
+        <div className="mx-10 h-px bg-gray-200" />
+
+        {proposal.title && (
+          <div className="px-10 mt-6 mb-4">
+            {editable('title', proposal.title, <h2 className="text-base font-bold border-b pb-2" style={{ color: '#1a1a1a', borderColor: '#ddd' }}>{proposal.title}</h2>)}
+          </div>
+        )}
+
+        <div className="px-10">
+          {contentSections(ClassicSection)}
+          {lineItemsTable('outlined')}
+          {termsAndConditions(ClassicSection)}
+          {signatureBlock()}
+        </div>
+
+        {/* Classic footer */}
+        <div className="mt-12 mx-10">
+          <div className="h-1" style={{ backgroundColor: trade.accentColor }} />
+          <div className="text-center py-4 text-xs" style={{ color: '#888' }}>
+            {profile?.company_name} • {profile?.phone && formatPhone(profile.phone)} • {profile?.email}
+          </div>
+        </div>
+        {exhibitsSection()}
+      </div>
+    );
+  }
+
+  // ════════════════════════════════════════
+  // TEMPLATE: BOLD
+  // ════════════════════════════════════════
+  if (template === 'bold') {
+    return (
+      <div className="bg-white text-sm" style={{ fontFamily: "'Inter', sans-serif", minHeight: '800px', color: '#1a1a1a' }}>
+        {/* Full-width colored header */}
+        <div className="px-10 py-8" style={{ backgroundColor: trade.accentColor }}>
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-4">
+              {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className="h-14 w-auto object-contain brightness-0 invert" />}
+              <div>
+                <div className="text-xl font-extrabold tracking-tight text-white">{profile?.company_name || 'Company Name'}</div>
+                {profile?.trade_type && <div className="text-xs uppercase tracking-widest mt-0.5 text-white/70">{trade.label}</div>}
+              </div>
+            </div>
+            <div className="text-right text-white">
+              <div className="text-3xl font-black">PROPOSAL</div>
+              <div className="text-sm mt-1 text-white/70">{proposalNumber}</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="px-10 py-6">
+          <ClientInfoRow proposal={proposal} proposalNumber={proposalNumber} jobSiteAddress={jobSiteAddress} hideProposalNumber />
+        </div>
+
+        {proposal.title && (
+          <div className="px-10 mb-6">
+            {editable('title', proposal.title,
+              <h2 className="text-lg font-extrabold uppercase tracking-wide" style={{ color: trade.accentColor }}>{proposal.title}</h2>
             )}
           </div>
-          <div className="text-right text-sm" style={{ color: '#555' }}>
-            <div className="flex justify-end gap-8">
-              <div>
-                <span className="font-bold" style={{ color: '#1a1a1a' }}>Proposal no :</span>
-              </div>
-              <div className="font-bold" style={{ color: '#1a1a1a' }}>
-                PRO-{String(proposal.proposal_number).padStart(4, '0')}
-              </div>
-            </div>
-            <div className="flex justify-end gap-8 mt-0.5">
-              <div>Date :</div>
-              <div>{proposal.proposal_date}</div>
-            </div>
-            <div className="flex justify-end gap-8 mt-0.5">
-              <div>Valid until :</div>
-              <div>{proposal.valid_until}</div>
+        )}
+
+        <div className="px-10">
+          {contentSections(BoldSection)}
+          {lineItemsTable('filled')}
+          {termsAndConditions(BoldSection)}
+          {signatureBlock()}
+        </div>
+        {footer()}
+        {exhibitsSection()}
+      </div>
+    );
+  }
+
+  // ════════════════════════════════════════
+  // TEMPLATE: MINIMAL
+  // ════════════════════════════════════════
+  return (
+    <div className="bg-white text-sm" style={{ fontFamily: "'Inter', sans-serif", minHeight: '800px', color: '#1a1a1a' }}>
+      <div className="px-12 pt-14 pb-8">
+        <div className="flex items-start justify-between">
+          <div>
+            {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className="h-10 w-auto object-contain mb-4" />}
+            <div className="text-base font-semibold" style={{ color: '#1a1a1a' }}>{profile?.company_name || 'Company Name'}</div>
+            {address && <div className="text-xs mt-0.5" style={{ color: '#999' }}>{address}</div>}
+          </div>
+          <div className="text-right">
+            <div className="text-xs uppercase tracking-widest font-medium" style={{ color: '#999' }}>Proposal</div>
+            <div className="text-sm font-semibold mt-0.5">{proposalNumber}</div>
+            <div className="text-xs mt-2" style={{ color: '#999' }}>
+              {proposal.proposal_date && <div>{proposal.proposal_date}</div>}
             </div>
           </div>
         </div>
       </div>
 
-      {/* ─── Title ─── */}
+      <div className="mx-12 h-px bg-gray-100" />
+
+      <div className="px-12 py-8">
+        <div className="text-xs uppercase tracking-widest font-medium mb-2" style={{ color: '#999' }}>Prepared for</div>
+        <div className="text-sm font-semibold">{proposal.client_name}</div>
+        {proposal.client_email && <div className="text-xs" style={{ color: '#666' }}>{proposal.client_email}</div>}
+        {proposal.client_phone && <div className="text-xs" style={{ color: '#666' }}>{formatPhone(proposal.client_phone)}</div>}
+        {jobSiteAddress && <div className="text-xs mt-1" style={{ color: '#666' }}>{jobSiteAddress}</div>}
+      </div>
+
       {proposal.title && (
-        <div className="px-10 mb-6">
-          {editable('title', proposal.title,
-            <h2 className="text-lg font-bold" style={{ color: '#1a1a1a' }}>{proposal.title}</h2>
-          )}
+        <div className="px-12 mb-6">
+          {editable('title', proposal.title, <h2 className="text-base font-semibold" style={{ color: '#1a1a1a' }}>{proposal.title}</h2>)}
         </div>
       )}
 
-      {/* ─── Content sections ─── */}
-      <div className="px-10">
-        {/* Job Description */}
-        {(proposal.enhanced_job_description || proposal.job_description) && (
-          <ContentSection title="Job Description">
-            {editable('job_description', proposal.enhanced_job_description || proposal.job_description,
-              <p className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: '#333' }}>{proposal.enhanced_job_description || proposal.job_description}</p>
-            )}
-          </ContentSection>
-        )}
-
-        {/* Scope of Work */}
-        {(proposal.enhanced_scope_of_work || proposal.scope_of_work) && (
-          <ContentSection title="Scope of Work">
-            {editable('scope_of_work', proposal.enhanced_scope_of_work || proposal.scope_of_work,
-              <p className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: '#333' }}>{proposal.enhanced_scope_of_work || proposal.scope_of_work}</p>
-            )}
-          </ContentSection>
-        )}
-
-        {/* Materials */}
-        {proposal.materials_included && (
-          <ContentSection title="Materials Included">
-            {editable('materials_included', proposal.materials_included,
-              <p className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: '#333' }}>{proposal.materials_included}</p>
-            )}
-          </ContentSection>
-        )}
-        {proposal.materials_excluded && (
-          <ContentSection title="Materials Excluded">
-            {editable('materials_excluded', proposal.materials_excluded,
-              <p className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: '#333' }}>{proposal.materials_excluded}</p>
-            )}
-          </ContentSection>
-        )}
-
-        {/* Timeline */}
-        {(proposal.estimated_start_date || proposal.estimated_duration) && (
-          <ContentSection title="Timeline">
-            <div className="text-sm space-y-0.5" style={{ color: '#333' }}>
-              {proposal.estimated_start_date && <div>Start date: {proposal.estimated_start_date}</div>}
-              {proposal.estimated_duration && editable('estimated_duration', proposal.estimated_duration,
-                <div>Duration: {proposal.estimated_duration}</div>
-              )}
-            </div>
-          </ContentSection>
-        )}
-
-        {/* ─── Line Items Table ─── */}
-        {lineItems.length > 0 && (
-          <div className="mb-8">
-            {/* Colored header line */}
-            <div className="h-0.5 mb-0" style={{ backgroundColor: trade.accentColor }} />
-            <table className="w-full text-sm">
-              <thead>
-                <tr style={{ backgroundColor: trade.accentColor }}>
-                  <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-white w-8">#</th>
-                  <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider text-white">Description</th>
-                  <th className="text-center py-3 px-4 text-xs font-bold uppercase tracking-wider text-white w-16">Qty</th>
-                  <th className="text-right py-3 px-4 text-xs font-bold uppercase tracking-wider text-white w-20">Unit</th>
-                  <th className="text-right py-3 px-4 text-xs font-bold uppercase tracking-wider text-white w-24">Price</th>
-                  <th className="text-right py-3 px-4 text-xs font-bold uppercase tracking-wider text-white w-24">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {lineItems.map((item, idx) => (
-                  onLineItemEdit ? (
-                    <EditableLineItemRow key={item.id} item={item} onSave={onLineItemEdit} />
-                  ) : (
-                    <tr key={item.id} className="border-b" style={{ borderColor: '#e8e8e8', borderStyle: 'dotted' }}>
-                      <td className="py-3 px-4 text-center" style={{ color: '#888' }}>{idx + 1}</td>
-                      <td className="py-3 px-4">{item.description}</td>
-                      <td className="text-center py-3 px-4">{item.quantity}</td>
-                      <td className="text-right py-3 px-4" style={{ color: '#555' }}>{item.unit}</td>
-                      <td className="text-right py-3 px-4">${formatCurrency(item.unit_price)}</td>
-                      <td className="text-right py-3 px-4 font-semibold">${formatCurrency(item.subtotal)}</td>
-                    </tr>
-                  )
-                ))}
-              </tbody>
-            </table>
-            <div className="h-0.5" style={{ backgroundColor: trade.accentColor }} />
-
-            {/* Totals */}
-            {onTotalsEdit ? (
-              <EditableTotals
-                subtotal={Number(proposal.subtotal) || 0}
-                taxRate={Number(proposal.tax_rate) || 0}
-                depositMode={proposal.deposit_mode || 'percentage'}
-                depositValue={Number(proposal.deposit_value) || 0}
-                onSave={onTotalsEdit}
-              />
-            ) : (
-              <div className="mt-4">
-                <div className="flex justify-end">
-                  <div className="w-64 space-y-1.5">
-                    <div className="flex justify-between text-sm">
-                      <span className="font-bold">Sub Total</span>
-                      <span className="font-bold">${formatCurrency(proposal.subtotal)}</span>
-                    </div>
-                    {Number(proposal.tax_rate) > 0 && (
-                      <div className="flex justify-between text-sm">
-                        <span className="font-bold">Tax {proposal.tax_rate}%</span>
-                        <span className="font-bold">${formatCurrency(proposal.tax_amount)}</span>
-                      </div>
-                    )}
-                    {/* Grand Total bar */}
-                    <div className="flex justify-between items-center text-white font-bold text-base px-4 py-2.5 rounded-sm mt-2" style={{ backgroundColor: trade.accentColor }}>
-                      <span>GRAND TOTAL</span>
-                      <span>${formatCurrency(proposal.total)}</span>
-                    </div>
-                    {Number(proposal.deposit_amount) > 0 && (
-                      <>
-                        <div className="flex justify-between text-sm mt-2">
-                          <span style={{ color: '#555' }}>Deposit Due Upon Signing</span>
-                          <span className="font-semibold">${formatCurrency(proposal.deposit_amount)}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span style={{ color: '#555' }}>Balance Due Upon Completion</span>
-                          <span className="font-semibold">${formatCurrency(proposal.balance_due)}</span>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Payment Terms */}
-        {proposal.payment_terms && (
-          <ContentSection title="Payment Terms">
-            {editable('payment_terms', proposal.payment_terms,
-              <p className="text-sm leading-relaxed" style={{ color: '#333' }}>{proposal.payment_terms}</p>
-            )}
-            {proposal.accepted_payment_methods?.length ? (
-              <p className="text-xs mt-2" style={{ color: '#888' }}>Accepted: {proposal.accepted_payment_methods.join(', ')}</p>
-            ) : null}
-          </ContentSection>
-        )}
-
-        {/* Warranty */}
-        {proposal.warranty_terms && (
-          <ContentSection title="Warranty">
-            {editable('warranty_terms', proposal.warranty_terms,
-              <p className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: '#333' }}>{proposal.warranty_terms}</p>
-            )}
-          </ContentSection>
-        )}
-
-        {/* Disclosures */}
-        {proposal.disclosures && (
-          <ContentSection title="Disclosures">
-            {editable('disclosures', proposal.disclosures,
-              <p className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: '#333' }}>{proposal.disclosures}</p>
-            )}
-          </ContentSection>
-        )}
-
-        {/* Special Conditions */}
-        {proposal.special_conditions && (
-          <ContentSection title="Special Conditions">
-            {editable('special_conditions', proposal.special_conditions,
-              <p className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: '#333' }}>{proposal.special_conditions}</p>
-            )}
-          </ContentSection>
-        )}
-
-        {/* ─── Signature Block ─── */}
-        <div className="mt-14 grid grid-cols-2 gap-16">
-          <div>
-            {proposal.client_signature_url ? (
-              <div className="mb-1 pb-2"><img src={proposal.client_signature_url} alt="Client signature" className="h-16 object-contain" /></div>
-            ) : (
-              <div className="border-b mb-1 pb-12" style={{ borderColor: '#ccc' }} />
-            )}
-            <div className="text-sm font-bold mt-2">{proposal.client_name || '___________________________'}</div>
-            <div className="text-xs mt-0.5" style={{ color: trade.accentColor, fontWeight: 600 }}>Client</div>
-            <div className="text-xs mt-1" style={{ color: '#888' }}>
-              {proposal.client_signed_at ? `Date: ${new Date(proposal.client_signed_at).toLocaleDateString()}` : 'Date: _______________'}
-            </div>
-          </div>
-          <div>
-            {(proposal as any).contractor_signature_url ? (
-              <div className="mb-1 pb-2"><img src={(proposal as any).contractor_signature_url} alt="Contractor signature" className="h-16 object-contain" /></div>
-            ) : (
-              <div className="border-b mb-1 pb-12" style={{ borderColor: '#ccc' }} />
-            )}
-            <div className="text-sm font-bold mt-2">{profile?.company_name || '___________________________'}</div>
-            <div className="text-xs mt-0.5" style={{ color: trade.accentColor, fontWeight: 600 }}>Contractor</div>
-            <div className="text-xs mt-1" style={{ color: '#888' }}>
-              {(proposal as any).contractor_signed_at ? `Date: ${new Date((proposal as any).contractor_signed_at).toLocaleDateString()}` : 'Date: _______________'}
-            </div>
-          </div>
-        </div>
+      <div className="px-12">
+        {contentSections(MinimalSection)}
+        {lineItemsTable('minimal')}
+        {termsAndConditions(MinimalSection)}
+        {signatureBlock()}
       </div>
 
-      {/* ─── Footer ─── */}
-      <div className="mt-12 mx-10">
-        <div className="h-px" style={{ backgroundColor: trade.accentColor }} />
-        <div className="flex justify-center gap-10 py-5">
-          {profile?.phone && (
-            <div className="flex items-center gap-2">
-              <Phone className="h-4 w-4" style={{ color: trade.accentColor }} />
-              <div>
-                <div className="text-xs font-bold" style={{ color: trade.accentColor }}>Phone</div>
-                <div className="text-xs" style={{ color: '#555' }}>{formatPhone(profile.phone)}</div>
-              </div>
-            </div>
-          )}
-          {profile?.email && (
-            <div className="flex items-center gap-2">
-              <Mail className="h-4 w-4" style={{ color: trade.accentColor }} />
-              <div>
-                <div className="text-xs font-bold" style={{ color: trade.accentColor }}>Email</div>
-                <div className="text-xs" style={{ color: '#555' }}>{profile.email}</div>
-              </div>
-            </div>
-          )}
-          {address && (
-            <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4" style={{ color: trade.accentColor }} />
-              <div>
-                <div className="text-xs font-bold" style={{ color: trade.accentColor }}>Address</div>
-                <div className="text-xs" style={{ color: '#555' }}>{address}</div>
-              </div>
-            </div>
-          )}
+      <div className="mt-12 mx-12">
+        <div className="h-px bg-gray-100" />
+        <div className="flex justify-center gap-8 py-5 text-xs" style={{ color: '#999' }}>
+          {profile?.phone && <span>{formatPhone(profile.phone)}</span>}
+          {profile?.email && <span>{profile.email}</span>}
+          {profile?.website && <span>{profile.website}</span>}
         </div>
-        {profile?.license_numbers?.length ? (
-          <div className="text-center text-xs pb-4" style={{ color: '#888' }}>Lic# {profile.license_numbers.join(', ')}</div>
-        ) : null}
       </div>
+      {exhibitsSection()}
+    </div>
+  );
+}
 
-      {/* ─── Exhibits ─── */}
-      {exhibits && exhibits.length > 0 && (
-        <div className="px-10 mt-8 pt-8 border-t-2 border-dashed">
-          <ContentSection title="Exhibits & Attachments">
-            <div className="grid grid-cols-2 gap-4">
-              {exhibits.map((exhibit, i) => (
-                <div key={exhibit.id} className="space-y-1">
-                  <img src={exhibit.file_url} alt={exhibit.caption || `Exhibit ${i + 1}`} className="w-full rounded border object-contain max-h-64" />
-                  <p className="text-xs text-center italic" style={{ color: '#888' }}>{exhibit.caption || `Exhibit ${i + 1}`}</p>
-                </div>
-              ))}
-            </div>
-          </ContentSection>
+// ─── Shared sub-components ───
+
+function ClientInfoRow({ proposal, proposalNumber, jobSiteAddress, hideProposalNumber }: {
+  proposal: any; proposalNumber: string; jobSiteAddress: string; hideProposalNumber?: boolean;
+}) {
+  return (
+    <div className="flex justify-between items-start">
+      <div>
+        <div className="text-xs font-medium uppercase tracking-wider mb-1" style={{ color: '#888' }}>To</div>
+        <div className="text-base font-bold">{proposal.client_name}</div>
+        {proposal.client_phone && <div className="text-sm" style={{ color: '#555' }}>{formatPhone(proposal.client_phone)}</div>}
+        {proposal.client_email && <div className="text-sm" style={{ color: '#555' }}>{proposal.client_email}</div>}
+        {jobSiteAddress && <div className="text-sm mt-0.5" style={{ color: '#555' }}>{jobSiteAddress}</div>}
+      </div>
+      {!hideProposalNumber && (
+        <div className="text-right text-sm" style={{ color: '#555' }}>
+          <div className="flex justify-end gap-8">
+            <div><span className="font-bold" style={{ color: '#1a1a1a' }}>Proposal no :</span></div>
+            <div className="font-bold" style={{ color: '#1a1a1a' }}>{proposalNumber}</div>
+          </div>
+          <div className="flex justify-end gap-8 mt-0.5"><div>Date :</div><div>{proposal.proposal_date}</div></div>
+          <div className="flex justify-end gap-8 mt-0.5"><div>Valid until :</div><div>{proposal.valid_until}</div></div>
         </div>
       )}
     </div>
   );
 }
 
-function ContentSection({ title, children }: { title: string; children: React.ReactNode }) {
+function ClassicInfoGrid({ proposal, proposalNumber, jobSiteAddress }: { proposal: any; proposalNumber: string; jobSiteAddress: string }) {
+  return (
+    <div className="grid grid-cols-2 gap-8">
+      <div>
+        <div className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#888' }}>Bill To</div>
+        <div className="text-sm font-semibold">{proposal.client_name}</div>
+        {proposal.client_email && <div className="text-xs" style={{ color: '#555' }}>{proposal.client_email}</div>}
+        {proposal.client_phone && <div className="text-xs" style={{ color: '#555' }}>{formatPhone(proposal.client_phone)}</div>}
+        {jobSiteAddress && <div className="text-xs mt-1" style={{ color: '#555' }}>Job site: {jobSiteAddress}</div>}
+      </div>
+      <div className="text-right">
+        <div className="text-xs" style={{ color: '#888' }}>Date: <span className="font-semibold text-gray-800">{proposal.proposal_date}</span></div>
+        <div className="text-xs mt-0.5" style={{ color: '#888' }}>Valid until: <span className="font-semibold text-gray-800">{proposal.valid_until}</span></div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Section components per template ───
+
+function ModernSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mb-6">
       <h3 className="text-sm font-bold mb-2" style={{ color: '#1a1a1a' }}>{title}</h3>
+      {children}
+    </div>
+  );
+}
+
+function ClassicSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="mb-6">
+      <h3 className="text-xs font-bold uppercase tracking-wider mb-2 pb-1 border-b" style={{ color: '#555', borderColor: '#e0e0e0' }}>{title}</h3>
+      {children}
+    </div>
+  );
+}
+
+function BoldSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="mb-6">
+      <h3 className="text-sm font-extrabold uppercase tracking-wide mb-2" style={{ color: '#1a1a1a' }}>{title}</h3>
+      {children}
+    </div>
+  );
+}
+
+function MinimalSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="mb-8">
+      <h3 className="text-xs uppercase tracking-widest font-medium mb-3" style={{ color: '#999' }}>{title}</h3>
       {children}
     </div>
   );
