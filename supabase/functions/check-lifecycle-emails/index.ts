@@ -73,6 +73,51 @@ serve(async (req) => {
       }
     }
 
+    // ─── EMAIL 3 (cron catch-up): Free limit hit for existing users ───
+    // Find free-tier users who have used 3+ proposals but never got the email
+    const { data: freeLimitCandidates } = await supabase
+      .from("user_subscriptions")
+      .select("user_id, proposals_used")
+      .neq("status", "active")
+      .gte("proposals_used", 3);
+
+    if (freeLimitCandidates && freeLimitCandidates.length > 0) {
+      const { data: alreadySentLimit } = await supabase
+        .from("lifecycle_email_logs")
+        .select("user_id")
+        .eq("email_type", "free_limit")
+        .in("user_id", freeLimitCandidates.map((u) => u.user_id));
+      const sentLimitIds = new Set((alreadySentLimit || []).map((r) => r.user_id));
+
+      const { data: unsubsLimit } = await supabase
+        .from("lifecycle_email_unsubs")
+        .select("user_id")
+        .in("user_id", freeLimitCandidates.map((u) => u.user_id));
+      const unsubLimitIds = new Set((unsubsLimit || []).map((r) => r.user_id));
+
+      for (const user of freeLimitCandidates) {
+        if (sentLimitIds.has(user.user_id) || unsubLimitIds.has(user.user_id)) continue;
+
+        const { data: profile } = await supabase
+          .from("company_profiles")
+          .select("email, owner_name")
+          .eq("user_id", user.user_id)
+          .single();
+
+        if (!profile?.email) continue;
+
+        await supabase.functions.invoke("send-lifecycle-email", {
+          body: {
+            email_type: "free_limit",
+            user_id: user.user_id,
+            recipient_email: profile.email,
+            first_name: profile.owner_name,
+          },
+        });
+        results.push(`free_limit → ${profile.email}`);
+      }
+    }
+
     // ─── EMAIL 4: Day-10 inactive paid subscriber ───
     const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
 
