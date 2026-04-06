@@ -24,6 +24,8 @@ const tradeTypes = [
   { value: 'landscaping', label: 'Landscaping' },
   { value: 'painting', label: 'Painting' },
   { value: 'flooring', label: 'Flooring' },
+  { value: 'foundation', label: 'Foundation' },
+  { value: 'pressure_washing', label: 'Pressure Washing' },
   { value: 'other', label: 'Other' },
 ] as const;
 
