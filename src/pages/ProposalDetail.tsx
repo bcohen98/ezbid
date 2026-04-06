@@ -44,7 +44,7 @@ export default function ProposalDetail() {
       });
       if (error) throw error;
       refetch();
-      toast({ title: 'Proposal sent!', description: data?.message || `Sent to ${proposal.client_email}` });
+      toast({ title: 'Proposal sent!', description: `Sent to ${proposal.client_email}. Let them know to check spam or junk if they don't see it.` });
     } catch (err: any) {
       toast({ title: 'Send failed', description: err.message, variant: 'destructive' });
     } finally {

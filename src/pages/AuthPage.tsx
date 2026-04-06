@@ -49,7 +49,7 @@ export default function AuthPage() {
           localStorage.removeItem('ezbid_referral_code');
         }
 
-        toast({ title: 'Account created!', description: 'Check your email to confirm your account.' });
+        toast({ title: 'Account created!', description: 'Check your email to confirm your account. If you don\'t see it, check your spam or junk folder.' });
       } else {
         const { error } = await signIn(email, password);
         if (error) throw error;
