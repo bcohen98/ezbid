@@ -239,6 +239,7 @@ export default function NewProposal() {
 
       const proposal = await createProposal({
         template: 'clean' as any,
+        trade_type: trade as any,
         client_name: clientName,
         client_email: null,
         client_phone: null,
