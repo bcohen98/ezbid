@@ -6,6 +6,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import AppLayout from '@/components/AppLayout';
 import SubscriptionCard from '@/components/SubscriptionCard';
+import ReferralPromoCard from '@/components/ReferralPromoCard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -128,6 +129,18 @@ export default function Dashboard() {
               </Link>
             </div>
           </div>
+        )}
+
+        {/* Referral promo banner */}
+        {!promoDismissed && proposals.length === 0 && (
+          <ReferralPromoCard
+            compact
+            dismissible
+            onDismiss={() => {
+              setPromoDismissed(true);
+              localStorage.setItem('ezbid_referral_promo_dismissed', 'true');
+            }}
+          />
         )}
 
         {/* Stats */}
