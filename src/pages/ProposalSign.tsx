@@ -4,7 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { formatPhone } from '@/lib/formatPhone';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Loader2 } from 'lucide-react';
+import { CheckCircle, Download, Loader2 } from 'lucide-react';
+import html2pdf from 'html2pdf.js';
 
 interface ProposalData {
   proposal: any;
