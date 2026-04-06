@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   UserCircle, FileText, Sparkles, Eye, Send, PenLine, ArrowRight,
-  CheckCircle, Building2, ClipboardList, Mail, Download
+  CheckCircle, Building2, ClipboardList, Mail, Download, Layers, ListChecks, DollarSign
 } from 'lucide-react';
 
 const steps = [
@@ -26,48 +26,54 @@ const steps = [
   },
   {
     number: 3,
-    icon: ClipboardList,
-    title: "Start a new proposal",
-    description: "Click \"New Proposal\" from the dashboard. Pick a template that fits your style — there are several clean, professional designs to choose from.",
-    tip: "You can always change the template later before you send it.",
+    icon: Layers,
+    title: "Select your trade",
+    description: "Click \"New Proposal\" from the dashboard. Pick your trade from the visual icon cards — Roofing, Plumbing, HVAC, Landscaping, Electrical, Painting, and more. Your default trade is pre-selected but you can change it per proposal.",
+    tip: "The trade you pick determines which line items are pre-loaded and how the AI writes your proposal.",
   },
   {
     number: 4,
     icon: FileText,
-    title: "Enter the job details",
-    description: "Fill in your client's name and contact info, the job site address, what work you're doing, and your pricing. Add line items for labor, materials, or anything else you need to quote.",
-    tip: "Don't worry about perfect wording — the next step takes care of that.",
+    title: "Describe the job",
+    description: "Enter the client's name, the job address, and describe the work in plain English. Just explain what needs to be done — materials, timeline, warranty, anything relevant. That's the entire form.",
+    tip: "Don't worry about perfect wording — write it like you'd explain it to the client on the phone. The AI handles the rest.",
   },
   {
     number: 5,
-    icon: Sparkles,
-    title: "Let AI polish your proposal",
-    description: "Hit the \"Enhance\" button and the AI will clean up your job description and scope of work. It makes everything sound professional without changing your numbers or what you quoted.",
-    tip: "You can always edit the AI text or undo it if you prefer your original wording.",
+    icon: ListChecks,
+    title: "Build your quote",
+    description: "A line item table is pre-loaded with common items for your trade (e.g., Shingles, Labor, Dump Fee for roofers). Edit quantities and prices, add or remove items. Subtotal, tax, discount, and grand total calculate instantly.",
+    tip: "Toggle on the Deposit field to set a deposit amount or percentage — it'll show up in your proposal's payment terms automatically.",
   },
   {
     number: 6,
-    icon: Eye,
-    title: "Preview your proposal",
-    description: "See exactly what your client will see — a clean, branded document with your logo, all the job details, pricing breakdown, and terms. Review it and make any final changes.",
-    tip: "Check the total, the deposit amount, and the payment terms before sending.",
+    icon: Sparkles,
+    title: "Build Proposal with AI",
+    description: "Hit the big \"Build Proposal with AI\" button. The AI first checks your job description for any missing line items and suggests them for your review. Then it generates a complete, professional proposal with trade-specific sections — scope of work, materials, timeline, warranty, payment terms — all referencing your exact quote.",
+    tip: "AI-suggested line items are clearly marked with a blue \"AI\" badge. You can accept, remove, or edit them before the proposal is generated.",
   },
   {
     number: 7,
+    icon: Eye,
+    title: "Preview and polish",
+    description: "See exactly what your client will see — a clean, branded document with your logo, job details, pricing breakdown, deposit/balance, and terms. Edit any section, use \"Polish with AI\" to refine further, or request revisions.",
+    tip: "Check the total, the deposit amount, and the payment terms before sending.",
+  },
+  {
+    number: 8,
     icon: Send,
     title: "Send it to your client",
     description: "Enter your client's email and hit send. They'll get a professional email with a link to view and sign the proposal — no app download needed on their end.",
     tip: "You can also download a PDF to print or send through text message.",
   },
   {
-    number: 8,
+    number: 9,
     icon: PenLine,
     title: "Client signs electronically",
     description: "Your client opens the link, reviews the proposal, and draws their signature right on their phone or computer. You'll see the status change to \"Signed\" on your dashboard.",
     tip: "If they haven't signed yet, you can follow up — the link stays active.",
   },
 ];
-
 const faqs = [
   { q: "Do I need to be good with computers?", a: "Not at all. If you can send a text message, you can use EZ-Bid. It's designed to be as simple as possible." },
   { q: "What if I make a mistake?", a: "You can edit any proposal before you send it. Even after sending, you can create a new version if something needs to change." },
