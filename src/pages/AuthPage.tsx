@@ -109,8 +109,13 @@ export default function AuthPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={8}
               />
+              {isSignUp && (
+                <p className="text-xs text-muted-foreground">
+                  Must be at least 8 characters and include uppercase, lowercase, a number, and a special character.
+                </p>
+              )}
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Please wait...' : isSignUp ? 'Create account' : 'Sign in'}
