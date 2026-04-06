@@ -311,7 +311,7 @@ export default function ProposalPreview() {
         body: { proposal_id: proposal.id, send_to_self: true },
       });
       if (error) throw error;
-      toast({ title: 'Email sent!', description: data?.message || 'Check your inbox.' });
+      toast({ title: 'Email sent!', description: 'Check your inbox — if you don\'t see it, check your spam or junk folder.' });
     } catch (err: any) {
       toast({ title: 'Send failed', description: err.message, variant: 'destructive' });
     } finally {
@@ -338,7 +338,7 @@ export default function ProposalPreview() {
       });
       if (error) throw error;
       refetch();
-      toast({ title: 'Proposal sent!', description: data?.message || `Sent to ${proposal.client_email}` });
+      toast({ title: 'Proposal sent!', description: `Sent to ${proposal.client_email}. Let them know to check spam or junk if they don't see it.` });
     } catch (err: any) {
       toast({ title: 'Send failed', description: err.message, variant: 'destructive' });
     } finally {

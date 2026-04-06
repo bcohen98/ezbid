@@ -39,7 +39,7 @@ export default function ReferAndEarn() {
     }
     try {
       await sendInvites.mutateAsync(emails);
-      toast({ title: 'Invites sent!', description: `Sent ${emails.length} invitation${emails.length > 1 ? 's' : ''}.` });
+      toast({ title: 'Invites sent!', description: `Sent ${emails.length} invitation${emails.length > 1 ? 's' : ''}. Let them know to check spam or junk if they don't see it.` });
       setEmailInput('');
     } catch (err: any) {
       toast({ title: 'Error sending invites', description: err.message, variant: 'destructive' });
