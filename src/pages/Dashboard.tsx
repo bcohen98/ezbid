@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useProposals } from '@/hooks/useProposals';
+import { useToast } from '@/hooks/use-toast';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import AppLayout from '@/components/AppLayout';
