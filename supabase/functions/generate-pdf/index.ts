@@ -6,93 +6,95 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-function esc(str: string | null | undefined): string {
-  if (!str) return '';
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+function esc(s: string | null | undefined): string {
+  if (!s) return '';
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function fmt(val: number | null | undefined): string {
-  if (val == null) return '0.00';
-  return Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function fmt(v: number | null | undefined): string {
+  if (v == null) return '0.00';
+  return Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-interface TradeStyle { headerBg: string; headerText: string; accentColor: string }
-
-const TRADES: Record<string, TradeStyle> = {
-  roofing:             { headerBg: '#2D3436', headerText: '#FFFFFF', accentColor: '#2D3436' },
-  landscaping:         { headerBg: '#1B4332', headerText: '#FFFFFF', accentColor: '#1B4332' },
-  hvac:                { headerBg: '#2C5F7C', headerText: '#FFFFFF', accentColor: '#2C5F7C' },
-  plumbing:            { headerBg: '#1B2A4A', headerText: '#FFFFFF', accentColor: '#1B2A4A' },
-  electrical:          { headerBg: '#92400E', headerText: '#FFFFFF', accentColor: '#92400E' },
-  painting:            { headerBg: '#57534E', headerText: '#FFFFFF', accentColor: '#57534E' },
-  general_contractor:  { headerBg: '#3E2723', headerText: '#FFFFFF', accentColor: '#3E2723' },
-  pressure_washing:    { headerBg: '#475569', headerText: '#FFFFFF', accentColor: '#475569' },
-  foundation:          { headerBg: '#6B7280', headerText: '#FFFFFF', accentColor: '#6B7280' },
-  flooring:            { headerBg: '#78350F', headerText: '#FFFFFF', accentColor: '#78350F' },
-  other:               { headerBg: '#374151', headerText: '#FFFFFF', accentColor: '#374151' },
+const TRADES: Record<string, { bg: string; label: string }> = {
+  roofing:            { bg: '#2D3436', label: 'Roofing' },
+  landscaping:        { bg: '#1B4332', label: 'Landscaping' },
+  hvac:               { bg: '#2C5F7C', label: 'HVAC' },
+  plumbing:           { bg: '#1B2A4A', label: 'Plumbing' },
+  electrical:         { bg: '#92400E', label: 'Electrical' },
+  painting:           { bg: '#57534E', label: 'Painting' },
+  general_contractor: { bg: '#3E2723', label: 'General Contracting' },
+  pressure_washing:   { bg: '#475569', label: 'Pressure Washing' },
+  foundation:         { bg: '#6B7280', label: 'Foundation' },
+  flooring:           { bg: '#78350F', label: 'Flooring' },
+  other:              { bg: '#374151', label: '' },
 };
 
-function getStyle(trade: string | null): TradeStyle {
-  return TRADES[trade || ''] || TRADES.other;
+function getColor(t: string | null): string {
+  return (TRADES[t || ''] || TRADES.other).bg;
+}
+function getLabel(t: string | null): string {
+  return (TRADES[t || ''] || TRADES.other).label;
 }
 
 function buildHtml(proposal: any, lineItems: any[], profile: any, exhibits: any[]): string {
-  const ts = getStyle(proposal.trade_type || profile?.trade_type);
+  const c = getColor(proposal.trade_type || profile?.trade_type);
+  const tradeLabel = getLabel(proposal.trade_type || profile?.trade_type);
   const companyName = esc(profile?.company_name) || 'Company Name';
-  const address = [profile?.street_address, profile?.city, profile?.state, profile?.zip].filter(Boolean).join(', ');
-  const contacts = [profile?.phone, profile?.email, profile?.website].filter(Boolean).map(esc).join(' &middot; ');
+  const addr = [profile?.street_address, profile?.city, profile?.state, profile?.zip].filter(Boolean).join(', ');
+
+  const phoneSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
+  const mailSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>`;
+  const pinSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;
 
   const section = (title: string, content: string | null | undefined) => {
     if (!content) return '';
-    return `
-      <div style="margin-bottom:20px;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-          <div style="width:4px;height:16px;border-radius:2px;background:${ts.accentColor};"></div>
-          <h3 style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${ts.accentColor};margin:0;">${esc(title)}</h3>
-        </div>
-        <div style="margin-left:12px;font-size:13px;line-height:1.7;white-space:pre-wrap;">${esc(content)}</div>
-      </div>`;
+    return `<div style="margin-bottom:20px;"><h3 style="font-size:13px;font-weight:700;margin-bottom:6px;color:#1a1a1a;">${esc(title)}</h3><p style="font-size:13px;line-height:1.7;white-space:pre-wrap;color:#333;margin:0;">${esc(content)}</p></div>`;
   };
 
+  const lineItemRows = lineItems.map((item, idx) => `
+    <tr style="border-bottom:1px dotted #e0e0e0;">
+      <td style="padding:10px 12px;text-align:center;color:#888;">${idx + 1}</td>
+      <td style="padding:10px 12px;">${esc(item.description)}</td>
+      <td style="padding:10px 12px;text-align:center;">${item.quantity}</td>
+      <td style="padding:10px 12px;text-align:right;color:#555;">${esc(item.unit)}</td>
+      <td style="padding:10px 12px;text-align:right;">$${fmt(item.unit_price)}</td>
+      <td style="padding:10px 12px;text-align:right;font-weight:600;">$${fmt(item.subtotal)}</td>
+    </tr>`).join('');
+
   const lineItemsHtml = lineItems.length > 0 ? `
-    <div style="margin-bottom:20px;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-        <div style="width:4px;height:16px;border-radius:2px;background:${ts.accentColor};"></div>
-        <h3 style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${ts.accentColor};margin:0;">Pricing</h3>
-      </div>
-      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:4px;">
+    <div style="margin-bottom:28px;">
+      <div style="height:2px;background:${c};"></div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
         <thead>
-          <tr style="background:${ts.accentColor}0D;">
-            <th style="text-align:left;padding:10px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:${ts.accentColor};">Description</th>
-            <th style="text-align:right;padding:10px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:${ts.accentColor};width:60px;">Qty</th>
-            <th style="text-align:right;padding:10px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:${ts.accentColor};width:60px;">Unit</th>
-            <th style="text-align:right;padding:10px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:${ts.accentColor};width:90px;">Unit Price</th>
-            <th style="text-align:right;padding:10px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:${ts.accentColor};width:90px;">Amount</th>
+          <tr style="background:${c};">
+            <th style="padding:10px 12px;text-align:center;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:40px;">#</th>
+            <th style="padding:10px 12px;text-align:left;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Description</th>
+            <th style="padding:10px 12px;text-align:center;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:60px;">Qty</th>
+            <th style="padding:10px 12px;text-align:right;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:60px;">Unit</th>
+            <th style="padding:10px 12px;text-align:right;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:90px;">Price</th>
+            <th style="padding:10px 12px;text-align:right;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:90px;">Total</th>
           </tr>
         </thead>
-        <tbody>
-          ${lineItems.map((item, idx) => `
-            <tr style="border-bottom:1px solid #f0f0f0;${idx % 2 === 1 ? 'background:#f9fafb;' : ''}">
-              <td style="padding:10px 12px;">${esc(item.description)}</td>
-              <td style="text-align:right;padding:10px 12px;">${item.quantity}</td>
-              <td style="text-align:right;padding:10px 12px;">${esc(item.unit)}</td>
-              <td style="text-align:right;padding:10px 12px;">$${fmt(item.unit_price)}</td>
-              <td style="text-align:right;padding:10px 12px;font-weight:500;">$${fmt(item.subtotal)}</td>
-            </tr>
-          `).join('')}
-        </tbody>
+        <tbody>${lineItemRows}</tbody>
       </table>
-      <div style="border-top:2px solid ${ts.accentColor}33;padding-top:12px;font-size:13px;">
+      <div style="height:2px;background:${c};"></div>
+
+      <div style="margin-top:16px;">
         <table style="width:100%;border-collapse:collapse;">
-          <tr><td style="padding:4px 12px;color:#888;">Subtotal</td><td style="padding:4px 12px;text-align:right;">$${fmt(proposal.subtotal)}</td></tr>
-          ${Number(proposal.tax_rate) > 0 ? `<tr><td style="padding:4px 12px;color:#888;">Tax (${proposal.tax_rate}%)</td><td style="padding:4px 12px;text-align:right;">$${fmt(proposal.tax_amount)}</td></tr>` : ''}
-          <tr style="background:${ts.accentColor}0D;">
-            <td style="padding:10px 12px;font-weight:700;font-size:15px;color:${ts.accentColor};border-radius:4px 0 0 4px;">Grand Total</td>
-            <td style="padding:10px 12px;text-align:right;font-weight:700;font-size:15px;color:${ts.accentColor};border-radius:0 4px 4px 0;">$${fmt(proposal.total)}</td>
-          </tr>
+          <tr><td style="text-align:right;padding:3px 12px;font-weight:700;font-size:13px;width:75%;">Sub Total</td><td style="text-align:right;padding:3px 12px;font-weight:700;font-size:13px;">$${fmt(proposal.subtotal)}</td></tr>
+          ${Number(proposal.tax_rate) > 0 ? `<tr><td style="text-align:right;padding:3px 12px;font-weight:700;font-size:13px;">Tax ${proposal.tax_rate}%</td><td style="text-align:right;padding:3px 12px;font-weight:700;font-size:13px;">$${fmt(proposal.tax_amount)}</td></tr>` : ''}
+          <tr><td colspan="2" style="padding:8px 0 0;">
+            <table style="width:100%;border-collapse:collapse;">
+              <tr style="background:${c};color:#fff;">
+                <td style="padding:10px 16px;font-weight:700;font-size:14px;border-radius:3px 0 0 3px;">GRAND TOTAL</td>
+                <td style="padding:10px 16px;text-align:right;font-weight:700;font-size:14px;border-radius:0 3px 3px 0;">$${fmt(proposal.total)}</td>
+              </tr>
+            </table>
+          </td></tr>
           ${Number(proposal.deposit_amount) > 0 ? `
-            <tr><td style="padding:4px 12px;color:#888;">Deposit Due Upon Signing</td><td style="padding:4px 12px;text-align:right;">$${fmt(proposal.deposit_amount)}</td></tr>
-            <tr style="font-weight:600;"><td style="padding:4px 12px;">Balance Due Upon Completion</td><td style="padding:4px 12px;text-align:right;">$${fmt(proposal.balance_due)}</td></tr>
+            <tr><td style="text-align:right;padding:6px 12px 2px;font-size:12px;color:#555;">Deposit Due Upon Signing</td><td style="text-align:right;padding:6px 12px 2px;font-size:12px;font-weight:600;">$${fmt(proposal.deposit_amount)}</td></tr>
+            <tr><td style="text-align:right;padding:2px 12px;font-size:12px;color:#555;">Balance Due Upon Completion</td><td style="text-align:right;padding:2px 12px;font-size:12px;font-weight:600;">$${fmt(proposal.balance_due)}</td></tr>
           ` : ''}
         </table>
       </div>
@@ -102,14 +104,11 @@ function buildHtml(proposal: any, lineItems: any[], profile: any, exhibits: any[
   if (exhibits.length > 0) {
     exhibitsHtml = `
     <div style="page-break-before:always;padding-top:40px;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
-        <div style="width:4px;height:16px;border-radius:2px;background:${ts.accentColor};"></div>
-        <h3 style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${ts.accentColor};margin:0;">Exhibits & Attachments</h3>
-      </div>
+      <h3 style="font-size:13px;font-weight:700;margin-bottom:16px;">Exhibits & Attachments</h3>
       ${exhibits.map((ex, i) => `
         <div style="margin-bottom:16px;">
           <img src="${esc(ex.file_url)}" style="max-width:100%;max-height:500px;border:1px solid #e5e5e5;border-radius:4px;" />
-          <p style="font-size:12px;color:#888;margin-top:4px;">${ex.caption ? esc(ex.caption) : `Exhibit ${i + 1}`}</p>
+          <p style="font-size:12px;color:#888;margin-top:4px;font-style:italic;">${ex.caption ? esc(ex.caption) : `Exhibit ${i + 1}`}</p>
         </div>
       `).join('')}
     </div>`;
@@ -118,92 +117,94 @@ function buildHtml(proposal: any, lineItems: any[], profile: any, exhibits: any[
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family:'Inter',Arial,Helvetica,sans-serif; font-size:13px; color:#1a1a1a; background:#fff; }
   @page { size:letter; margin:0; }
 </style></head><body>
 
-<!-- Header -->
-<div style="padding:24px 40px;background:${ts.headerBg};color:${ts.headerText};">
+<!-- Logo + Company -->
+<div style="padding:40px 40px 24px;">
   <table style="width:100%;border-collapse:collapse;">
     <tr>
-      <td style="vertical-align:top;width:60%;">
-        ${profile?.logo_url ? `<img src="${esc(profile.logo_url)}" style="height:40px;margin-bottom:10px;filter:brightness(0) invert(1);" />` : ''}
-        <div style="font-size:16px;font-weight:700;letter-spacing:-0.3px;">${companyName}</div>
-        ${address ? `<div style="font-size:11px;opacity:0.8;margin-top:4px;">${esc(address)}</div>` : ''}
-        <div style="font-size:11px;opacity:0.8;margin-top:2px;">${contacts}</div>
-        ${profile?.license_numbers?.length ? `<div style="font-size:11px;opacity:0.7;margin-top:4px;">Lic# ${esc(profile.license_numbers.join(', '))}</div>` : ''}
-      </td>
-      <td style="vertical-align:top;text-align:right;width:40%;">
-        <div style="font-size:24px;font-weight:700;letter-spacing:-0.5px;">PROPOSAL</div>
-        <div style="font-size:11px;opacity:0.7;margin-top:4px;">PRO-${String(proposal.proposal_number).padStart(4, '0')}</div>
+      <td style="vertical-align:middle;">
+        <table style="border-collapse:collapse;"><tr>
+          ${profile?.logo_url ? `<td style="vertical-align:middle;padding-right:14px;"><img src="${esc(profile.logo_url)}" style="height:48px;" /></td>` : ''}
+          <td style="vertical-align:middle;">
+            <div style="font-size:20px;font-weight:800;color:${c};letter-spacing:-0.5px;">${companyName}</div>
+            ${tradeLabel ? `<div style="font-size:10px;text-transform:uppercase;letter-spacing:2px;color:${c};opacity:0.7;margin-top:2px;">${esc(tradeLabel)}</div>` : ''}
+          </td>
+        </tr></table>
       </td>
     </tr>
   </table>
 </div>
-<!-- Accent bar -->
-<div style="height:4px;background:${ts.accentColor};opacity:0.6;"></div>
 
-<!-- Body -->
-<div style="padding:28px 40px;">
-  <!-- Client + Dates -->
-  <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+<!-- PROPOSAL title -->
+<div style="padding:0 40px 28px;">
+  <table style="border-collapse:collapse;margin-bottom:24px;"><tr>
+    <td style="width:48px;height:40px;background:${c};border-radius:4px;"></td>
+    <td style="padding-left:12px;vertical-align:middle;"><span style="font-size:28px;font-weight:900;letter-spacing:-0.5px;color:#1a1a1a;">PROPOSAL</span></td>
+  </tr></table>
+
+  <!-- Client / Proposal info -->
+  <table style="width:100%;border-collapse:collapse;">
     <tr>
-      <td style="vertical-align:top;width:60%;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-          <div style="width:4px;height:16px;border-radius:2px;background:${ts.accentColor};"></div>
-          <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${ts.accentColor};">Client</span>
-        </div>
-        <div style="margin-left:12px;font-size:13px;font-weight:500;">${esc(proposal.client_name)}</div>
-        ${proposal.client_email ? `<div style="margin-left:12px;font-size:11px;color:#888;">${esc(proposal.client_email)}</div>` : ''}
-        ${proposal.client_phone ? `<div style="margin-left:12px;font-size:11px;color:#888;">${esc(proposal.client_phone)}</div>` : ''}
-        ${proposal.job_site_street ? `<div style="margin-left:12px;font-size:11px;color:#888;margin-top:4px;">${esc(proposal.job_site_street)}, ${esc(proposal.job_site_city)}, ${esc(proposal.job_site_state)} ${esc(proposal.job_site_zip)}</div>` : ''}
+      <td style="vertical-align:top;width:55%;">
+        <div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:4px;">To</div>
+        <div style="font-size:14px;font-weight:700;">${esc(proposal.client_name)}</div>
+        ${proposal.client_phone ? `<div style="font-size:12px;color:#555;">${esc(proposal.client_phone)}</div>` : ''}
+        ${proposal.client_email ? `<div style="font-size:12px;color:#555;">${esc(proposal.client_email)}</div>` : ''}
+        ${proposal.job_site_street ? `<div style="font-size:12px;color:#555;margin-top:2px;">${esc(proposal.job_site_street)}${proposal.job_site_city ? `, ${esc(proposal.job_site_city)}` : ''}${proposal.job_site_state ? `, ${esc(proposal.job_site_state)}` : ''} ${esc(proposal.job_site_zip)}</div>` : ''}
       </td>
-      <td style="vertical-align:top;text-align:right;font-size:11px;color:#888;">
-        <div>Date: ${esc(proposal.proposal_date)}</div>
-        <div>Valid until: ${esc(proposal.valid_until)}</div>
+      <td style="vertical-align:top;text-align:right;font-size:12px;color:#555;">
+        <table style="border-collapse:collapse;margin-left:auto;">
+          <tr><td style="font-weight:700;color:#1a1a1a;padding:2px 8px;text-align:right;">Proposal no :</td><td style="font-weight:700;color:#1a1a1a;padding:2px 0;">PRO-${String(proposal.proposal_number).padStart(4, '0')}</td></tr>
+          <tr><td style="padding:2px 8px;text-align:right;">Date :</td><td style="padding:2px 0;">${esc(proposal.proposal_date)}</td></tr>
+          <tr><td style="padding:2px 8px;text-align:right;">Valid until :</td><td style="padding:2px 0;">${esc(proposal.valid_until)}</td></tr>
+        </table>
       </td>
     </tr>
   </table>
+</div>
 
-  ${proposal.title ? `<h2 style="font-size:18px;font-weight:700;margin-bottom:20px;color:${ts.accentColor};">${esc(proposal.title)}</h2>` : ''}
+<!-- Content -->
+<div style="padding:0 40px;">
+  ${proposal.title ? `<h2 style="font-size:17px;font-weight:700;margin-bottom:20px;color:#1a1a1a;">${esc(proposal.title)}</h2>` : ''}
   ${section('Job Description', proposal.enhanced_job_description || proposal.job_description)}
   ${section('Scope of Work', proposal.enhanced_scope_of_work || proposal.scope_of_work)}
   ${section('Materials Included', proposal.materials_included)}
   ${section('Materials Excluded', proposal.materials_excluded)}
   ${proposal.estimated_start_date || proposal.estimated_duration ? `
     <div style="margin-bottom:20px;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-        <div style="width:4px;height:16px;border-radius:2px;background:${ts.accentColor};"></div>
-        <h3 style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${ts.accentColor};margin:0;">Timeline</h3>
-      </div>
-      <div style="margin-left:12px;font-size:13px;">
+      <h3 style="font-size:13px;font-weight:700;margin-bottom:6px;color:#1a1a1a;">Timeline</h3>
+      <div style="font-size:13px;color:#333;">
         ${proposal.estimated_start_date ? `<div>Start date: ${esc(proposal.estimated_start_date)}</div>` : ''}
         ${proposal.estimated_duration ? `<div>Duration: ${esc(proposal.estimated_duration)}</div>` : ''}
       </div>
     </div>` : ''}
   ${lineItemsHtml}
   ${section('Payment Terms', proposal.payment_terms)}
-  ${proposal.accepted_payment_methods?.length ? `<p style="font-size:11px;color:#888;margin-top:-16px;margin-bottom:20px;margin-left:12px;">Accepted: ${esc(proposal.accepted_payment_methods.join(', '))}</p>` : ''}
+  ${proposal.accepted_payment_methods?.length ? `<p style="font-size:11px;color:#888;margin-top:-16px;margin-bottom:20px;">Accepted: ${esc(proposal.accepted_payment_methods.join(', '))}</p>` : ''}
   ${section('Warranty', proposal.warranty_terms)}
   ${section('Disclosures', proposal.disclosures)}
   ${section('Special Conditions', proposal.special_conditions)}
 
-  <!-- Signature Block -->
+  <!-- Signatures -->
   <div style="margin-top:48px;">
     <table style="width:100%;border-collapse:collapse;">
       <tr>
-        <td style="width:45%;vertical-align:bottom;">
-          <div style="border-bottom:2px solid ${ts.accentColor}44;height:48px;"></div>
-          <div style="font-size:11px;font-weight:600;margin-top:6px;">Client Signature</div>
-          <div style="font-size:11px;color:#888;margin-top:2px;">Name: ___________________________</div>
+        <td style="width:42%;vertical-align:bottom;">
+          <div style="border-bottom:1px solid #ccc;height:48px;"></div>
+          <div style="font-size:12px;font-weight:700;margin-top:6px;">${esc(proposal.client_name) || '___________________________'}</div>
+          <div style="font-size:11px;font-weight:600;color:${c};margin-top:2px;">Client</div>
           <div style="font-size:11px;color:#888;margin-top:2px;">Date: _______________</div>
         </td>
-        <td style="width:10%;"></td>
-        <td style="width:45%;vertical-align:bottom;">
-          <div style="border-bottom:2px solid ${ts.accentColor}44;height:48px;"></div>
-          <div style="font-size:11px;font-weight:600;margin-top:6px;">Contractor Signature</div>
+        <td style="width:16%;"></td>
+        <td style="width:42%;vertical-align:bottom;">
+          <div style="border-bottom:1px solid #ccc;height:48px;"></div>
+          <div style="font-size:12px;font-weight:700;margin-top:6px;">${companyName}</div>
+          <div style="font-size:11px;font-weight:600;color:${c};margin-top:2px;">Contractor</div>
           <div style="font-size:11px;color:#888;margin-top:2px;">Date: _______________</div>
         </td>
       </tr>
@@ -211,10 +212,15 @@ function buildHtml(proposal: any, lineItems: any[], profile: any, exhibits: any[
   </div>
 
   <!-- Footer -->
-  <div style="margin-top:32px;padding-top:16px;border-top:1px solid #e5e5e5;text-align:center;">
-    <div style="font-size:11px;font-weight:500;color:${ts.accentColor};">${companyName}</div>
-    <div style="font-size:11px;color:#888;margin-top:2px;">${contacts}</div>
-    ${profile?.license_numbers?.length ? `<div style="font-size:11px;color:#888;margin-top:2px;">Lic# ${esc(profile.license_numbers.join(', '))}</div>` : ''}
+  <div style="margin-top:40px;border-top:1px solid ${c};padding-top:20px;">
+    <table style="width:100%;border-collapse:collapse;">
+      <tr>
+        ${profile?.phone ? `<td style="text-align:center;vertical-align:top;"><table style="border-collapse:collapse;margin:0 auto;"><tr><td style="vertical-align:middle;padding-right:6px;">${phoneSvg}</td><td style="vertical-align:top;"><div style="font-size:11px;font-weight:700;color:${c};">Phone</div><div style="font-size:11px;color:#555;">${esc(profile.phone)}</div></td></tr></table></td>` : ''}
+        ${profile?.email ? `<td style="text-align:center;vertical-align:top;"><table style="border-collapse:collapse;margin:0 auto;"><tr><td style="vertical-align:middle;padding-right:6px;">${mailSvg}</td><td style="vertical-align:top;"><div style="font-size:11px;font-weight:700;color:${c};">Email</div><div style="font-size:11px;color:#555;">${esc(profile.email)}</div></td></tr></table></td>` : ''}
+        ${addr ? `<td style="text-align:center;vertical-align:top;"><table style="border-collapse:collapse;margin:0 auto;"><tr><td style="vertical-align:middle;padding-right:6px;">${pinSvg}</td><td style="vertical-align:top;"><div style="font-size:11px;font-weight:700;color:${c};">Address</div><div style="font-size:11px;color:#555;">${esc(addr)}</div></td></tr></table></td>` : ''}
+      </tr>
+    </table>
+    ${profile?.license_numbers?.length ? `<div style="text-align:center;font-size:11px;color:#888;margin-top:8px;">Lic# ${esc(profile.license_numbers.join(', '))}</div>` : ''}
   </div>
 
   ${exhibitsHtml}
