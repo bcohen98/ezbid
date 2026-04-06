@@ -43,7 +43,7 @@ serve(async (req) => {
       });
     }
 
-    const { trade, client_name, job_address, job_description, line_items, subtotal, tax_amount, discount_amount, grand_total, company } = await req.json();
+    const { trade, client_name, job_address, job_description, line_items, subtotal, tax_amount, discount_amount, grand_total, deposit_amount, deposit_label, balance_due, company } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
@@ -54,6 +54,10 @@ serve(async (req) => {
     const lineItemsText = (line_items || []).map((li: any, i: number) =>
       `${i + 1}. ${li.description} — ${li.quantity} ${li.unit} @ $${li.unit_price.toFixed(2)} = $${(li.quantity * li.unit_price).toFixed(2)}`
     ).join("\n");
+
+    const depositSection = deposit_label
+      ? `\n- Deposit Due Upon Signing: $${(deposit_amount || 0).toFixed(2)} (${deposit_label})\n- Balance Due Upon Completion: $${(balance_due || 0).toFixed(2)}`
+      : "";
 
     const prompt = `You are an experienced ${tradeLabel} contractor writing a professional proposal. Generate a complete, ready-to-send proposal with these requirements:
 
@@ -76,7 +80,7 @@ FINANCIALS:
 - Subtotal: $${(subtotal || 0).toFixed(2)}
 - Tax: $${(tax_amount || 0).toFixed(2)}
 - Discount: $${(discount_amount || 0).toFixed(2)}
-- Grand Total: $${(grand_total || 0).toFixed(2)}
+- Grand Total: $${(grand_total || 0).toFixed(2)}${depositSection}
 
 REQUIRED SECTIONS for ${tradeLabel}: cover letter, ${sections}, itemized quote table, grand total, signature line
 
@@ -87,7 +91,7 @@ RULES:
 4. Write a brief professional cover letter addressed to the client.
 5. Include realistic warranty terms and payment terms appropriate for ${tradeLabel} work.
 6. Do NOT invent additional costs or items not in the line items.
-7. The proposal should be ready to send — no placeholders.`;
+7. The proposal should be ready to send — no placeholders.${deposit_label ? `\n8. The payment terms section MUST include the deposit/balance breakdown: deposit of $${(deposit_amount || 0).toFixed(2)} due upon signing, balance of $${(balance_due || 0).toFixed(2)} due upon completion.` : ""}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

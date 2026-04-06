@@ -12,6 +12,7 @@ export interface LineItem {
   quantity: number;
   unit: string;
   unit_price: number;
+  aiSuggested?: boolean;
 }
 
 const tradeDefaults: Record<TradeType, { description: string; unit: string }[]> = {
@@ -108,19 +109,26 @@ interface Props {
   discountEnabled: boolean;
   discountMode: 'flat' | 'percentage';
   discountValue: number;
+  depositEnabled: boolean;
+  depositMode: 'flat' | 'percentage';
+  depositValue: number;
   onTaxToggle: (v: boolean) => void;
   onTaxRateChange: (v: number) => void;
   onDiscountToggle: (v: boolean) => void;
   onDiscountModeChange: (v: 'flat' | 'percentage') => void;
   onDiscountValueChange: (v: number) => void;
+  onDepositToggle: (v: boolean) => void;
+  onDepositModeChange: (v: 'flat' | 'percentage') => void;
+  onDepositValueChange: (v: number) => void;
 }
 
 export default function LineItemsTable({
   trade, items, onChange,
   taxEnabled, taxRate, discountEnabled, discountMode, discountValue,
+  depositEnabled, depositMode, depositValue,
   onTaxToggle, onTaxRateChange, onDiscountToggle, onDiscountModeChange, onDiscountValueChange,
+  onDepositToggle, onDepositModeChange, onDepositValueChange,
 }: Props) {
-  // Pre-populate when trade changes
   const [lastTrade, setLastTrade] = useState(trade);
   useEffect(() => {
     if (trade !== lastTrade) {
@@ -130,7 +138,11 @@ export default function LineItemsTable({
   }, [trade]);
 
   const updateItem = (id: string, field: keyof LineItem, value: string | number) => {
-    onChange(items.map(item => item.id === id ? { ...item, [field]: value } : item));
+    onChange(items.map(item => {
+      if (item.id !== id) return item;
+      // Clear aiSuggested flag when user edits
+      return { ...item, [field]: value, aiSuggested: false };
+    }));
   };
 
   const removeItem = (id: string) => onChange(items.filter(i => i.id !== id));
@@ -142,6 +154,10 @@ export default function LineItemsTable({
     ? discountMode === 'percentage' ? subtotal * (discountValue / 100) : discountValue
     : 0;
   const grandTotal = subtotal + taxAmount - discountAmount;
+  const depositAmount = depositEnabled
+    ? depositMode === 'percentage' ? grandTotal * (depositValue / 100) : depositValue
+    : 0;
+  const balanceDue = grandTotal - depositAmount;
 
   const fmt = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 
@@ -164,14 +180,19 @@ export default function LineItemsTable({
           </thead>
           <tbody>
             {items.map(item => (
-              <tr key={item.id} className="border-t">
+              <tr key={item.id} className={cn('border-t', item.aiSuggested && 'bg-blue-50/60')}>
                 <td className="p-2">
-                  <Input
-                    value={item.description}
-                    onChange={e => updateItem(item.id, 'description', e.target.value)}
-                    placeholder="Item description"
-                    className="border-0 bg-transparent shadow-none focus-visible:ring-1 h-10"
-                  />
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={item.description}
+                      onChange={e => updateItem(item.id, 'description', e.target.value)}
+                      placeholder="Item description"
+                      className="border-0 bg-transparent shadow-none focus-visible:ring-1 h-10"
+                    />
+                    {item.aiSuggested && (
+                      <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">AI</span>
+                    )}
+                  </div>
                 </td>
                 <td className="p-2">
                   <Input
@@ -214,14 +235,19 @@ export default function LineItemsTable({
       {/* Mobile cards */}
       <div className="md:hidden space-y-3">
         {items.map(item => (
-          <div key={item.id} className="border rounded-lg p-3 space-y-2 bg-background">
+          <div key={item.id} className={cn('border rounded-lg p-3 space-y-2 bg-background', item.aiSuggested && 'border-blue-200 bg-blue-50/40')}>
             <div className="flex items-center justify-between">
-              <Input
-                value={item.description}
-                onChange={e => updateItem(item.id, 'description', e.target.value)}
-                placeholder="Description"
-                className="flex-1 mr-2 h-11"
-              />
+              <div className="flex items-center gap-2 flex-1 mr-2">
+                <Input
+                  value={item.description}
+                  onChange={e => updateItem(item.id, 'description', e.target.value)}
+                  placeholder="Description"
+                  className="h-11"
+                />
+                {item.aiSuggested && (
+                  <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">AI</span>
+                )}
+              </div>
               <button type="button" onClick={() => removeItem(item.id)} className="text-muted-foreground hover:text-destructive p-2">
                 <Trash2 className="h-4 w-4" />
               </button>
@@ -327,6 +353,47 @@ export default function LineItemsTable({
           <span className="font-semibold">Grand Total</span>
           <span className="font-bold text-lg">{fmt(grandTotal)}</span>
         </div>
+
+        {/* Deposit toggle */}
+        <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center gap-2">
+            <Switch checked={depositEnabled} onCheckedChange={onDepositToggle} />
+            <span className="text-muted-foreground">Deposit</span>
+          </div>
+          {depositEnabled && (
+            <div className="flex items-center gap-1">
+              <Input
+                type="number"
+                min={0}
+                step={0.01}
+                value={depositValue || ''}
+                onChange={e => onDepositValueChange(parseFloat(e.target.value) || 0)}
+                className="w-16 h-8 text-right text-sm"
+              />
+              <button
+                type="button"
+                onClick={() => onDepositModeChange(depositMode === 'flat' ? 'percentage' : 'flat')}
+                className="text-xs px-2 py-1 rounded border hover:bg-accent"
+              >
+                {depositMode === 'flat' ? '$' : '%'}
+              </button>
+              <span className="ml-1 font-medium">{fmt(depositAmount)}</span>
+            </div>
+          )}
+        </div>
+
+        {depositEnabled && (
+          <div className="space-y-1 text-sm border-t pt-2">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Deposit Due Upon Signing</span>
+              <span className="font-medium">{fmt(depositAmount)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Balance Due Upon Completion</span>
+              <span className="font-medium">{fmt(balanceDue)}</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
