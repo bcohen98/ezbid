@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useProposals } from '@/hooks/useProposals';
+import { useToast } from '@/hooks/use-toast';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import AppLayout from '@/components/AppLayout';
@@ -10,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Plus, FileText, AlertCircle, PenLine, X, Search, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
+import { Plus, FileText, AlertCircle, PenLine, X, Search, ArrowUpDown, ChevronUp, ChevronDown, Trash2 } from 'lucide-react';
 
 import { formatCurrency } from '@/lib/formatCurrency';
 
@@ -32,7 +33,8 @@ type SortDir = 'asc' | 'desc';
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { proposals, isLoading: proposalsLoading } = useProposals();
+  const { proposals, isLoading: proposalsLoading, deleteProposal, isDeleting } = useProposals();
+  const { toast } = useToast();
   const { subscription, isLoading: subLoading } = useSubscription();
   const { profileCompletion, isLoading: profileLoading } = useCompanyProfile();
   const [activeTab, setActiveTab] = useState<TabKey>('all');
@@ -280,6 +282,25 @@ export default function Dashboard() {
                     >
                       Countersign
                     </Badge>
+                  )}
+                  {p.status === 'draft' && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      disabled={isDeleting}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (confirm('Delete this draft proposal?')) {
+                          deleteProposal(p.id).then(() => {
+                            toast({ title: 'Draft deleted' });
+                          });
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   )}
                 </div>
               </div>
