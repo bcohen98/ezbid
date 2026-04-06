@@ -58,6 +58,7 @@ Deno.serve(async (req: Request) => {
 
   const url = new URL(req.url);
   const section = url.searchParams.get("section") || "overview";
+  const range = url.searchParams.get("range") || "month";
 
   try {
     let result: unknown;
@@ -73,7 +74,7 @@ Deno.serve(async (req: Request) => {
     } else if (section === "revenue") {
       result = await getRevenue(adminClient);
     } else if (section === "analytics") {
-      result = await getAnalytics(adminClient);
+      result = await getAnalytics(adminClient, range);
     } else {
       return new Response(JSON.stringify({ error: "Invalid section" }), {
         status: 400,
@@ -255,84 +256,125 @@ async function getRevenue(client: ReturnType<typeof createClient>) {
 }
 
 // ── Analytics (site visits, errors, downtime) ─────────────
-async function getAnalytics(client: ReturnType<typeof createClient>) {
+
+function getRangeConfig(range: string) {
   const now = new Date();
-  const thirtyDaysAgo = new Date(now);
-  thirtyDaysAgo.setDate(now.getDate() - 30);
+  let since: Date;
+  let bucketCount: number;
+  let bucketMs: number;
+  let formatKey: (d: Date) => string;
+  let formatLabel: string;
 
-  // Page views per day (last 30 days)
-  const { data: pageViews } = await client
-    .from("page_views")
-    .select("created_at, path")
-    .gte("created_at", thirtyDaysAgo.toISOString())
-    .order("created_at", { ascending: true });
+  switch (range) {
+    case "hour": {
+      since = new Date(now.getTime() - 60 * 60 * 1000);
+      bucketCount = 12; // 5-min buckets
+      bucketMs = 5 * 60 * 1000;
+      formatKey = (d) => d.toISOString().slice(0, 16); // YYYY-MM-DDTHH:MM
+      formatLabel = "HH:MM";
+      break;
+    }
+    case "day": {
+      since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      bucketCount = 24;
+      bucketMs = 60 * 60 * 1000;
+      formatKey = (d) => d.toISOString().slice(0, 13); // YYYY-MM-DDTHH
+      formatLabel = "HH:00";
+      break;
+    }
+    case "week": {
+      since = new Date(now);
+      since.setDate(now.getDate() - 7);
+      bucketCount = 7;
+      bucketMs = 24 * 60 * 60 * 1000;
+      formatKey = (d) => d.toISOString().slice(0, 10);
+      formatLabel = "MM-DD";
+      break;
+    }
+    case "year": {
+      since = new Date(now);
+      since.setFullYear(now.getFullYear() - 1);
+      bucketCount = 12;
+      bucketMs = 30 * 24 * 60 * 60 * 1000; // approx month
+      formatKey = (d) => d.toISOString().slice(0, 7); // YYYY-MM
+      formatLabel = "YYYY-MM";
+      break;
+    }
+    default: {
+      // month (30 days)
+      since = new Date(now);
+      since.setDate(now.getDate() - 30);
+      bucketCount = 30;
+      bucketMs = 24 * 60 * 60 * 1000;
+      formatKey = (d) => d.toISOString().slice(0, 10);
+      formatLabel = "MM-DD";
+      break;
+    }
+  }
+  return { since, bucketCount, bucketMs, formatKey, formatLabel, now };
+}
 
-  // Aggregate by day
-  const visitsByDay: Record<string, { views: number; uniqueSessions: Set<string> }> = {};
-  // We need session_id for unique counts, re-query with it
+function buildBuckets(cfg: ReturnType<typeof getRangeConfig>) {
+  const buckets: string[] = [];
+  for (let i = cfg.bucketCount - 1; i >= 0; i--) {
+    const d = new Date(cfg.now.getTime() - i * cfg.bucketMs);
+    buckets.push(cfg.formatKey(d));
+  }
+  return buckets;
+}
+
+async function getAnalytics(client: ReturnType<typeof createClient>, range: string) {
+  const cfg = getRangeConfig(range);
+  const buckets = buildBuckets(cfg);
+
   const { data: pageViewsFull } = await client
     .from("page_views")
     .select("created_at, path, session_id")
-    .gte("created_at", thirtyDaysAgo.toISOString())
+    .gte("created_at", cfg.since.toISOString())
     .order("created_at", { ascending: true });
 
+  const visitsByBucket: Record<string, { views: number; uniqueSessions: Set<string> }> = {};
   for (const pv of pageViewsFull || []) {
-    const day = pv.created_at.slice(0, 10);
-    if (!visitsByDay[day]) {
-      visitsByDay[day] = { views: 0, uniqueSessions: new Set() };
-    }
-    visitsByDay[day].views++;
-    if (pv.session_id) visitsByDay[day].uniqueSessions.add(pv.session_id);
+    const key = cfg.formatKey(new Date(pv.created_at));
+    if (!visitsByBucket[key]) visitsByBucket[key] = { views: 0, uniqueSessions: new Set() };
+    visitsByBucket[key].views++;
+    if (pv.session_id) visitsByBucket[key].uniqueSessions.add(pv.session_id);
   }
 
-  // Build daily array for last 30 days
-  const dailyVisits = [];
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date(now);
-    d.setDate(now.getDate() - i);
-    const key = d.toISOString().slice(0, 10);
-    const entry = visitsByDay[key];
-    dailyVisits.push({
-      date: key,
-      pageViews: entry?.views || 0,
-      visitors: entry?.uniqueSessions.size || 0,
-    });
-  }
+  const dailyVisits = buckets.map((key) => ({
+    date: key,
+    pageViews: visitsByBucket[key]?.views || 0,
+    visitors: visitsByBucket[key]?.uniqueSessions.size || 0,
+  }));
 
-  // App errors per day
+  // Errors
   const { data: errors } = await client
     .from("app_errors")
     .select("created_at, error_message, path")
-    .gte("created_at", thirtyDaysAgo.toISOString())
+    .gte("created_at", cfg.since.toISOString())
     .order("created_at", { ascending: false });
 
-  const errorsByDay: Record<string, number> = {};
+  const errorsByBucket: Record<string, number> = {};
   for (const e of errors || []) {
-    const day = e.created_at.slice(0, 10);
-    errorsByDay[day] = (errorsByDay[day] || 0) + 1;
+    const key = cfg.formatKey(new Date(e.created_at));
+    errorsByBucket[key] = (errorsByBucket[key] || 0) + 1;
   }
 
-  const dailyErrors = [];
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date(now);
-    d.setDate(now.getDate() - i);
-    const key = d.toISOString().slice(0, 10);
-    dailyErrors.push({ date: key, errors: errorsByDay[key] || 0 });
-  }
+  const dailyErrors = buckets.map((key) => ({
+    date: key,
+    errors: errorsByBucket[key] || 0,
+  }));
 
-  // Recent errors list (last 20)
   const recentErrors = (errors || []).slice(0, 20).map((e) => ({
     message: e.error_message,
     path: e.path,
     timestamp: e.created_at,
   }));
 
-  // Downtime detection: days with zero page views (among days that should have traffic)
-  // Simple heuristic: flag days with 0 views in last 14 days as potential downtime
-  const downtimeDays = dailyVisits
-    .slice(-14)
-    .filter((d) => d.pageViews === 0)
-    .map((d) => d.date);
+  // Downtime: buckets with 0 views (only for day+ ranges)
+  const downtimeDays = range !== "hour"
+    ? dailyVisits.filter((d) => d.pageViews === 0).map((d) => d.date)
+    : [];
 
   // Top pages
   const pageCounts: Record<string, number> = {};
@@ -344,6 +386,8 @@ async function getAnalytics(client: ReturnType<typeof createClient>) {
     .slice(0, 10)
     .map(([path, count]) => ({ path, count }));
 
+  const rangeLabel = range === "hour" ? "1h" : range === "day" ? "24h" : range === "week" ? "7d" : range === "year" ? "1y" : "30d";
+
   return {
     dailyVisits,
     dailyErrors,
@@ -352,5 +396,6 @@ async function getAnalytics(client: ReturnType<typeof createClient>) {
     topPages,
     totalViews30d: (pageViewsFull || []).length,
     totalErrors30d: (errors || []).length,
+    rangeLabel,
   };
 }
