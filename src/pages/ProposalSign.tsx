@@ -287,7 +287,8 @@ export default function ProposalSign() {
             {lineItems.length > 0 && (
               <div>
                 <h3 className="text-sm font-semibold mb-2">Pricing</h3>
-                <table className="w-full text-sm">
+                <div className="overflow-x-auto">
+                <table className="w-full text-sm min-w-[400px]">
                   <thead>
                     <tr className="border-b text-xs text-muted-foreground">
                       <th className="text-left py-2">Description</th>
