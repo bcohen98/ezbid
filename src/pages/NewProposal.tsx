@@ -70,8 +70,7 @@ export default function NewProposal() {
   });
 
   // Only show upgrade after subscription data has loaded and user truly can't create
-  const [dismissed, setDismissed] = useState(false);
-  const showUpgrade = !subLoading && !canCreateProposal && !dismissed;
+  const showUpgrade = !subLoading && !canCreateProposal;
 
   if (showUpgrade) {
     return (
