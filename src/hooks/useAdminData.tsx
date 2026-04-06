@@ -1,14 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-async function fetchAdminSection(section: string) {
+async function fetchAdminSection(section: string, params?: Record<string, string>) {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const session = await supabase.auth.getSession();
   const token = session.data.session?.access_token;
 
   if (!token) throw new Error('Not authenticated');
 
-  const url = `${supabaseUrl}/functions/v1/admin-data?section=${section}`;
+  const qp = new URLSearchParams({ section, ...params });
+  const url = `${supabaseUrl}/functions/v1/admin-data?${qp.toString()}`;
   console.log('[AdminCheck] Fetching:', url, '| section:', section);
 
   const res = await fetch(url, {
@@ -69,10 +70,10 @@ export function useAdminRevenue() {
   });
 }
 
-export function useAdminAnalytics() {
+export function useAdminAnalytics(range: string = 'month') {
   return useQuery({
-    queryKey: ['admin-analytics'],
-    queryFn: () => fetchAdminSection('analytics'),
+    queryKey: ['admin-analytics', range],
+    queryFn: () => fetchAdminSection('analytics', { range }),
     staleTime: 60_000,
   });
 }
