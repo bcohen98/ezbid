@@ -125,7 +125,7 @@ export default function Clients() {
 
   return (
     <AppLayout>
-      <div className="container py-6 animate-fade-in">
+      <div className="container px-4 py-5 md:py-6 animate-fade-in">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Users className="h-5 w-5" />
@@ -134,23 +134,23 @@ export default function Clients() {
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-3 mb-4">
-          <div className="relative flex-1 max-w-xs">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4">
+          <div className="relative w-full sm:max-w-xs">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search clients or proposals..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="pl-8 h-9 text-sm"
+              className="pl-8 h-9 text-sm w-full"
             />
           </div>
-          <div className="flex gap-1">
+          <div className="flex gap-1 overflow-x-auto">
             {(['date', 'title', 'total', 'status'] as SortKey[]).map(k => (
               <Button
                 key={k}
                 variant={sortKey === k ? 'default' : 'ghost'}
                 size="sm"
-                className="text-xs gap-1"
+                className="text-xs gap-1 shrink-0"
                 onClick={() => toggleSort(k)}
               >
                 {k.charAt(0).toUpperCase() + k.slice(1)}
@@ -174,19 +174,19 @@ export default function Clients() {
                     className="cursor-pointer py-3 px-4"
                     onClick={() => toggleClient(client.key)}
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div className="flex items-center gap-3">
-                        {isExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
-                        <div>
-                          <CardTitle className="text-sm font-medium">{client.name}</CardTitle>
-                          {client.email && <p className="text-xs text-muted-foreground">{client.email}</p>}
+                        {isExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
+                        <div className="min-w-0">
+                          <CardTitle className="text-sm font-medium truncate">{client.name}</CardTitle>
+                          {client.email && <p className="text-xs text-muted-foreground truncate">{client.email}</p>}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 text-sm">
+                      <div className="flex items-center gap-2 text-sm pl-7 sm:pl-0">
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-7 w-7 p-0"
+                          className="h-7 w-7 p-0 shrink-0"
                           onClick={(e) => {
                             e.stopPropagation();
                             const p = client.proposals[0];
@@ -206,14 +206,14 @@ export default function Clients() {
                         >
                           <Pencil className="h-3 w-3" />
                         </Button>
-                        <span className="text-muted-foreground">{client.proposals.length} proposal{client.proposals.length !== 1 ? 's' : ''}</span>
-                        <span className="font-medium">${formatCurrency(client.totalValue)}</span>
+                        <span className="text-muted-foreground whitespace-nowrap">{client.proposals.length} proposal{client.proposals.length !== 1 ? 's' : ''}</span>
+                        <span className="font-medium whitespace-nowrap">${formatCurrency(client.totalValue)}</span>
                       </div>
                     </div>
                   </CardHeader>
                   {isExpanded && (
                     <CardContent className="pt-0 pb-3 px-4">
-                      <div className="border rounded-md overflow-hidden">
+                      <div className="border rounded-md overflow-x-auto">
                         <table className="w-full text-sm">
                           <thead>
                             <tr className="border-b bg-muted/50 text-xs text-muted-foreground">

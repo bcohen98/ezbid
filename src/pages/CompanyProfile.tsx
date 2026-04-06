@@ -192,7 +192,7 @@ export default function CompanyProfile() {
 
   return (
     <AppLayout>
-      <div className="container max-w-2xl py-8 space-y-6 animate-fade-in">
+      <div className="container max-w-2xl px-4 py-6 md:py-8 space-y-5 md:space-y-6 animate-fade-in">
         <div>
           <h1 className="text-2xl font-semibold">My Company</h1>
           <p className="text-sm text-muted-foreground mt-1">This information appears on your proposals.</p>
@@ -227,7 +227,7 @@ export default function CompanyProfile() {
         <Card>
           <CardHeader><CardTitle className="text-base">Company Information</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Company name</Label>
                 <Input value={form.company_name} onChange={(e) => handleChange('company_name', e.target.value)} />
@@ -237,7 +237,7 @@ export default function CompanyProfile() {
                 <Input value={form.owner_name} onChange={(e) => handleChange('owner_name', e.target.value)} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Trade type</Label>
                 <Select value={form.trade_type} onValueChange={(v) => handleChange('trade_type', v)}>
@@ -282,12 +282,12 @@ export default function CompanyProfile() {
               <Label>Street address</Label>
               <Input value={form.street_address} onChange={(e) => handleChange('street_address', e.target.value)} />
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-2"><Label>City</Label><Input value={form.city} onChange={(e) => handleChange('city', e.target.value)} /></div>
               <div className="space-y-2"><Label>State</Label><Input value={form.state} onChange={(e) => handleChange('state', e.target.value)} /></div>
               <div className="space-y-2"><Label>ZIP</Label><Input value={form.zip} onChange={(e) => handleChange('zip', e.target.value)} /></div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2"><Label>Phone</Label><PhoneInput value={form.phone} onChange={(v) => setForm(prev => ({ ...prev, phone: v }))} /></div>
               <div className="space-y-2"><Label>Email</Label><Input value={form.email} onChange={(e) => handleChange('email', e.target.value)} /></div>
             </div>
@@ -303,7 +303,7 @@ export default function CompanyProfile() {
         <Card>
           <CardHeader><CardTitle className="text-base">Default Proposal Terms</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Default payment terms</Label>
                 <Input value={form.default_payment_terms} onChange={(e) => handleChange('default_payment_terms', e.target.value)} placeholder="e.g. Net 15" />
@@ -380,12 +380,12 @@ export default function CompanyProfile() {
           </CardContent>
         </Card>
 
-        <div className="flex justify-end gap-3">
-          <Button variant="outline" onClick={handleRefineWithAI} disabled={refining} className="gap-2">
+        <div className="flex flex-col sm:flex-row justify-end gap-3">
+          <Button variant="outline" onClick={handleRefineWithAI} disabled={refining} className="gap-2 w-full sm:w-auto">
             {refining ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
             {refining ? 'Refining...' : 'Refine with AI'}
           </Button>
-          <Button onClick={handleSave} disabled={isUpdating}>
+          <Button onClick={handleSave} disabled={isUpdating} className="w-full sm:w-auto">
             {isUpdating ? 'Saving...' : 'Save changes'}
           </Button>
         </div>
