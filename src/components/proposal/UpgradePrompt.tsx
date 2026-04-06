@@ -34,7 +34,7 @@ export default function UpgradePrompt({ proposalsUsed, onContinue }: Props) {
   };
 
   return (
-    <div className="container max-w-lg px-4 py-12 md:py-16 animate-fade-in">
+    <div className="container max-w-lg py-16 animate-fade-in">
       <Card>
         <CardContent className="p-8 text-center">
           <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">

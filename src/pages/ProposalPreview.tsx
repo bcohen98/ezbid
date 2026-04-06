@@ -325,17 +325,17 @@ export default function ProposalPreview() {
 
   return (
     <AppLayout>
-      <div className="container px-4 py-5 md:py-6 animate-fade-in">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-5">
+      <div className="container py-6 animate-fade-in">
+        <div className="flex items-center gap-3 mb-6">
           <Link to={`/proposals/${id}`}>
             <Button variant="ghost" size="sm"><ArrowLeft className="h-4 w-4 mr-1" /> Back to edit form</Button>
           </Link>
-          <h1 className="text-lg md:text-xl font-semibold">Proposal Preview</h1>
+          <h1 className="text-xl font-semibold">Proposal Preview</h1>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
           {/* Preview */}
-          <div className="border rounded-lg overflow-x-auto bg-background shadow-sm">
+          <div className="border rounded-lg overflow-hidden bg-background shadow-sm">
             <ProposalDocument proposal={proposal} lineItems={lineItems} profile={profile} exhibits={exhibits} onFieldEdit={handleFieldEdit} onLineItemEdit={handleLineItemEdit} onTotalsEdit={handleTotalsEdit} />
           </div>
 
@@ -356,15 +356,17 @@ export default function ProposalPreview() {
                 <Sparkles className="h-4 w-4" /> AI Revision
               </h3>
 
+
               <Textarea
                 value={revisionNote}
                 onChange={(e) => setRevisionNote(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleRevise(); } }}
-                placeholder="e.g. Switch to bold template, add a $500 line item for cleanup, change tax to 8.5%..."
+                placeholder="e.g. Switch to bold template, add a $500 line item for cleanup, change tax to 8.5%... (Enter to submit, Shift+Enter for new line)"
                 rows={4}
               />
               <Button
                 variant="outline"
+                size="sm"
                 className="w-full gap-2"
                 disabled={!revisionNote.trim() || isRevising}
                 onClick={handleRevise}
