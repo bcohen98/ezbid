@@ -49,6 +49,21 @@ export default function AuthPage() {
           localStorage.removeItem('ezbid_referral_code');
         }
 
+        // Send welcome lifecycle email (non-blocking)
+        try {
+          const namePart = email.split('@')[0];
+          await supabase.functions.invoke('send-lifecycle-email', {
+            body: {
+              email_type: 'welcome',
+              user_id: (await supabase.auth.getUser())?.data?.user?.id || '',
+              recipient_email: email,
+              first_name: namePart,
+            },
+          });
+        } catch {
+          // Non-blocking
+        }
+
         toast({ title: 'Account created!', description: 'Check your email to confirm your account. If you don\'t see it, check your spam or junk folder.' });
       } else {
         const { error } = await signIn(email, password);
