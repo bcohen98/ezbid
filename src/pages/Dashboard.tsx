@@ -283,6 +283,25 @@ export default function Dashboard() {
                       Countersign
                     </Badge>
                   )}
+                  {p.status === 'draft' && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      disabled={isDeleting}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (confirm('Delete this draft proposal?')) {
+                          deleteProposal(p.id).then(() => {
+                            toast({ title: 'Draft deleted' });
+                          });
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
