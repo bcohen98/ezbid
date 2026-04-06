@@ -38,6 +38,25 @@ export default function ProposalPreview() {
   const [isUndoing, setIsUndoing] = useState(false);
   const lastSnapshot = useRef<{ proposal: any; lineItems: any[] } | null>(null);
 
+  // Template switching
+  const getDefaultTemplate = (): TemplateId => {
+    const saved = localStorage.getItem('ezbid_default_template');
+    if (saved && ['modern', 'classic', 'bold', 'minimal'].includes(saved)) return saved as TemplateId;
+    return ((proposal?.template as TemplateId) || 'modern');
+  };
+  const [activeTemplate, setActiveTemplate] = useState<TemplateId>(getDefaultTemplate);
+
+  const handleTemplateChange = async (t: TemplateId) => {
+    setActiveTemplate(t);
+    localStorage.setItem('ezbid_default_template', t);
+    if (proposal) {
+      await updateProposal({ id: proposal.id, template: t as any });
+    }
+  };
+
+  const tradeStyle = proposal ? getTradeStyle((proposal as any).trade_type || profile?.trade_type) : null;
+
+
   if (isLoading) {
     return <AppLayout><div className="container py-8"><p className="text-sm text-muted-foreground">Loading preview...</p></div></AppLayout>;
   }
