@@ -77,3 +77,11 @@ export function useAdminAnalytics(range: string = 'month') {
     staleTime: 60_000,
   });
 }
+
+export function useAdminReferrals() {
+  return useQuery({
+    queryKey: ['admin-referrals'],
+    queryFn: () => fetchAdminSection('referrals'),
+    staleTime: 30_000,
+  });
+}

@@ -5,7 +5,7 @@ import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { FileText, Settings, LogOut, Plus, Users, Shield, HelpCircle, Menu, X } from 'lucide-react';
+import { FileText, Settings, LogOut, Plus, Users, Shield, HelpCircle, Menu, X, Gift } from 'lucide-react';
 import EZBidLogo from '@/components/EZBidLogo';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
@@ -55,6 +55,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const navItems = [
     { href: '/dashboard', label: 'Proposals', icon: FileText },
     { href: '/clients', label: 'Clients', icon: Users },
+    { href: '/referrals', label: 'Refer & Earn', icon: Gift },
     { href: '/company-profile', label: companyLabel, icon: Settings },
     { href: '/tutorial', label: 'Tutorial', icon: HelpCircle },
   ];

@@ -656,6 +656,101 @@ export type Database = {
           },
         ]
       }
+      referral_codes: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      referral_credits: {
+        Row: {
+          applied_at: string | null
+          created_at: string
+          credit_months: number
+          id: string
+          referral_id: string
+          stripe_invoice_id: string | null
+          user_id: string
+        }
+        Insert: {
+          applied_at?: string | null
+          created_at?: string
+          credit_months?: number
+          id?: string
+          referral_id: string
+          stripe_invoice_id?: string | null
+          user_id: string
+        }
+        Update: {
+          applied_at?: string | null
+          created_at?: string
+          credit_months?: number
+          id?: string
+          referral_id?: string
+          stripe_invoice_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_credits_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "referrals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referrals: {
+        Row: {
+          converted_at: string | null
+          created_at: string
+          credit_applied: boolean
+          id: string
+          referred_email: string
+          referred_user_id: string | null
+          referrer_user_id: string
+          status: Database["public"]["Enums"]["referral_status"]
+          stripe_subscription_id: string | null
+        }
+        Insert: {
+          converted_at?: string | null
+          created_at?: string
+          credit_applied?: boolean
+          id?: string
+          referred_email: string
+          referred_user_id?: string | null
+          referrer_user_id: string
+          status?: Database["public"]["Enums"]["referral_status"]
+          stripe_subscription_id?: string | null
+        }
+        Update: {
+          converted_at?: string | null
+          created_at?: string
+          credit_applied?: boolean
+          id?: string
+          referred_email?: string
+          referred_user_id?: string | null
+          referrer_user_id?: string
+          status?: Database["public"]["Enums"]["referral_status"]
+          stripe_subscription_id?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -785,6 +880,7 @@ export type Database = {
         | "contractor"
         | "premium"
         | "clean"
+      referral_status: "pending" | "signed_up" | "converted"
       subscription_plan: "starter" | "pro"
       trade_type:
         | "general_contractor"
@@ -956,6 +1052,7 @@ export const Constants = {
         "premium",
         "clean",
       ],
+      referral_status: ["pending", "signed_up", "converted"],
       subscription_plan: ["starter", "pro"],
       trade_type: [
         "general_contractor",
