@@ -11,7 +11,7 @@ import ExhibitsUpload from '@/components/proposal/ExhibitsUpload';
 import { useProposalExhibits } from '@/hooks/useProposalExhibits';
 import TemplateSwitcher, { type TemplateId } from '@/components/proposal/TemplateSwitcher';
 import { getTradeStyle } from '@/components/proposal/tradeStyles';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
