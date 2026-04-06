@@ -60,7 +60,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       <header className="border-b">
         <div className="container flex h-14 items-center justify-between px-4">
           <div className="flex items-center gap-4 md:gap-6">

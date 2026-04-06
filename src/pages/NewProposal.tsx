@@ -161,7 +161,7 @@ export default function NewProposal() {
 
   return (
     <AppLayout>
-      <div className="container max-w-4xl py-8 animate-fade-in">
+      <div className="container max-w-4xl px-4 py-8 animate-fade-in">
         {step === 'template' ? (
           <TemplateSelector
             selected={selectedTemplate}
