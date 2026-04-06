@@ -61,10 +61,11 @@ serve(async (req) => {
           let userId: string | null = existingSubs?.[0]?.user_id ?? null;
 
           // Fallback: look up by email from session or Stripe customer
+          let lookupEmail: string | null = null;
           if (!userId) {
             const email = session.customer_email
               || (session as any).customer_details?.email;
-            let lookupEmail = email;
+            lookupEmail = email;
             if (!lookupEmail && customerId) {
               const customer = await stripe.customers.retrieve(customerId);
               if (customer && !customer.deleted) {
@@ -89,6 +90,11 @@ serve(async (req) => {
               })
               .eq("user_id", userId);
             console.log(`[STRIPE-WEBHOOK] Activated subscription for user ${userId}`);
+
+            // ── Referral conversion check ──
+            if (lookupEmail) {
+              await processReferralConversion(supabase, stripe, lookupEmail, subscriptionId);
+            }
           } else {
             console.error(`[STRIPE-WEBHOOK] Could not find user for customer ${customerId}`);
           }
@@ -145,3 +151,113 @@ serve(async (req) => {
     status: 200,
   });
 });
+
+// ── Referral conversion helper ──
+async function processReferralConversion(
+  supabase: ReturnType<typeof createClient>,
+  stripe: Stripe,
+  email: string,
+  subscriptionId: string
+) {
+  try {
+    // Find a referral for this email that is signed_up (not yet converted)
+    const { data: referral } = await supabase
+      .from("referrals")
+      .select("*")
+      .eq("referred_email", email.toLowerCase())
+      .eq("status", "signed_up")
+      .limit(1)
+      .maybeSingle();
+
+    if (!referral) return;
+
+    // Update referral to converted
+    await supabase
+      .from("referrals")
+      .update({
+        status: "converted",
+        converted_at: new Date().toISOString(),
+        stripe_subscription_id: subscriptionId,
+        credit_applied: true,
+      })
+      .eq("id", referral.id);
+
+    // Create credit for referrer
+    await supabase.from("referral_credits").insert({
+      user_id: referral.referrer_user_id,
+      referral_id: referral.id,
+      credit_months: 1,
+    });
+
+    // Apply credit to referrer's Stripe subscription
+    const { data: referrerSub } = await supabase
+      .from("user_subscriptions")
+      .select("stripe_customer_id")
+      .eq("user_id", referral.referrer_user_id)
+      .maybeSingle();
+
+    if (referrerSub?.stripe_customer_id) {
+      // Add negative balance (credit) of $39 (one month)
+      await stripe.customers.createBalanceTransaction(referrerSub.stripe_customer_id, {
+        amount: -3900, // -$39.00 in cents
+        currency: "usd",
+        description: `Referral credit: ${email} subscribed`,
+      });
+
+      console.log(`[STRIPE-WEBHOOK] Applied $39 referral credit to customer ${referrerSub.stripe_customer_id}`);
+
+      // Update the credit record
+      await supabase
+        .from("referral_credits")
+        .update({ applied_at: new Date().toISOString() })
+        .eq("referral_id", referral.id)
+        .eq("user_id", referral.referrer_user_id);
+    }
+
+    // Send congratulations email to referrer
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+
+    if (resendApiKey && lovableApiKey) {
+      const { data: referrerProfile } = await supabase
+        .from("company_profiles")
+        .select("email")
+        .eq("user_id", referral.referrer_user_id)
+        .maybeSingle();
+
+      if (referrerProfile?.email) {
+        await fetch("https://connector-gateway.lovable.dev/resend/emails", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${lovableApiKey}`,
+            "X-Connection-Api-Key": resendApiKey,
+          },
+          body: JSON.stringify({
+            from: "EZ-Bid <onboarding@resend.dev>",
+            to: [referrerProfile.email],
+            subject: "Your referral just subscribed! 🎉",
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 30px 20px;">
+                <h1 style="font-size: 22px; font-weight: bold; color: #1a1a1a;">Great news!</h1>
+                <p style="font-size: 15px; color: #555; line-height: 1.6;">
+                  Your referral (${email}) just subscribed to EZ-Bid Pro! 
+                  We've added <strong>1 free month ($39)</strong> as a credit to your account. 
+                  It'll be automatically applied to your next billing cycle.
+                </p>
+                <p style="font-size: 15px; color: #555; line-height: 1.6;">
+                  Keep referring — there's no cap on how many free months you can earn!
+                </p>
+                <p style="font-size: 12px; color: #999; margin-top: 30px;">— The EZ-Bid Team</p>
+              </div>
+            `,
+          }),
+        });
+      }
+    }
+
+    console.log(`[STRIPE-WEBHOOK] Referral conversion processed for ${email}, referrer: ${referral.referrer_user_id}`);
+  } catch (err) {
+    console.error("[STRIPE-WEBHOOK] Referral conversion error:", err);
+  }
+}
