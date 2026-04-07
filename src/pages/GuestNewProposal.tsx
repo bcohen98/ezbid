@@ -269,6 +269,11 @@ export default function GuestNewProposal() {
       localStorage.setItem('ezbid_guest_line_items', JSON.stringify(guestLineItems));
       localStorage.setItem('ezbid_guest_proposal_created', 'true');
 
+      // Log IP for rate limiting
+      supabase.functions.invoke('log-visit', {
+        body: { page_url: '/guest/new-proposal', log_guest_proposal: true },
+      }).catch(() => {});
+
       logGuestProposalEvent('complete');
       toast({ title: 'Proposal generated!' });
       navigate('/guest/preview');
