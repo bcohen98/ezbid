@@ -254,6 +254,7 @@ export default function GuestNewProposal() {
       localStorage.setItem('ezbid_guest_line_items', JSON.stringify(guestLineItems));
       localStorage.setItem('ezbid_guest_proposal_created', 'true');
 
+      logGuestProposalEvent('complete');
       toast({ title: 'Proposal generated!' });
       navigate('/guest/preview');
     } catch (err: any) {
