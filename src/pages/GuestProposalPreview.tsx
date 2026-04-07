@@ -13,6 +13,7 @@ export default function GuestProposalPreview() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [showWall, setShowWall] = useState(false);
+  const [activeTemplate, setActiveTemplate] = useState<TemplateId>('modern');
 
   // Redirect logged-in users
   useEffect(() => {
@@ -47,7 +48,7 @@ export default function GuestProposalPreview() {
 
   // Build a mock profile from guest company info
   const guestCompany = proposal.guest_company || {};
-  const profile = {
+  const profile: any = {
     company_name: guestCompany.company_name || null,
     phone: guestCompany.phone || null,
     email: guestCompany.email || null,
@@ -63,8 +64,6 @@ export default function GuestProposalPreview() {
     website: null,
     trade_type: proposal.trade_type,
   };
-
-  const [activeTemplate, setActiveTemplate] = useState<TemplateId>('modern');
 
   const tradeStyle = getTradeStyle(proposal.trade_type);
 
