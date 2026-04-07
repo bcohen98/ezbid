@@ -22,6 +22,7 @@ export default function AdminOverview() {
               <MetricCard label="MRR" value={`$${data.mrr.toLocaleString()}`} />
               <MetricCard label="Total Proposals" value={data.totalProposals} />
               <MetricCard label="Proposals This Week" value={data.proposalsThisWeek} />
+              <MetricCard label="Guest Proposals" value={data.guestProposals} />
             </div>
 
             <Card>
