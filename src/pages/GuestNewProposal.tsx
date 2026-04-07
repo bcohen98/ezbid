@@ -106,6 +106,7 @@ export default function GuestNewProposal() {
 
   const handleBuildClick = async () => {
     if (!validate()) return;
+    logGuestProposalEvent('start');
 
     setIsSuggesting(true);
     try {
