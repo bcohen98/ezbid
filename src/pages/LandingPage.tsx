@@ -242,9 +242,9 @@ export default function LandingPage() {
         <div className="container text-center max-w-2xl mx-auto px-4">
           <h2 className="text-2xl md:text-3xl font-bold">Ready to look like the pro you are?</h2>
           <p className="mt-2 text-muted-foreground">Create your first proposal in minutes. No credit card, no commitment.</p>
-          <Link to="/auth" className="inline-block mt-6 w-full sm:w-auto">
+          <Link to="/guest/new-proposal" className="inline-block mt-6 w-full sm:w-auto">
             <Button size="lg" className="gap-2 text-base px-8 w-full sm:w-auto">
-              Get started free
+              Create a Free Proposal
               <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
