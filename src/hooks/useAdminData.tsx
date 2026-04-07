@@ -78,6 +78,14 @@ export function useAdminAnalytics(range: string = 'month') {
   });
 }
 
+export function useAdminVisitorAnalytics(range: string = '30') {
+  return useQuery({
+    queryKey: ['admin-visitor-analytics', range],
+    queryFn: () => fetchAdminSection('visitor_analytics', { range }),
+    staleTime: 60_000,
+  });
+}
+
 export function useAdminReferrals() {
   return useQuery({
     queryKey: ['admin-referrals'],
