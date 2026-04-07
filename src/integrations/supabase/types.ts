@@ -799,6 +799,45 @@ export type Database = {
         }
         Relationships: []
       }
+      site_analytics: {
+        Row: {
+          id: string
+          ip_address: string
+          is_guest_proposal_complete: boolean
+          is_guest_proposal_start: boolean
+          is_logged_in: boolean
+          page_url: string
+          session_id: string | null
+          user_id: string | null
+          visited_at: string
+          visitor_id: string | null
+        }
+        Insert: {
+          id?: string
+          ip_address: string
+          is_guest_proposal_complete?: boolean
+          is_guest_proposal_start?: boolean
+          is_logged_in?: boolean
+          page_url: string
+          session_id?: string | null
+          user_id?: string | null
+          visited_at?: string
+          visitor_id?: string | null
+        }
+        Update: {
+          id?: string
+          ip_address?: string
+          is_guest_proposal_complete?: boolean
+          is_guest_proposal_start?: boolean
+          is_logged_in?: boolean
+          page_url?: string
+          session_id?: string | null
+          user_id?: string | null
+          visited_at?: string
+          visitor_id?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
