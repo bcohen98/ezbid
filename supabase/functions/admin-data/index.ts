@@ -151,6 +151,10 @@ async function getOverview(client: ReturnType<typeof createClient>) {
     statusCounts[p.status] = (statusCounts[p.status] || 0) + 1;
   }
 
+  const { count: guestProposals } = await client
+    .from("guest_proposals")
+    .select("*", { count: "exact", head: true });
+
   return {
     totalUsers: totalUsers || 0,
     signupsThisWeek: signupsThisWeek || 0,
@@ -159,6 +163,7 @@ async function getOverview(client: ReturnType<typeof createClient>) {
     mrr,
     totalProposals: totalProposals || 0,
     proposalsThisWeek: proposalsThisWeek || 0,
+    guestProposals: guestProposals || 0,
     statusCounts,
   };
 }
