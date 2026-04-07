@@ -155,6 +155,24 @@ export type Database = {
         }
         Relationships: []
       }
+      guest_proposals: {
+        Row: {
+          created_at: string
+          id: string
+          ip_address: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip_address: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip_address?: string
+        }
+        Relationships: []
+      }
       invoices: {
         Row: {
           amount_paid: number | null
