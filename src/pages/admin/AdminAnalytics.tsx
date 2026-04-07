@@ -49,7 +49,7 @@ function formatTick(value: string, range: string) {
 export default function AdminAnalytics() {
   const [range, setRange] = useState('month');
   const [visitorRange, setVisitorRange] = useState('30');
-  const [activeTab, setActiveTab] = useState('visitors');
+  const [activeTab, setActiveTab] = useState('site');
 
   const { data, isLoading } = useAdminAnalytics(range);
   const { data: visitorData, isLoading: visitorLoading } = useAdminVisitorAnalytics(visitorRange);
@@ -63,8 +63,8 @@ export default function AdminAnalytics() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
-            <TabsTrigger value="visitors">Visitor Analytics</TabsTrigger>
             <TabsTrigger value="site">Site Health</TabsTrigger>
+            <TabsTrigger value="visitors">Visitor Analytics</TabsTrigger>
           </TabsList>
 
           {/* ──── Visitor Analytics Tab ──── */}
