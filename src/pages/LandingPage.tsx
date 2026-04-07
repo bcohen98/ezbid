@@ -101,15 +101,15 @@ export default function LandingPage() {
           <p className="mt-4 md:mt-5 text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
             EZ-Bid helps contractors create polished, professional proposals in minutes — not hours. Fill in the details, let AI sharpen the language, and send it out. No design skills needed.
           </p>
-          <div className="mt-6 md:mt-8 flex items-center justify-center gap-3">
-            <Link to="/auth" className="w-full sm:w-auto">
-              <Button size="lg" className="gap-2 text-base px-8 w-full sm:w-auto">
-                Start for free
+          <div className="mt-6 md:mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link to="/guest/new-proposal" className="w-full sm:w-auto">
+              <Button size="lg" className="gap-2 text-base px-8 w-full sm:w-auto h-14 text-lg font-semibold">
+                Create a Free Proposal — No Account Needed
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
           </div>
-          <p className="mt-3 text-xs text-muted-foreground">3 free proposals · No credit card required</p>
+          <p className="mt-3 text-xs text-muted-foreground">Try it free · No signup required · Takes 5 minutes</p>
         </div>
       </section>
 
@@ -242,9 +242,9 @@ export default function LandingPage() {
         <div className="container text-center max-w-2xl mx-auto px-4">
           <h2 className="text-2xl md:text-3xl font-bold">Ready to look like the pro you are?</h2>
           <p className="mt-2 text-muted-foreground">Create your first proposal in minutes. No credit card, no commitment.</p>
-          <Link to="/auth" className="inline-block mt-6 w-full sm:w-auto">
+          <Link to="/guest/new-proposal" className="inline-block mt-6 w-full sm:w-auto">
             <Button size="lg" className="gap-2 text-base px-8 w-full sm:w-auto">
-              Get started free
+              Create a Free Proposal
               <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>

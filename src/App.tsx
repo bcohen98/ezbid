@@ -9,6 +9,8 @@ import AuthPage from "./pages/AuthPage";
 import Dashboard from "./pages/Dashboard";
 import CompanyProfile from "./pages/CompanyProfile";
 import NewProposal from "./pages/NewProposal";
+import GuestNewProposal from "./pages/GuestNewProposal";
+import GuestProposalPreview from "./pages/GuestProposalPreview";
 import ProposalPreview from "./pages/ProposalPreview";
 import ProposalDetail from "./pages/ProposalDetail";
 import ProposalSign from "./pages/ProposalSign";
@@ -36,7 +38,7 @@ function AppTracking() {
 
 function HelpChatWidgetWrapper() {
   const location = useLocation();
-  if (location.pathname.includes('/sign')) return null;
+  if (location.pathname.includes('/sign') || location.pathname.startsWith('/guest')) return null;
   return <HelpChatWidget />;
 }
 
@@ -50,6 +52,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/guest/new-proposal" element={<GuestNewProposal />} />
+            <Route path="/guest/preview" element={<GuestProposalPreview />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/company-profile" element={<CompanyProfile />} />
             <Route path="/clients" element={<Clients />} />

@@ -19,12 +19,19 @@ export default function AuthPage() {
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
 
-  // Capture referral code from URL
+  // Capture referral code from URL and handle guest params
   useEffect(() => {
     const ref = searchParams.get('ref');
     if (ref) {
       localStorage.setItem('ezbid_referral_code', ref);
-      setIsSignUp(true); // Default to signup when arriving via referral
+      setIsSignUp(true);
+    }
+    if (searchParams.get('signup') === '1') {
+      setIsSignUp(true);
+    }
+    if (searchParams.get('guest_limit') === '1') {
+      toast({ title: 'Free proposal already used', description: 'Create a free account to make unlimited proposals and access your saved work.' });
+      setIsSignUp(true);
     }
   }, [searchParams]);
 
@@ -68,7 +75,13 @@ export default function AuthPage() {
       } else {
         const { error } = await signIn(email, password);
         if (error) throw error;
-        navigate('/dashboard');
+        // Check if there's a guest proposal to transfer
+        const hasGuestProposal = localStorage.getItem('ezbid_guest_proposal');
+        if (hasGuestProposal || searchParams.get('from') === 'guest') {
+          navigate('/dashboard?transfer_guest=1');
+        } else {
+          navigate('/dashboard');
+        }
       }
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });

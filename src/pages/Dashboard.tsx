@@ -1,9 +1,11 @@
-import { useState, useMemo } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useProposals } from '@/hooks/useProposals';
 import { useToast } from '@/hooks/use-toast';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import AppLayout from '@/components/AppLayout';
 import SubscriptionCard from '@/components/SubscriptionCard';
 import ReferralPromoCard from '@/components/ReferralPromoCard';
@@ -34,14 +36,72 @@ type SortDir = 'asc' | 'desc';
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { proposals, isLoading: proposalsLoading, deleteProposal, isDeleting } = useProposals();
+  const [searchParams] = useSearchParams();
+  const { proposals, isLoading: proposalsLoading, deleteProposal, isDeleting, createProposal } = useProposals();
   const { toast } = useToast();
-  const { subscription, isLoading: subLoading } = useSubscription();
+  const { subscription, isLoading: subLoading, incrementProposalCount } = useSubscription();
   const { profileCompletion, isLoading: profileLoading } = useCompanyProfile();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabKey>('all');
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [search, setSearch] = useState('');
+
+  // Transfer guest proposal to account
+  useEffect(() => {
+    const shouldTransfer = searchParams.get('transfer_guest') === '1' || localStorage.getItem('ezbid_guest_proposal');
+    if (!shouldTransfer || !user) return;
+
+    const guestProposalRaw = localStorage.getItem('ezbid_guest_proposal');
+    const guestLineItemsRaw = localStorage.getItem('ezbid_guest_line_items');
+    if (!guestProposalRaw) return;
+
+    const transferGuestProposal = async () => {
+      try {
+        const gp = JSON.parse(guestProposalRaw);
+        const gli = guestLineItemsRaw ? JSON.parse(guestLineItemsRaw) : [];
+
+        // Remove guest-only fields
+        const { guest_company, ...proposalData } = gp;
+
+        const proposal = await createProposal({
+          ...proposalData,
+          template: proposalData.template as any,
+          trade_type: proposalData.trade_type as any,
+          deposit_mode: proposalData.deposit_mode as any,
+          status: 'draft' as any,
+        });
+
+        if (gli.length > 0) {
+          await supabase.from('proposal_line_items').insert(
+            gli.map((item: any, i: number) => ({
+              proposal_id: proposal.id,
+              description: item.description,
+              quantity: item.quantity,
+              unit: item.unit,
+              unit_price: item.unit_price,
+              subtotal: item.subtotal || item.quantity * item.unit_price,
+              sort_order: i,
+            }))
+          );
+        }
+
+        await incrementProposalCount();
+
+        // Clean up localStorage
+        localStorage.removeItem('ezbid_guest_proposal');
+        localStorage.removeItem('ezbid_guest_line_items');
+
+        toast({ title: 'Proposal saved!', description: 'Your guest proposal has been saved to your account.' });
+        navigate(`/proposals/${proposal.id}/preview`, { replace: true });
+      } catch (err: any) {
+        console.error('Guest proposal transfer failed:', err);
+        toast({ title: 'Transfer issue', description: 'We couldn\'t transfer your guest proposal. You can create a new one.', variant: 'destructive' });
+      }
+    };
+
+    transferGuestProposal();
+  }, [user]);
 
   const [draftDismissed, setDraftDismissed] = useState(false);
   const [promoDismissed, setPromoDismissed] = useState(() => {
