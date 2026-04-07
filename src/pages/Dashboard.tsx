@@ -4,6 +4,8 @@ import { useProposals } from '@/hooks/useProposals';
 import { useToast } from '@/hooks/use-toast';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import AppLayout from '@/components/AppLayout';
 import SubscriptionCard from '@/components/SubscriptionCard';
 import ReferralPromoCard from '@/components/ReferralPromoCard';
