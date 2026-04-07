@@ -33,12 +33,27 @@ export default function GuestNewProposal() {
     }
   }, [user, authLoading, navigate]);
 
-  // Enforce one guest proposal limit
+  // Enforce one guest proposal limit (localStorage + IP)
   useEffect(() => {
     const hasCreated = localStorage.getItem('ezbid_guest_proposal_created');
     if (hasCreated) {
       navigate('/auth?guest_limit=1', { replace: true });
+      return;
     }
+    // Check IP-based limit
+    const checkIp = async () => {
+      try {
+        const { data } = await supabase.functions.invoke('log-visit', {
+          body: { page_url: '/guest/new-proposal', check_guest_ip: true },
+        });
+        if (data?.ip_blocked) {
+          navigate('/auth?guest_limit=1', { replace: true });
+        }
+      } catch {
+        // If IP check fails, allow the guest to proceed
+      }
+    };
+    checkIp();
   }, [navigate]);
 
   const [trade, setTrade] = useState<TradeType>('general_contractor');
