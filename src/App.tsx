@@ -38,7 +38,7 @@ function AppTracking() {
 
 function HelpChatWidgetWrapper() {
   const location = useLocation();
-  if (location.pathname.includes('/sign')) return null;
+  if (location.pathname.includes('/sign') || location.pathname.startsWith('/guest')) return null;
   return <HelpChatWidget />;
 }
 
