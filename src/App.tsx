@@ -9,6 +9,8 @@ import AuthPage from "./pages/AuthPage";
 import Dashboard from "./pages/Dashboard";
 import CompanyProfile from "./pages/CompanyProfile";
 import NewProposal from "./pages/NewProposal";
+import GuestNewProposal from "./pages/GuestNewProposal";
+import GuestProposalPreview from "./pages/GuestProposalPreview";
 import ProposalPreview from "./pages/ProposalPreview";
 import ProposalDetail from "./pages/ProposalDetail";
 import ProposalSign from "./pages/ProposalSign";
