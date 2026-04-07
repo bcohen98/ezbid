@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { logGuestProposalEvent } from '@/hooks/usePageTracking';
 import EZBidLogo from '@/components/EZBidLogo';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -105,6 +106,7 @@ export default function GuestNewProposal() {
 
   const handleBuildClick = async () => {
     if (!validate()) return;
+    logGuestProposalEvent('start');
 
     setIsSuggesting(true);
     try {
@@ -252,6 +254,7 @@ export default function GuestNewProposal() {
       localStorage.setItem('ezbid_guest_line_items', JSON.stringify(guestLineItems));
       localStorage.setItem('ezbid_guest_proposal_created', 'true');
 
+      logGuestProposalEvent('complete');
       toast({ title: 'Proposal generated!' });
       navigate('/guest/preview');
     } catch (err: any) {

@@ -75,6 +75,8 @@ Deno.serve(async (req: Request) => {
       result = await getRevenue(adminClient);
     } else if (section === "analytics") {
       result = await getAnalytics(adminClient, range);
+    } else if (section === "visitor_analytics") {
+      result = await getVisitorAnalytics(adminClient, range);
     } else if (section === "referrals") {
       result = await getReferrals(adminClient);
     } else {
@@ -454,5 +456,144 @@ async function getReferrals(client: ReturnType<typeof createClient>) {
     totalCreditsIssued,
     totalCreditsApplied,
     topReferrers,
+  };
+}
+
+// ── Visitor Analytics (site_analytics table) ──────────────
+async function getVisitorAnalytics(client: ReturnType<typeof createClient>, range: string) {
+  const now = new Date();
+  let sinceDays: number;
+  switch (range) {
+    case "7": sinceDays = 7; break;
+    case "30": sinceDays = 30; break;
+    case "90": sinceDays = 90; break;
+    default: sinceDays = 0; break; // all time
+  }
+
+  const since = sinceDays > 0
+    ? new Date(now.getTime() - sinceDays * 24 * 60 * 60 * 1000)
+    : new Date("2020-01-01");
+
+  const since30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+  // Fetch all analytics in range
+  const { data: analytics } = await client
+    .from("site_analytics")
+    .select("ip_address, page_url, session_id, visitor_id, is_logged_in, user_id, is_guest_proposal_start, is_guest_proposal_complete, visited_at")
+    .gte("visited_at", since.toISOString())
+    .order("visited_at", { ascending: true });
+
+  const rows = analytics || [];
+
+  // All-time stats
+  const { data: allTimeRows } = await client
+    .from("site_analytics")
+    .select("ip_address, visitor_id")
+    .limit(10000);
+  const allTimeUniqueIPs = new Set((allTimeRows || []).map(r => r.ip_address));
+
+  // 30-day stats
+  const { data: last30dRows } = await client
+    .from("site_analytics")
+    .select("ip_address, visitor_id, is_guest_proposal_complete")
+    .gte("visited_at", since30d.toISOString());
+
+  const uniqueIPs30d = new Set((last30dRows || []).map(r => r.ip_address));
+  const totalVisits30d = (last30dRows || []).length;
+  const guestProposals30d = (last30dRows || []).filter(r => r.is_guest_proposal_complete).length;
+
+  // Daily chart data
+  const dayBuckets: Record<string, { totalVisits: number; uniqueIPs: Set<string>; uniqueVisitors: Set<string>; guestVisits: number; loggedInVisits: number; newVisitors: Set<string>; returningVisitors: Set<string> }> = {};
+  const seenVisitorIds = new Set<string>();
+
+  for (const row of rows) {
+    const day = row.visited_at.slice(0, 10);
+    if (!dayBuckets[day]) {
+      dayBuckets[day] = {
+        totalVisits: 0,
+        uniqueIPs: new Set(),
+        uniqueVisitors: new Set(),
+        guestVisits: 0,
+        loggedInVisits: 0,
+        newVisitors: new Set(),
+        returningVisitors: new Set(),
+      };
+    }
+    const b = dayBuckets[day];
+    b.totalVisits++;
+    b.uniqueIPs.add(row.ip_address);
+
+    const vid = row.visitor_id || row.ip_address;
+    b.uniqueVisitors.add(vid);
+
+    if (row.is_logged_in) {
+      b.loggedInVisits++;
+    } else {
+      b.guestVisits++;
+    }
+
+    if (seenVisitorIds.has(vid)) {
+      b.returningVisitors.add(vid);
+    } else {
+      b.newVisitors.add(vid);
+      seenVisitorIds.add(vid);
+    }
+  }
+
+  // Build sorted daily array
+  const days = Object.keys(dayBuckets).sort();
+  const dailyData = days.map(day => ({
+    date: day,
+    totalVisits: dayBuckets[day].totalVisits,
+    uniqueVisitors: dayBuckets[day].uniqueVisitors.size,
+    guestVisits: dayBuckets[day].guestVisits,
+    loggedInVisits: dayBuckets[day].loggedInVisits,
+    newVisitors: dayBuckets[day].newVisitors.size,
+    returningVisitors: dayBuckets[day].returningVisitors.size,
+  }));
+
+  // Funnel data (in selected range)
+  const uniqueVisitorsInRange = new Set(rows.map(r => r.visitor_id || r.ip_address));
+  const startedGuestProposal = new Set(
+    rows.filter(r => r.is_guest_proposal_start).map(r => r.visitor_id || r.ip_address)
+  );
+  const completedGuestProposal = new Set(
+    rows.filter(r => r.is_guest_proposal_complete).map(r => r.visitor_id || r.ip_address)
+  );
+
+  // Account creation: count unique user_ids that appear in range
+  const createdAccounts = new Set(
+    rows.filter(r => r.user_id).map(r => r.user_id)
+  );
+
+  // Paid subscribers: check user_subscriptions for active status
+  let paidCount = 0;
+  if (createdAccounts.size > 0) {
+    const userIds = Array.from(createdAccounts).filter(Boolean);
+    if (userIds.length > 0) {
+      const { data: subs } = await client
+        .from("user_subscriptions")
+        .select("user_id, status")
+        .in("user_id", userIds as string[])
+        .eq("status", "active");
+      paidCount = (subs || []).length;
+    }
+  }
+
+  return {
+    summary: {
+      uniqueVisitorsAllTime: allTimeUniqueIPs.size,
+      uniqueVisitors30d: uniqueIPs30d.size,
+      totalVisits30d,
+      guestProposals30d,
+    },
+    dailyData,
+    funnel: {
+      uniqueVisitors: uniqueVisitorsInRange.size,
+      startedGuestProposal: startedGuestProposal.size,
+      completedGuestProposal: completedGuestProposal.size,
+      createdAccount: createdAccounts.size,
+      upgradedToPaid: paidCount,
+    },
   };
 }
