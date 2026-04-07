@@ -57,6 +57,27 @@ Deno.serve(async (req: Request) => {
       auth: { persistSession: false },
     });
 
+    // Handle guest IP check
+    const { check_guest_ip, log_guest_proposal } = body;
+
+    if (check_guest_ip) {
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const { data: existing } = await client
+        .from("guest_proposals")
+        .select("id")
+        .eq("ip_address", ip)
+        .gte("created_at", thirtyDaysAgo)
+        .limit(1);
+
+      return new Response(JSON.stringify({ ok: true, ip_blocked: (existing && existing.length > 0) }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (log_guest_proposal) {
+      await client.from("guest_proposals").insert({ ip_address: ip });
+    }
+
     await client.from("site_analytics").insert({
       ip_address: ip,
       page_url,
