@@ -375,20 +375,8 @@ export default function AdminAnalytics() {
             ) : null}
           </TabsContent>
 
-          {/* ──── Site Health Tab (existing) ──── */}
+          {/* ──── Site Health Tab ──── */}
           <TabsContent value="site" className="space-y-6 mt-4">
-            <div className="flex justify-end">
-              <Select value={range} onValueChange={setRange}>
-                <SelectTrigger className="w-[160px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {RANGE_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
 
             {isLoading ? (
               <p className="text-sm text-muted-foreground">Loading analytics...</p>
