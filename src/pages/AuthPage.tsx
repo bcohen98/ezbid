@@ -73,11 +73,11 @@ export default function AuthPage() {
         }
 
         toast({ title: 'Account created!', description: 'Check your email to confirm your account. If you don\'t see it, check your spam or junk folder.' });
-        gtagEvent('sign_up', { method: 'email' });
+        trackEvent('sign_up', { method: 'email' });
       } else {
         const { error } = await signIn(email, password);
         if (error) throw error;
-        gtagEvent('login', { method: 'email' });
+        trackEvent('login', { method: 'email' });
         // Check if there's a guest proposal to transfer
         const hasGuestProposal = localStorage.getItem('ezbid_guest_proposal');
         if (hasGuestProposal || searchParams.get('from') === 'guest') {
