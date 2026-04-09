@@ -11,7 +11,7 @@ export function useErrorTracking() {
           error_stack: event.error?.stack?.slice(0, 2000) || null,
           path: window.location.pathname,
         })
-        .then();
+        .then(() => {}, () => {});
     }
 
     function handleRejection(event: PromiseRejectionEvent) {
@@ -29,7 +29,7 @@ export function useErrorTracking() {
               : null,
           path: window.location.pathname,
         })
-        .then();
+        .then(() => {}, () => {});
     }
 
     window.addEventListener('error', handleError);
