@@ -79,6 +79,8 @@ Deno.serve(async (req: Request) => {
       result = await getVisitorAnalytics(adminClient, range);
     } else if (section === "referrals") {
       result = await getReferrals(adminClient);
+    } else if (section === "conversions") {
+      result = await getConversions(adminClient, range);
     } else {
       return new Response(JSON.stringify({ error: "Invalid section" }), {
         status: 400,
