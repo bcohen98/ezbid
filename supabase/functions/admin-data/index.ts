@@ -312,13 +312,27 @@ function getRangeConfig(range: string) {
       break;
     }
     default: {
-      // month (30 days)
-      since = new Date(now);
-      since.setDate(now.getDate() - 30);
-      bucketCount = 30;
-      bucketMs = 24 * 60 * 60 * 1000;
-      formatKey = (d) => d.toISOString().slice(0, 10);
-      formatLabel = "MM-DD";
+      // Custom range "YYYY-MM-DD_YYYY-MM-DD" or default to 30 days
+      if (range.includes("_")) {
+        const [startStr, endStr] = range.split("_");
+        since = new Date(startStr);
+        const endDate = new Date(endStr);
+        endDate.setHours(23, 59, 59, 999);
+        const diffMs = endDate.getTime() - since.getTime();
+        const diffDays = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+        bucketCount = Math.max(diffDays, 1);
+        bucketMs = 24 * 60 * 60 * 1000;
+        formatKey = (d) => d.toISOString().slice(0, 10);
+        formatLabel = "MM-DD";
+      } else {
+        // month (30 days)
+        since = new Date(now);
+        since.setDate(now.getDate() - 30);
+        bucketCount = 30;
+        bucketMs = 24 * 60 * 60 * 1000;
+        formatKey = (d) => d.toISOString().slice(0, 10);
+        formatLabel = "MM-DD";
+      }
       break;
     }
   }
