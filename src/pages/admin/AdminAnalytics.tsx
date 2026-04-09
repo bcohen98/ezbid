@@ -49,10 +49,12 @@ function formatTick(value: string, range: string) {
 export default function AdminAnalytics() {
   const [range, setRange] = useState('month');
   const [visitorRange, setVisitorRange] = useState('30');
-  const [activeTab, setActiveTab] = useState('site');
+  const [conversionRange, setConversionRange] = useState('30');
+  const [activeTab, setActiveTab] = useState('conversions');
 
   const { data, isLoading } = useAdminAnalytics(range);
   const { data: visitorData, isLoading: visitorLoading } = useAdminVisitorAnalytics(visitorRange);
+  const { data: conversionData, isLoading: conversionLoading } = useAdminConversions(conversionRange);
 
   const rangeLabel = data?.rangeLabel || '30d';
 
