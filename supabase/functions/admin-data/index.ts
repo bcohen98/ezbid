@@ -638,10 +638,12 @@ async function getConversions(client: ReturnType<typeof createClient>, range: st
   const since = rangeToSince(range);
   const end = rangeToEnd(range);
 
-  const { data: events } = await client
+  let query = client
     .from("conversion_events")
     .select("event_name, created_at, session_id, visitor_id, metadata, page_path")
-    .gte("created_at", since.toISOString())
+    .gte("created_at", since.toISOString());
+  if (end) query = query.lte("created_at", end.toISOString());
+  const { data: events } = await query
     .order("created_at", { ascending: false })
     .limit(1000);
 
