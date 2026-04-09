@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { gtagEvent } from '@/lib/gtag';
+import { trackEvent } from '@/lib/trackEvent';
 
 // Legacy type exports used by ProposalForm and TemplateSelector
 export type ProposalTemplate = 'classic' | 'modern' | 'minimal' | 'bold' | 'executive' | 'contractor' | 'premium' | 'clean';
@@ -146,7 +146,7 @@ export default function NewProposal() {
   // Step 1: Get AI suggestions before generating proposal
   const handleBuildClick = async () => {
     if (!validate()) return;
-    gtagEvent('proposal_started', { trade });
+    trackEvent('proposal_started', { trade });
 
     setIsSuggesting(true);
     try {
@@ -311,7 +311,7 @@ export default function NewProposal() {
       }
 
       toast({ title: 'Proposal generated!' });
-      gtagEvent('proposal_generated', { trade });
+      trackEvent('proposal_generated', { trade });
       navigate(`/proposals/${proposal.id}/preview`);
     } catch (err: any) {
       console.error('Generate proposal error:', err);

@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Sparkles, ArrowRight, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { gtagEvent } from '@/lib/gtag';
+import { trackEvent } from '@/lib/trackEvent';
 
 interface Props {
   proposalsUsed: number;
@@ -17,8 +17,8 @@ export default function UpgradePrompt({ proposalsUsed, onContinue, source }: Pro
   const { toast } = useToast();
 
   useEffect(() => {
-    gtagEvent('free_limit_reached', { proposals_used: proposalsUsed });
-    gtagEvent('upgrade_prompt_viewed', { source: source || 'unknown' });
+    trackEvent('free_limit_reached', { proposals_used: proposalsUsed });
+    trackEvent('upgrade_prompt_viewed', { source: source || 'unknown' });
   }, []);
 
   const handleUpgrade = async (plan: 'monthly' | 'annual') => {
@@ -29,7 +29,7 @@ export default function UpgradePrompt({ proposalsUsed, onContinue, source }: Pro
       });
       if (error) throw error;
       if (data?.url) {
-        gtagEvent('subscription_upgraded', { plan });
+        trackEvent('subscription_upgraded', { plan });
         window.open(data.url, '_blank');
       } else {
         throw new Error('No checkout URL returned');

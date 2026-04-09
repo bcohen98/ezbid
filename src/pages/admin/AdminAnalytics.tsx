@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { useAdminAnalytics, useAdminVisitorAnalytics } from '@/hooks/useAdminData';
+import { useAdminAnalytics, useAdminVisitorAnalytics, useAdminConversions } from '@/hooks/useAdminData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
@@ -21,7 +21,7 @@ import {
   YAxis,
   Legend,
 } from 'recharts';
-import { AlertTriangle, Eye, Bug, Wifi, Users, TrendingUp, FileText, ArrowDownRight } from 'lucide-react';
+import { AlertTriangle, Eye, Bug, Wifi, Users, TrendingUp, FileText, ArrowDownRight, Activity, Zap } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const RANGE_OPTIONS = [
@@ -49,10 +49,12 @@ function formatTick(value: string, range: string) {
 export default function AdminAnalytics() {
   const [range, setRange] = useState('month');
   const [visitorRange, setVisitorRange] = useState('30');
-  const [activeTab, setActiveTab] = useState('site');
+  const [conversionRange, setConversionRange] = useState('30');
+  const [activeTab, setActiveTab] = useState('conversions');
 
   const { data, isLoading } = useAdminAnalytics(range);
   const { data: visitorData, isLoading: visitorLoading } = useAdminVisitorAnalytics(visitorRange);
+  const { data: conversionData, isLoading: conversionLoading } = useAdminConversions(conversionRange);
 
   const rangeLabel = data?.rangeLabel || '30d';
 
@@ -63,9 +65,161 @@ export default function AdminAnalytics() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
+            <TabsTrigger value="conversions">Conversions</TabsTrigger>
             <TabsTrigger value="site">Site Health</TabsTrigger>
             <TabsTrigger value="visitors">Visitor Analytics</TabsTrigger>
           </TabsList>
+
+          {/* ──── Conversions Tab ──── */}
+          <TabsContent value="conversions" className="space-y-6 mt-4">
+            <div className="flex justify-end">
+              <Select value={conversionRange} onValueChange={setConversionRange}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {VISITOR_RANGE_OPTIONS.filter(o => o.value !== 'all').map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {conversionLoading ? (
+              <p className="text-sm text-muted-foreground">Loading conversion data...</p>
+            ) : conversionData ? (
+              <>
+                {/* Event summary cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <SummaryCard
+                    icon={<Activity className="h-4 w-4" />}
+                    label="Total Events"
+                    value={conversionData.totalEvents ?? 0}
+                  />
+                  <SummaryCard
+                    icon={<Users className="h-4 w-4" />}
+                    label="Sign Ups"
+                    value={conversionData.eventCounts?.sign_up ?? 0}
+                  />
+                  <SummaryCard
+                    icon={<FileText className="h-4 w-4" />}
+                    label="Proposals Generated"
+                    value={conversionData.eventCounts?.proposal_generated ?? 0}
+                  />
+                  <SummaryCard
+                    icon={<Zap className="h-4 w-4" />}
+                    label="Upgrades"
+                    value={conversionData.eventCounts?.subscription_upgraded ?? 0}
+                  />
+                </div>
+
+                {/* All event counts */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">Event Breakdown</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-1">
+                      {Object.entries(conversionData.eventCounts || {})
+                        .sort(([, a], [, b]) => (b as number) - (a as number))
+                        .map(([name, count]) => (
+                          <div key={name} className="flex items-center justify-between text-sm">
+                            <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">{name}</span>
+                            <span className="font-semibold tabular-nums">{count as number}</span>
+                          </div>
+                        ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Daily chart */}
+                {conversionData.dailyData?.length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium">Daily Events</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-72 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={conversionData.dailyData}>
+                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                            <XAxis dataKey="date" tickFormatter={(v: string) => v.slice(5)} tick={{ fontSize: 10 }} />
+                            <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+                            <Tooltip contentStyle={{ background: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 12 }} />
+                            <Legend />
+                            {(conversionData.allEventNames || []).map((name: string, i: number) => {
+                              const colors = [
+                                'hsl(var(--primary))',
+                                'hsl(var(--muted-foreground))',
+                                'hsl(200 70% 50%)',
+                                'hsl(150 60% 45%)',
+                                'hsl(40 80% 50%)',
+                                'hsl(0 70% 55%)',
+                                'hsl(280 60% 55%)',
+                                'hsl(320 60% 50%)',
+                              ];
+                              return (
+                                <Bar
+                                  key={name}
+                                  dataKey={name}
+                                  name={name}
+                                  fill={colors[i % colors.length]}
+                                  radius={[2, 2, 0, 0]}
+                                  stackId="events"
+                                />
+                              );
+                            })}
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Live event feed */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                      Live Event Feed
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {conversionData.recentEvents?.length > 0 ? (
+                      <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                        <table className="w-full text-sm">
+                          <thead className="sticky top-0 bg-card">
+                            <tr className="border-b text-left text-muted-foreground">
+                              <th className="pb-2 pr-4 font-medium">Time</th>
+                              <th className="pb-2 pr-4 font-medium">Event</th>
+                              <th className="pb-2 pr-4 font-medium">Page</th>
+                              <th className="pb-2 font-medium">Details</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {conversionData.recentEvents.map((e: { event_name: string; created_at: string; page_path: string; metadata: Record<string, unknown> }, i: number) => (
+                              <tr key={i} className="border-b last:border-0">
+                                <td className="py-1.5 pr-4 whitespace-nowrap text-muted-foreground text-xs">{new Date(e.created_at).toLocaleString()}</td>
+                                <td className="py-1.5 pr-4">
+                                  <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">{e.event_name}</span>
+                                </td>
+                                <td className="py-1.5 pr-4 text-xs text-muted-foreground">{e.page_path}</td>
+                                <td className="py-1.5 text-xs truncate max-w-[200px]">
+                                  {e.metadata && Object.keys(e.metadata).length > 0 ? JSON.stringify(e.metadata) : '—'}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No events yet. Events will appear here as users interact with the app.</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            ) : null}
+          </TabsContent>
 
           {/* ──── Visitor Analytics Tab ──── */}
           <TabsContent value="visitors" className="space-y-6 mt-4">
