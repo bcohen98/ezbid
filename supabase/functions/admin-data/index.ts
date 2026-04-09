@@ -604,3 +604,65 @@ async function getVisitorAnalytics(client: ReturnType<typeof createClient>, rang
     },
   };
 }
+
+// ── Conversions (conversion_events table) ─────────────────
+async function getConversions(client: ReturnType<typeof createClient>, range: string) {
+  const now = new Date();
+  let sinceDays: number;
+  switch (range) {
+    case "7": sinceDays = 7; break;
+    case "30": sinceDays = 30; break;
+    case "90": sinceDays = 90; break;
+    default: sinceDays = 30; break;
+  }
+
+  const since = new Date(now.getTime() - sinceDays * 24 * 60 * 60 * 1000);
+
+  const { data: events } = await client
+    .from("conversion_events")
+    .select("event_name, created_at, session_id, visitor_id, metadata, page_path")
+    .gte("created_at", since.toISOString())
+    .order("created_at", { ascending: false })
+    .limit(1000);
+
+  const rows = events || [];
+
+  // Summary counts by event name
+  const eventCounts: Record<string, number> = {};
+  for (const e of rows) {
+    eventCounts[e.event_name] = (eventCounts[e.event_name] || 0) + 1;
+  }
+
+  // Daily breakdown
+  const dayBuckets: Record<string, Record<string, number>> = {};
+  for (const e of rows) {
+    const day = e.created_at.slice(0, 10);
+    if (!dayBuckets[day]) dayBuckets[day] = {};
+    dayBuckets[day][e.event_name] = (dayBuckets[day][e.event_name] || 0) + 1;
+  }
+
+  const days = Object.keys(dayBuckets).sort();
+  const allEventNames = [...new Set(rows.map(r => r.event_name))];
+
+  const dailyData = days.map(day => ({
+    date: day,
+    ...Object.fromEntries(allEventNames.map(name => [name, dayBuckets[day][name] || 0])),
+  }));
+
+  // Recent events feed (latest 50)
+  const recentEvents = rows.slice(0, 50).map(e => ({
+    event_name: e.event_name,
+    created_at: e.created_at,
+    page_path: e.page_path,
+    visitor_id: e.visitor_id,
+    metadata: e.metadata,
+  }));
+
+  return {
+    eventCounts,
+    dailyData,
+    allEventNames,
+    recentEvents,
+    totalEvents: rows.length,
+  };
+}
