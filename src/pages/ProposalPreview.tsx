@@ -300,7 +300,7 @@ export default function ProposalPreview() {
     } catch (err: any) {
       toast({ title: 'PDF generation failed', description: err.message, variant: 'destructive' });
     } finally {
-      gtagEvent('proposal_downloaded', { proposal_id: proposal.id });
+      trackEvent('proposal_downloaded', { proposal_id: proposal.id });
       setIsGeneratingPdf(false);
     }
   };
@@ -340,7 +340,7 @@ export default function ProposalPreview() {
       });
       if (error) throw error;
       refetch();
-      gtagEvent('proposal_sent', { proposal_id: proposal.id, method: 'email_client' });
+      trackEvent('proposal_sent', { proposal_id: proposal.id, method: 'email_client' });
       toast({ title: 'Proposal sent!', description: `Sent to ${proposal.client_email}. Let them know to check spam or junk if they don't see it.` });
     } catch (err: any) {
       toast({ title: 'Send failed', description: err.message, variant: 'destructive' });
