@@ -21,7 +21,7 @@ import {
   YAxis,
   Legend,
 } from 'recharts';
-import { AlertTriangle, Eye, Bug, Wifi, Users, TrendingUp, FileText, ArrowDownRight } from 'lucide-react';
+import { AlertTriangle, Eye, Bug, Wifi, Users, TrendingUp, FileText, ArrowDownRight, Activity, Zap } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const RANGE_OPTIONS = [
