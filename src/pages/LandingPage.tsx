@@ -198,7 +198,7 @@ export default function LandingPage() {
                 Most popular
               </span>
               <h3 className="text-lg font-semibold">Pro Monthly</h3>
-              <p className="mt-1 text-3xl font-bold">$39<span className="text-sm font-normal text-muted-foreground">/mo</span></p>
+              <p className="mt-1 text-3xl font-bold">$29<span className="text-sm font-normal text-muted-foreground">/mo</span></p>
               <p className="text-xs text-muted-foreground">Unlimited proposals</p>
               <ul className="mt-5 space-y-2">
                 {["Unlimited proposals", "All templates", "AI-enhanced descriptions", "PDF export", "Email delivery", "E-signatures", "Priority support"].map((f) => (
@@ -216,11 +216,11 @@ export default function LandingPage() {
             {/* Pro Annual */}
             <div className="rounded-lg border bg-card p-5 md:p-6 relative">
               <span className="absolute -top-3 left-4 bg-primary text-primary-foreground text-xs font-medium px-2.5 py-0.5 rounded-full">
-                Save 15%
+                2 months free
               </span>
               <h3 className="text-lg font-semibold">Pro Annual</h3>
-              <p className="mt-1 text-3xl font-bold">$399<span className="text-sm font-normal text-muted-foreground">/yr</span></p>
-              <p className="text-xs text-muted-foreground">~$33/mo · Unlimited proposals</p>
+              <p className="mt-1 text-3xl font-bold">$290<span className="text-sm font-normal text-muted-foreground">/yr</span></p>
+              <p className="text-xs text-muted-foreground">~$24/mo · Unlimited proposals</p>
               <ul className="mt-5 space-y-2">
                 {["Everything in Pro Monthly", "2 months free", "Locked-in pricing", "Priority support"].map((f) => (
                   <li key={f} className="flex items-start gap-2 text-sm">

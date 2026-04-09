@@ -78,7 +78,7 @@ const faqs = [
   { q: "Do I need to be good with computers?", a: "Not at all. If you can send a text message, you can use EZ-Bid. It's designed to be as simple as possible." },
   { q: "What if I make a mistake?", a: "You can edit any proposal before you send it. Even after sending, you can create a new version if something needs to change." },
   { q: "Can my client sign on their phone?", a: "Yes. The signing page works on any phone, tablet, or computer. They don't need to download anything." },
-  { q: "How many proposals can I send for free?", a: "You get 3 free proposals to try it out. After that, Pro plans start at $39/month or $399/year." },
+  { q: "How many proposals can I send for free?", a: "You get 3 free proposals to try it out. After that, Pro is $29/month or $290/year (2 months free)." },
   { q: "Can I add my logo?", a: "Yes. Upload your logo in your Company Profile and it'll appear on every proposal automatically." },
   { q: "What if I need help?", a: "Use the chat bubble in the bottom corner of the app — we're here to help." },
 ];

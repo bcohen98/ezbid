@@ -78,10 +78,10 @@ export default function SubscriptionCard({ subscription, isActive }: Props) {
         <p className="text-xs text-muted-foreground">Upgrade for unlimited proposals</p>
         <div className="space-y-2">
           <Button size="sm" className="w-full gap-2" onClick={() => handleCheckout('monthly')} disabled={!!loading}>
-            {loading === 'monthly' ? <Loader2 className="h-3 w-3 animate-spin" /> : <>Pro · $39/mo <ArrowRight className="h-3 w-3" /></>}
+            {loading === 'monthly' ? <Loader2 className="h-3 w-3 animate-spin" /> : <>Pro · $29/mo <ArrowRight className="h-3 w-3" /></>}
           </Button>
           <Button variant="outline" size="sm" className="w-full gap-2" onClick={() => handleCheckout('annual')} disabled={!!loading}>
-            {loading === 'annual' ? <Loader2 className="h-3 w-3 animate-spin" /> : <>Pro · $399/yr (save 15%) <ArrowRight className="h-3 w-3" /></>}
+            {loading === 'annual' ? <Loader2 className="h-3 w-3 animate-spin" /> : <>Pro · $290/yr (2 months free) <ArrowRight className="h-3 w-3" /></>}
           </Button>
         </div>
       </CardContent>
