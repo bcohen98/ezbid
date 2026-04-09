@@ -93,3 +93,12 @@ export function useAdminReferrals() {
     staleTime: 30_000,
   });
 }
+
+export function useAdminConversions(range: string = '30') {
+  return useQuery({
+    queryKey: ['admin-conversions', range],
+    queryFn: () => fetchAdminSection('conversions', { range }),
+    staleTime: 30_000,
+    refetchInterval: 30_000, // auto-refresh every 30s for live feel
+  });
+}
