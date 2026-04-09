@@ -235,20 +235,7 @@ export default function AdminAnalytics() {
             ) : null}
           </TabsContent>
 
-          {/* ──── Visitor Analytics Tab ──── */}
           <TabsContent value="visitors" className="space-y-6 mt-4">
-            <div className="flex justify-end">
-              <Select value={visitorRange} onValueChange={setVisitorRange}>
-                <SelectTrigger className="w-[160px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {VISITOR_RANGE_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
 
             {visitorLoading ? (
               <p className="text-sm text-muted-foreground">Loading visitor analytics...</p>
@@ -282,7 +269,7 @@ export default function AdminAnalytics() {
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium">
-                      Visitors — {VISITOR_RANGE_OPTIONS.find(o => o.value === visitorRange)?.label}
+                      Visitors — {RANGE_OPTIONS.find(o => o.value === range)?.label || range}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -377,7 +364,7 @@ export default function AdminAnalytics() {
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium">
-                      User Funnel — {VISITOR_RANGE_OPTIONS.find(o => o.value === visitorRange)?.label}
+                      User Funnel — {RANGE_OPTIONS.find(o => o.value === range)?.label || range}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
