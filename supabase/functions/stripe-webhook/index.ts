@@ -197,14 +197,14 @@ async function processReferralConversion(
       .maybeSingle();
 
     if (referrerSub?.stripe_customer_id) {
-      // Add negative balance (credit) of $39 (one month)
+      // Add negative balance (credit) of $29 (one month)
       await stripe.customers.createBalanceTransaction(referrerSub.stripe_customer_id, {
-        amount: -3900, // -$39.00 in cents
+        amount: -2900, // -$29.00 in cents
         currency: "usd",
         description: `Referral credit: ${email} subscribed`,
       });
 
-      console.log(`[STRIPE-WEBHOOK] Applied $39 referral credit to customer ${referrerSub.stripe_customer_id}`);
+      console.log(`[STRIPE-WEBHOOK] Applied $29 referral credit to customer ${referrerSub.stripe_customer_id}`);
 
       // Update the credit record
       await supabase
@@ -242,7 +242,7 @@ async function processReferralConversion(
                 <h1 style="font-size: 22px; font-weight: bold; color: #1a1a1a;">Great news!</h1>
                 <p style="font-size: 15px; color: #555; line-height: 1.6;">
                   Your referral (${email}) just subscribed to EZ-Bid Pro! 
-                  We've added <strong>1 free month ($39)</strong> as a credit to your account. 
+                  We've added <strong>1 free month ($29)</strong> as a credit to your account. 
                   It'll be automatically applied to your next billing cycle.
                 </p>
                 <p style="font-size: 15px; color: #555; line-height: 1.6;">
