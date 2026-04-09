@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { gtagPageView } from '@/lib/gtag';
 
 function getSessionId() {
   let sid = sessionStorage.getItem('ez_sid');
@@ -32,6 +33,9 @@ export function usePageTracking() {
     lastPath.current = path;
 
     const sessionId = getSessionId();
+
+    // GA4 virtual pageview for SPA route change
+    gtagPageView(path);
 
     // Existing page_views insert (keep existing functionality)
     supabase

@@ -1,18 +1,25 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Sparkles, ArrowRight, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { gtagEvent } from '@/lib/gtag';
 
 interface Props {
   proposalsUsed: number;
   onContinue: () => void;
+  source?: string;
 }
 
-export default function UpgradePrompt({ proposalsUsed, onContinue }: Props) {
+export default function UpgradePrompt({ proposalsUsed, onContinue, source }: Props) {
   const [loading, setLoading] = useState<'monthly' | 'annual' | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    gtagEvent('free_limit_reached', { proposals_used: proposalsUsed });
+    gtagEvent('upgrade_prompt_viewed', { source: source || 'unknown' });
+  }, []);
 
   const handleUpgrade = async (plan: 'monthly' | 'annual') => {
     setLoading(plan);
@@ -22,6 +29,7 @@ export default function UpgradePrompt({ proposalsUsed, onContinue }: Props) {
       });
       if (error) throw error;
       if (data?.url) {
+        gtagEvent('subscription_upgraded', { plan });
         window.open(data.url, '_blank');
       } else {
         throw new Error('No checkout URL returned');
