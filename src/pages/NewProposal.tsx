@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { gtagEvent } from '@/lib/gtag';
+import { trackEvent } from '@/lib/trackEvent';
 
 // Legacy type exports used by ProposalForm and TemplateSelector
 export type ProposalTemplate = 'classic' | 'modern' | 'minimal' | 'bold' | 'executive' | 'contractor' | 'premium' | 'clean';

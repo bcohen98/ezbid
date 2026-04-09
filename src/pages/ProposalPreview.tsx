@@ -14,7 +14,7 @@ import { getTradeStyle } from '@/components/proposal/tradeStyles';
 import { useState, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { gtagEvent } from '@/lib/gtag';
+import { trackEvent } from '@/lib/trackEvent';
 
 interface RevisionEntry {
   request: string;

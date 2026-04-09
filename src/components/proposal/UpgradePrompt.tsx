@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Sparkles, ArrowRight, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { gtagEvent } from '@/lib/gtag';
+import { trackEvent } from '@/lib/trackEvent';
 
 interface Props {
   proposalsUsed: number;
