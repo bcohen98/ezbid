@@ -30,13 +30,7 @@ const RANGE_OPTIONS = [
   { value: 'week', label: 'Past Week' },
   { value: 'month', label: 'Past Month' },
   { value: 'year', label: 'Past Year' },
-] as const;
-
-const VISITOR_RANGE_OPTIONS = [
-  { value: '7', label: 'Last 7 Days' },
-  { value: '30', label: 'Last 30 Days' },
-  { value: '90', label: 'Last 90 Days' },
-  { value: 'all', label: 'All Time' },
+  { value: 'custom', label: 'Custom Range' },
 ] as const;
 
 function formatTick(value: string, range: string) {
