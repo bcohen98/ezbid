@@ -43,13 +43,21 @@ function formatTick(value: string, range: string) {
 
 export default function AdminAnalytics() {
   const [range, setRange] = useState('month');
-  const [visitorRange, setVisitorRange] = useState('30');
-  const [conversionRange, setConversionRange] = useState('30');
+  const [customStart, setCustomStart] = useState('');
+  const [customEnd, setCustomEnd] = useState('');
   const [activeTab, setActiveTab] = useState('conversions');
 
-  const { data, isLoading } = useAdminAnalytics(range);
-  const { data: visitorData, isLoading: visitorLoading } = useAdminVisitorAnalytics(visitorRange);
-  const { data: conversionData, isLoading: conversionLoading } = useAdminConversions(conversionRange);
+  // Build the effective range string (for custom: "YYYY-MM-DD_YYYY-MM-DD")
+  const effectiveRange = useMemo(() => {
+    if (range === 'custom' && customStart && customEnd) {
+      return `${customStart}_${customEnd}`;
+    }
+    return range === 'custom' ? 'month' : range;
+  }, [range, customStart, customEnd]);
+
+  const { data, isLoading } = useAdminAnalytics(effectiveRange);
+  const { data: visitorData, isLoading: visitorLoading } = useAdminVisitorAnalytics(effectiveRange);
+  const { data: conversionData, isLoading: conversionLoading } = useAdminConversions(effectiveRange);
 
   const rangeLabel = data?.rangeLabel || '30d';
 
