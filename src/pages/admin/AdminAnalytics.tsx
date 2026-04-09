@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { useAdminAnalytics, useAdminVisitorAnalytics } from '@/hooks/useAdminData';
+import { useAdminAnalytics, useAdminVisitorAnalytics, useAdminConversions } from '@/hooks/useAdminData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
