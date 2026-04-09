@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import EZBidLogo from '@/components/EZBidLogo';
 import heroBg from '@/assets/hero-bg.jpg';
 import { supabase } from '@/integrations/supabase/client';
-import { gtagEvent } from '@/lib/gtag';
+import { trackEvent } from '@/lib/trackEvent';
 
 export default function AuthPage() {
   const [isSignUp, setIsSignUp] = useState(false);
