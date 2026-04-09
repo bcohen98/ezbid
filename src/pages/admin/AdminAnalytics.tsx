@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { useAdminAnalytics, useAdminVisitorAnalytics, useAdminConversions } from '@/hooks/useAdminData';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
@@ -30,13 +31,7 @@ const RANGE_OPTIONS = [
   { value: 'week', label: 'Past Week' },
   { value: 'month', label: 'Past Month' },
   { value: 'year', label: 'Past Year' },
-] as const;
-
-const VISITOR_RANGE_OPTIONS = [
-  { value: '7', label: 'Last 7 Days' },
-  { value: '30', label: 'Last 30 Days' },
-  { value: '90', label: 'Last 90 Days' },
-  { value: 'all', label: 'All Time' },
+  { value: 'custom', label: 'Custom Range' },
 ] as const;
 
 function formatTick(value: string, range: string) {
@@ -48,13 +43,21 @@ function formatTick(value: string, range: string) {
 
 export default function AdminAnalytics() {
   const [range, setRange] = useState('month');
-  const [visitorRange, setVisitorRange] = useState('30');
-  const [conversionRange, setConversionRange] = useState('30');
+  const [customStart, setCustomStart] = useState('');
+  const [customEnd, setCustomEnd] = useState('');
   const [activeTab, setActiveTab] = useState('conversions');
 
-  const { data, isLoading } = useAdminAnalytics(range);
-  const { data: visitorData, isLoading: visitorLoading } = useAdminVisitorAnalytics(visitorRange);
-  const { data: conversionData, isLoading: conversionLoading } = useAdminConversions(conversionRange);
+  // Build the effective range string (for custom: "YYYY-MM-DD_YYYY-MM-DD")
+  const effectiveRange = useMemo(() => {
+    if (range === 'custom' && customStart && customEnd) {
+      return `${customStart}_${customEnd}`;
+    }
+    return range === 'custom' ? 'month' : range;
+  }, [range, customStart, customEnd]);
+
+  const { data, isLoading } = useAdminAnalytics(effectiveRange);
+  const { data: visitorData, isLoading: visitorLoading } = useAdminVisitorAnalytics(effectiveRange);
+  const { data: conversionData, isLoading: conversionLoading } = useAdminConversions(effectiveRange);
 
   const rangeLabel = data?.rangeLabel || '30d';
 
@@ -62,6 +65,29 @@ export default function AdminAnalytics() {
     <AdminLayout>
       <div className="space-y-6 animate-fade-in">
         <h1 className="text-lg font-semibold">Site Analytics</h1>
+
+        <div className="flex items-center justify-between">
+          <div />
+          <div className="flex items-center gap-2">
+            <Select value={range} onValueChange={setRange}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {RANGE_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {range === 'custom' && (
+              <>
+                <Input type="date" className="w-[140px]" value={customStart} onChange={(e) => setCustomStart(e.target.value)} />
+                <span className="text-muted-foreground text-sm">to</span>
+                <Input type="date" className="w-[140px]" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} />
+              </>
+            )}
+          </div>
+        </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
@@ -72,18 +98,6 @@ export default function AdminAnalytics() {
 
           {/* ──── Conversions Tab ──── */}
           <TabsContent value="conversions" className="space-y-6 mt-4">
-            <div className="flex justify-end">
-              <Select value={conversionRange} onValueChange={setConversionRange}>
-                <SelectTrigger className="w-[160px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {VISITOR_RANGE_OPTIONS.filter(o => o.value !== 'all').map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
 
             {conversionLoading ? (
               <p className="text-sm text-muted-foreground">Loading conversion data...</p>
@@ -221,20 +235,7 @@ export default function AdminAnalytics() {
             ) : null}
           </TabsContent>
 
-          {/* ──── Visitor Analytics Tab ──── */}
           <TabsContent value="visitors" className="space-y-6 mt-4">
-            <div className="flex justify-end">
-              <Select value={visitorRange} onValueChange={setVisitorRange}>
-                <SelectTrigger className="w-[160px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {VISITOR_RANGE_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
 
             {visitorLoading ? (
               <p className="text-sm text-muted-foreground">Loading visitor analytics...</p>
@@ -268,7 +269,7 @@ export default function AdminAnalytics() {
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium">
-                      Visitors — {VISITOR_RANGE_OPTIONS.find(o => o.value === visitorRange)?.label}
+                      Visitors — {RANGE_OPTIONS.find(o => o.value === range)?.label || range}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -363,7 +364,7 @@ export default function AdminAnalytics() {
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium">
-                      User Funnel — {VISITOR_RANGE_OPTIONS.find(o => o.value === visitorRange)?.label}
+                      User Funnel — {RANGE_OPTIONS.find(o => o.value === range)?.label || range}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -374,20 +375,8 @@ export default function AdminAnalytics() {
             ) : null}
           </TabsContent>
 
-          {/* ──── Site Health Tab (existing) ──── */}
+          {/* ──── Site Health Tab ──── */}
           <TabsContent value="site" className="space-y-6 mt-4">
-            <div className="flex justify-end">
-              <Select value={range} onValueChange={setRange}>
-                <SelectTrigger className="w-[160px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {RANGE_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
 
             {isLoading ? (
               <p className="text-sm text-muted-foreground">Loading analytics...</p>

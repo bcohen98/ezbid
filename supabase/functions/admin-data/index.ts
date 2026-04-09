@@ -312,13 +312,27 @@ function getRangeConfig(range: string) {
       break;
     }
     default: {
-      // month (30 days)
-      since = new Date(now);
-      since.setDate(now.getDate() - 30);
-      bucketCount = 30;
-      bucketMs = 24 * 60 * 60 * 1000;
-      formatKey = (d) => d.toISOString().slice(0, 10);
-      formatLabel = "MM-DD";
+      // Custom range "YYYY-MM-DD_YYYY-MM-DD" or default to 30 days
+      if (range.includes("_")) {
+        const [startStr, endStr] = range.split("_");
+        since = new Date(startStr);
+        const endDate = new Date(endStr);
+        endDate.setHours(23, 59, 59, 999);
+        const diffMs = endDate.getTime() - since.getTime();
+        const diffDays = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+        bucketCount = Math.max(diffDays, 1);
+        bucketMs = 24 * 60 * 60 * 1000;
+        formatKey = (d) => d.toISOString().slice(0, 10);
+        formatLabel = "MM-DD";
+      } else {
+        // month (30 days)
+        since = new Date(now);
+        since.setDate(now.getDate() - 30);
+        bucketCount = 30;
+        bucketMs = 24 * 60 * 60 * 1000;
+        formatKey = (d) => d.toISOString().slice(0, 10);
+        formatLabel = "MM-DD";
+      }
       break;
     }
   }
@@ -466,28 +480,55 @@ async function getReferrals(client: ReturnType<typeof createClient>) {
   };
 }
 
+// ── Shared range helper ───────────────────────────────────
+function rangeToSince(range: string): Date {
+  const now = new Date();
+  switch (range) {
+    case "hour": return new Date(now.getTime() - 60 * 60 * 1000);
+    case "day": return new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    case "week": { const d = new Date(now); d.setDate(d.getDate() - 7); return d; }
+    case "month": { const d = new Date(now); d.setDate(d.getDate() - 30); return d; }
+    case "year": { const d = new Date(now); d.setFullYear(d.getFullYear() - 1); return d; }
+    // Legacy numeric values
+    case "7": { const d = new Date(now); d.setDate(d.getDate() - 7); return d; }
+    case "30": { const d = new Date(now); d.setDate(d.getDate() - 30); return d; }
+    case "90": { const d = new Date(now); d.setDate(d.getDate() - 90); return d; }
+    default: {
+      // Custom range: "YYYY-MM-DD_YYYY-MM-DD"
+      if (range.includes("_")) {
+        const [start] = range.split("_");
+        return new Date(start);
+      }
+      return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    }
+  }
+}
+
+function rangeToEnd(range: string): Date | null {
+  if (range.includes("_")) {
+    const [, end] = range.split("_");
+    const d = new Date(end);
+    d.setHours(23, 59, 59, 999);
+    return d;
+  }
+  return null;
+}
+
 // ── Visitor Analytics (site_analytics table) ──────────────
 async function getVisitorAnalytics(client: ReturnType<typeof createClient>, range: string) {
   const now = new Date();
-  let sinceDays: number;
-  switch (range) {
-    case "7": sinceDays = 7; break;
-    case "30": sinceDays = 30; break;
-    case "90": sinceDays = 90; break;
-    default: sinceDays = 0; break; // all time
-  }
-
-  const since = sinceDays > 0
-    ? new Date(now.getTime() - sinceDays * 24 * 60 * 60 * 1000)
-    : new Date("2020-01-01");
+  const since = rangeToSince(range);
+  const end = rangeToEnd(range);
 
   const since30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
   // Fetch all analytics in range
-  const { data: analytics } = await client
+  let analyticsQuery = client
     .from("site_analytics")
     .select("ip_address, page_url, session_id, visitor_id, is_logged_in, user_id, is_guest_proposal_start, is_guest_proposal_complete, visited_at")
-    .gte("visited_at", since.toISOString())
+    .gte("visited_at", since.toISOString());
+  if (end) analyticsQuery = analyticsQuery.lte("visited_at", end.toISOString());
+  const { data: analytics } = await analyticsQuery
     .order("visited_at", { ascending: true });
 
   const rows = analytics || [];
@@ -607,21 +648,15 @@ async function getVisitorAnalytics(client: ReturnType<typeof createClient>, rang
 
 // ── Conversions (conversion_events table) ─────────────────
 async function getConversions(client: ReturnType<typeof createClient>, range: string) {
-  const now = new Date();
-  let sinceDays: number;
-  switch (range) {
-    case "7": sinceDays = 7; break;
-    case "30": sinceDays = 30; break;
-    case "90": sinceDays = 90; break;
-    default: sinceDays = 30; break;
-  }
+  const since = rangeToSince(range);
+  const end = rangeToEnd(range);
 
-  const since = new Date(now.getTime() - sinceDays * 24 * 60 * 60 * 1000);
-
-  const { data: events } = await client
+  let query = client
     .from("conversion_events")
     .select("event_name, created_at, session_id, visitor_id, metadata, page_path")
-    .gte("created_at", since.toISOString())
+    .gte("created_at", since.toISOString());
+  if (end) query = query.lte("created_at", end.toISOString());
+  const { data: events } = await query
     .order("created_at", { ascending: false })
     .limit(1000);
 
