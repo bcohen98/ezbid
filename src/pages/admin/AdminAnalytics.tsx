@@ -66,6 +66,29 @@ export default function AdminAnalytics() {
       <div className="space-y-6 animate-fade-in">
         <h1 className="text-lg font-semibold">Site Analytics</h1>
 
+        <div className="flex items-center justify-between">
+          <div />
+          <div className="flex items-center gap-2">
+            <Select value={range} onValueChange={setRange}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {RANGE_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {range === 'custom' && (
+              <>
+                <Input type="date" className="w-[140px]" value={customStart} onChange={(e) => setCustomStart(e.target.value)} />
+                <span className="text-muted-foreground text-sm">to</span>
+                <Input type="date" className="w-[140px]" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} />
+              </>
+            )}
+          </div>
+        </div>
+
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
             <TabsTrigger value="conversions">Conversions</TabsTrigger>
@@ -75,18 +98,6 @@ export default function AdminAnalytics() {
 
           {/* ──── Conversions Tab ──── */}
           <TabsContent value="conversions" className="space-y-6 mt-4">
-            <div className="flex justify-end">
-              <Select value={conversionRange} onValueChange={setConversionRange}>
-                <SelectTrigger className="w-[160px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {VISITOR_RANGE_OPTIONS.filter(o => o.value !== 'all').map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
 
             {conversionLoading ? (
               <p className="text-sm text-muted-foreground">Loading conversion data...</p>
