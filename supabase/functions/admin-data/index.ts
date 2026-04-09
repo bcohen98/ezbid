@@ -504,18 +504,17 @@ function rangeToEnd(range: string): Date | null {
 async function getVisitorAnalytics(client: ReturnType<typeof createClient>, range: string) {
   const now = new Date();
   const since = rangeToSince(range);
-
-  const since = sinceDays > 0
-    ? new Date(now.getTime() - sinceDays * 24 * 60 * 60 * 1000)
-    : new Date("2020-01-01");
+  const end = rangeToEnd(range);
 
   const since30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
   // Fetch all analytics in range
-  const { data: analytics } = await client
+  let analyticsQuery = client
     .from("site_analytics")
     .select("ip_address, page_url, session_id, visitor_id, is_logged_in, user_id, is_guest_proposal_start, is_guest_proposal_complete, visited_at")
-    .gte("visited_at", since.toISOString())
+    .gte("visited_at", since.toISOString());
+  if (end) analyticsQuery = analyticsQuery.lte("visited_at", end.toISOString());
+  const { data: analytics } = await analyticsQuery
     .order("visited_at", { ascending: true });
 
   const rows = analytics || [];
