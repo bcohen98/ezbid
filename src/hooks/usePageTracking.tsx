@@ -41,7 +41,7 @@ export function usePageTracking() {
         session_id: sessionId,
         user_agent: navigator.userAgent,
       })
-      .then();
+      .then(() => {}, () => {});
 
     // New site_analytics tracking via edge function
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
