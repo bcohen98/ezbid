@@ -419,22 +419,56 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
   if (template === 'bold') {
     return (
       <div className="bg-white text-sm" style={{ fontFamily, minHeight: '800px', color: '#1a1a1a' }}>
-        {/* Full-width colored header */}
-        <div className="px-10 py-8" style={{ backgroundColor: trade.accentColor }}>
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-4">
-              {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className="h-14 w-auto object-contain brightness-0 invert" />}
-              <div>
-                <div className="text-xl font-extrabold tracking-tight text-white">{profile?.company_name || 'Company Name'}</div>
-                {profile?.trade_type && <div className="text-xs uppercase tracking-widest mt-0.5 text-white/70">{trade.label}</div>}
+        {/* Header — adapts to customHeaderStyle */}
+        {customHeaderStyle === 'dark' ? (
+          <div className="px-10 py-8" style={{ backgroundColor: trade.accentColor }}>
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-4">
+                {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className="h-14 w-auto object-contain brightness-0 invert" />}
+                <div>
+                  <div className="text-xl font-extrabold tracking-tight text-white">{profile?.company_name || 'Company Name'}</div>
+                  {profile?.trade_type && <div className="text-xs uppercase tracking-widest mt-0.5 text-white/70">{trade.label}</div>}
+                </div>
+              </div>
+              <div className="text-right text-white">
+                <div className="text-3xl font-black">PROPOSAL</div>
+                <div className="text-sm mt-1 text-white/70">{proposalNumber}</div>
               </div>
             </div>
-            <div className="text-right text-white">
-              <div className="text-3xl font-black">PROPOSAL</div>
-              <div className="text-sm mt-1 text-white/70">{proposalNumber}</div>
+          </div>
+        ) : customHeaderStyle === 'light' ? (
+          <div className="px-10 py-8 bg-white" style={{ borderTop: `4px solid ${trade.accentColor}` }}>
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-4">
+                {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className="h-14 w-auto object-contain" />}
+                <div>
+                  <div className="text-xl font-extrabold tracking-tight" style={{ color: '#1a1a1a' }}>{profile?.company_name || 'Company Name'}</div>
+                  {profile?.trade_type && <div className="text-xs uppercase tracking-widest mt-0.5" style={{ color: trade.accentColor }}>{trade.label}</div>}
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-3xl font-black" style={{ color: trade.accentColor }}>PROPOSAL</div>
+                <div className="text-sm mt-1" style={{ color: '#666' }}>{proposalNumber}</div>
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="px-10 py-8">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-4">
+                {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className="h-14 w-auto object-contain" />}
+                <div>
+                  <div className="text-xl font-extrabold tracking-tight" style={{ color: '#1a1a1a' }}>{profile?.company_name || 'Company Name'}</div>
+                  {profile?.trade_type && <div className="text-xs uppercase tracking-widest mt-0.5" style={{ color: '#888' }}>{trade.label}</div>}
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-3xl font-black" style={{ color: '#1a1a1a' }}>PROPOSAL</div>
+                <div className="text-sm mt-1" style={{ color: '#888' }}>{proposalNumber}</div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="px-10 py-6">
           <ClientInfoRow proposal={proposal} proposalNumber={proposalNumber} jobSiteAddress={jobSiteAddress} hideProposalNumber />
