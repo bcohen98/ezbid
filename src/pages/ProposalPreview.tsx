@@ -61,6 +61,14 @@ export default function ProposalPreview() {
 
   const tradeStyle = proposal ? getTradeStyle((proposal as any).trade_type || profile?.trade_type) : null;
 
+  // Initialize customization from saved proposal data
+  useState(() => {
+    if (proposal) {
+      if ((proposal as any).custom_accent_color) setAccentColor((proposal as any).custom_accent_color);
+      if ((proposal as any).font_style) setFontStyle((proposal as any).font_style as FontStyle);
+      if ((proposal as any).header_style) setHeaderStyle((proposal as any).header_style as HeaderStyle);
+    }
+  });
 
   if (isLoading) {
     return <AppLayout><div className="container py-8"><p className="text-sm text-muted-foreground">Loading preview...</p></div></AppLayout>;
