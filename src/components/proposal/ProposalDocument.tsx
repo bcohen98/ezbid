@@ -388,7 +388,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
             <div className="flex items-center gap-4">
               {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className="h-12 w-auto object-contain" />}
               <div>
-                <div style={{ fontFamily: 'Georgia, Times New Roman, serif', fontSize: '22px', fontWeight: 700, color: '#111', letterSpacing: '-0.3px' }}>{profile?.company_name || 'Company Name'}</div>
+                <div style={{ fontFamily, fontSize: '22px', fontWeight: 700, color: '#111', letterSpacing: '-0.3px' }}>{profile?.company_name || 'Company Name'}</div>
                 {profile?.trade_type && <div className="text-xs uppercase mt-1" style={{ letterSpacing: '2px', color: '#999' }}>{trade.label}</div>}
               </div>
             </div>
