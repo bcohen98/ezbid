@@ -47,6 +47,9 @@ export default function ProposalPreview() {
     return ((proposal?.template as TemplateId) || 'modern');
   };
   const [activeTemplate, setActiveTemplate] = useState<TemplateId>(getDefaultTemplate);
+  const [accentColor, setAccentColor] = useState<string>('');
+  const [fontStyle, setFontStyle] = useState<FontStyle>('modern');
+  const [headerStyle, setHeaderStyle] = useState<HeaderStyle>('dark');
 
   const handleTemplateChange = async (t: TemplateId) => {
     setActiveTemplate(t);
