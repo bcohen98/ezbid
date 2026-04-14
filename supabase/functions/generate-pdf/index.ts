@@ -99,58 +99,51 @@ function buildHtml(proposal: any, lineItems: any[], profile: any, exhibits: any[
 
   const section = (title: string, content: string | null | undefined) => {
     if (!content) return '';
-    return `<div style="margin-bottom:20px;"><h3 style="font-size:13px;font-weight:700;margin-bottom:6px;color:#1a1a1a;">${esc(title)}</h3><div style="font-size:13px;line-height:1.7;color:#333;margin:0;">${mdToHtml(content)}</div></div>`;
+    return `<div style="margin-bottom:20px;page-break-inside:avoid;"><h3 style="font-size:13px;font-weight:700;margin-bottom:6px;color:#1a1a1a;">${esc(title)}</h3><div style="font-size:13px;line-height:1.7;color:#333;margin:0;">${mdToHtml(content)}</div></div>`;
   };
 
   const lineItemRows = lineItems.map((item: any, idx: number) => `
-    <tr style="border-bottom:1px dotted #e0e0e0;">
-      <td style="padding:10px 12px;text-align:center;color:#888;">${idx + 1}</td>
-      <td style="padding:10px 12px;">${esc(item.description)}</td>
-      <td style="padding:10px 12px;text-align:center;">${item.quantity}</td>
-      <td style="padding:10px 12px;text-align:right;color:#555;">${esc(item.unit)}</td>
-      <td style="padding:10px 12px;text-align:right;">$${fmt(item.unit_price)}</td>
-      <td style="padding:10px 12px;text-align:right;font-weight:600;">$${fmt(item.subtotal)}</td>
+    <tr style="background:${idx % 2 === 0 ? '#ffffff' : '#f9fafb'};">
+      <td style="padding:12px 12px;text-align:center;color:#6b7280;border-bottom:1px solid #f0f0f0;">${idx + 1}</td>
+      <td style="padding:12px 12px;color:#1f2937;border-bottom:1px solid #f0f0f0;">${esc(item.description)}</td>
+      <td style="padding:12px 12px;text-align:center;color:#374151;border-bottom:1px solid #f0f0f0;">${item.quantity}</td>
+      <td style="padding:12px 12px;text-align:right;color:#6b7280;border-bottom:1px solid #f0f0f0;">${esc(item.unit)}</td>
+      <td style="padding:12px 12px;text-align:right;color:#374151;border-bottom:1px solid #f0f0f0;">$${fmt(item.unit_price)}</td>
+      <td style="padding:12px 12px;text-align:right;font-weight:600;color:#111827;border-bottom:1px solid #f0f0f0;">$${fmt(item.subtotal)}</td>
     </tr>`).join('');
 
-  // Line items table style varies by template
-  const tableHeaderStyle = template === 'classic' ? 'outlined' : template === 'minimal' ? 'minimal' : 'filled';
-  const tableHeaderBg = tableHeaderStyle === 'filled' ? c : 'transparent';
-  const tableHeaderColor = tableHeaderStyle === 'filled' ? '#fff' : '#1a1a1a';
-  const tableHeaderBorder = tableHeaderStyle === 'outlined' ? `border-bottom:2px solid ${c};` : '';
-
   const lineItemsHtml = lineItems.length > 0 ? `
-    <div style="margin-bottom:28px;">
-      ${tableHeaderStyle === 'filled' ? `<div style="height:2px;background:${c};"></div>` : `<div style="height:1px;background:#e0e0e0;"></div>`}
-      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+    <div style="margin-bottom:28px;page-break-inside:avoid;">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;">
         <thead>
-          <tr style="background:${tableHeaderBg};${tableHeaderBorder}">
-            <th style="padding:10px 12px;text-align:center;color:${tableHeaderColor};font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:40px;">#</th>
-            <th style="padding:10px 12px;text-align:left;color:${tableHeaderColor};font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Description</th>
-            <th style="padding:10px 12px;text-align:center;color:${tableHeaderColor};font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:60px;">Qty</th>
-            <th style="padding:10px 12px;text-align:right;color:${tableHeaderColor};font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:60px;">Unit</th>
-            <th style="padding:10px 12px;text-align:right;color:${tableHeaderColor};font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:90px;">Price</th>
-            <th style="padding:10px 12px;text-align:right;color:${tableHeaderColor};font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:90px;">Total</th>
+          <tr style="background:${c};">
+            <th style="padding:12px 12px;text-align:center;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:40px;">#</th>
+            <th style="padding:12px 12px;text-align:left;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Description</th>
+            <th style="padding:12px 12px;text-align:center;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:60px;">Qty</th>
+            <th style="padding:12px 12px;text-align:right;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:70px;">Unit</th>
+            <th style="padding:12px 12px;text-align:right;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:90px;">Price</th>
+            <th style="padding:12px 12px;text-align:right;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:100px;">Total</th>
           </tr>
         </thead>
         <tbody>${lineItemRows}</tbody>
       </table>
-      ${tableHeaderStyle === 'filled' ? `<div style="height:2px;background:${c};"></div>` : ''}
 
-      <div style="margin-top:16px;">
+      <div style="margin-top:12px;">
         <table style="width:100%;border-collapse:collapse;">
-          <tr><td style="text-align:right;padding:3px 12px;font-weight:700;font-size:13px;width:75%;">Sub Total</td><td style="text-align:right;padding:3px 12px;font-weight:700;font-size:13px;">$${fmt(proposal.subtotal)}</td></tr>
-          ${Number(proposal.tax_rate) > 0 ? `<tr><td style="text-align:right;padding:3px 12px;font-weight:700;font-size:13px;">Tax ${proposal.tax_rate}%</td><td style="text-align:right;padding:3px 12px;font-weight:700;font-size:13px;">$${fmt(proposal.tax_amount)}</td></tr>` : ''}
-          <tr><td colspan="2" style="padding:8px 0 0;">
+          <tr><td style="width:60%;"></td><td style="border-top:2px solid #e5e7eb;"></td><td style="border-top:2px solid #e5e7eb;"></td></tr>
+          <tr><td style="width:60%;"></td><td style="text-align:right;padding:8px 12px;font-weight:600;font-size:13px;color:#374151;">Subtotal</td><td style="text-align:right;padding:8px 12px;font-weight:600;font-size:13px;color:#111827;">$${fmt(proposal.subtotal)}</td></tr>
+          ${Number(proposal.tax_rate) > 0 ? `<tr><td></td><td style="text-align:right;padding:6px 12px;font-size:13px;color:#6b7280;">Tax (${proposal.tax_rate}%)</td><td style="text-align:right;padding:6px 12px;font-size:13px;color:#374151;">$${fmt(proposal.tax_amount)}</td></tr>` : ''}
+          <tr><td colspan="3" style="padding:6px 0 0;">
             <table style="width:100%;border-collapse:collapse;">
               <tr style="background:${c};color:#fff;">
-                <td style="padding:10px 16px;font-weight:700;font-size:14px;border-radius:3px 0 0 3px;">GRAND TOTAL</td>
-                <td style="padding:10px 16px;text-align:right;font-weight:700;font-size:14px;border-radius:0 3px 3px 0;">$${fmt(proposal.total)}</td>
+                <td style="padding:12px 16px;font-weight:700;font-size:14px;border-radius:4px 0 0 4px;">GRAND TOTAL</td>
+                <td style="padding:12px 16px;text-align:right;font-weight:700;font-size:14px;border-radius:0 4px 4px 0;">$${fmt(proposal.total)}</td>
               </tr>
             </table>
           </td></tr>
           ${Number(proposal.deposit_amount) > 0 ? `
-            <tr><td style="text-align:right;padding:6px 12px 2px;font-size:12px;color:#555;">Deposit Due Upon Signing</td><td style="text-align:right;padding:6px 12px 2px;font-size:12px;font-weight:600;">$${fmt(proposal.deposit_amount)}</td></tr>
-            <tr><td style="text-align:right;padding:2px 12px;font-size:12px;color:#555;">Balance Due Upon Completion</td><td style="text-align:right;padding:2px 12px;font-size:12px;font-weight:600;">$${fmt(proposal.balance_due)}</td></tr>
+            <tr><td></td><td style="text-align:right;padding:8px 12px 2px;font-size:12px;color:#6b7280;">Deposit Due Upon Signing</td><td style="text-align:right;padding:8px 12px 2px;font-size:12px;font-weight:600;color:#374151;">$${fmt(proposal.deposit_amount)}</td></tr>
+            <tr><td></td><td style="text-align:right;padding:2px 12px;font-size:12px;color:#6b7280;">Balance Due Upon Completion</td><td style="text-align:right;padding:2px 12px;font-size:12px;font-weight:600;color:#374151;">$${fmt(proposal.balance_due)}</td></tr>
           ` : ''}
         </table>
       </div>
@@ -374,8 +367,10 @@ function buildHtml(proposal: any, lineItems: any[], profile: any, exhibits: any[
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
   * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family:${fontFamily}; font-size:13px; color:#1a1a1a; background:#fff; }
-  @page { size:letter; margin:0; }
+  body { font-family:${fontFamily}; font-size:13px; color:#1a1a1a; background:#fff; padding-bottom:40px; }
+  @page { size:letter; margin:0.5in 0 0.6in 0; }
+  tr { page-break-inside:avoid; }
+  div { orphans:3; widows:3; }
 </style></head><body>
 
 ${headerHtml}

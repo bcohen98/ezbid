@@ -133,26 +133,20 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
   );
 
   // ─── Line items table (shared) ───
-  const lineItemsTable = (headerStyle: 'filled' | 'outlined' | 'minimal') => {
+  const lineItemsTable = () => {
     if (lineItems.length === 0) return null;
 
-    const headerBg = headerStyle === 'filled' ? trade.accentColor : headerStyle === 'outlined' ? 'transparent' : 'transparent';
-    const headerTextColor = headerStyle === 'filled' ? '#fff' : '#1a1a1a';
-    const showTopBorder = headerStyle !== 'filled';
-
     return (
-      <div className="mb-8">
-        {headerStyle === 'filled' && <div className="h-0.5" style={{ backgroundColor: trade.accentColor }} />}
-        {showTopBorder && <div className="h-px" style={{ backgroundColor: '#e0e0e0' }} />}
-        <table className="w-full text-sm">
+      <div className="mb-8" style={{ pageBreakInside: 'avoid' }}>
+        <table className="w-full text-sm" style={{ borderCollapse: 'separate', borderSpacing: 0, borderRadius: '6px', overflow: 'hidden', border: '1px solid #e5e7eb' }}>
           <thead>
-            <tr style={{ backgroundColor: headerBg, borderBottom: headerStyle === 'outlined' ? `2px solid ${trade.accentColor}` : undefined }}>
-              <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider w-8" style={{ color: headerTextColor }}>#</th>
-              <th className="text-left py-3 px-4 text-xs font-bold uppercase tracking-wider" style={{ color: headerTextColor }}>Description</th>
-              <th className="text-center py-3 px-4 text-xs font-bold uppercase tracking-wider w-16" style={{ color: headerTextColor }}>Qty</th>
-              <th className="text-right py-3 px-4 text-xs font-bold uppercase tracking-wider w-20" style={{ color: headerTextColor }}>Unit</th>
-              <th className="text-right py-3 px-4 text-xs font-bold uppercase tracking-wider w-24" style={{ color: headerTextColor }}>Price</th>
-              <th className="text-right py-3 px-4 text-xs font-bold uppercase tracking-wider w-24" style={{ color: headerTextColor }}>Total</th>
+            <tr style={{ backgroundColor: trade.accentColor }}>
+              <th className="py-3 px-4 text-center text-xs font-bold uppercase tracking-wider" style={{ color: '#fff', width: '40px' }}>#</th>
+              <th className="py-3 px-4 text-left text-xs font-bold uppercase tracking-wider" style={{ color: '#fff' }}>Description</th>
+              <th className="py-3 px-4 text-center text-xs font-bold uppercase tracking-wider" style={{ color: '#fff', width: '60px' }}>Qty</th>
+              <th className="py-3 px-4 text-right text-xs font-bold uppercase tracking-wider" style={{ color: '#fff', width: '70px' }}>Unit</th>
+              <th className="py-3 px-4 text-right text-xs font-bold uppercase tracking-wider" style={{ color: '#fff', width: '90px' }}>Price</th>
+              <th className="py-3 px-4 text-right text-xs font-bold uppercase tracking-wider" style={{ color: '#fff', width: '100px' }}>Total</th>
             </tr>
           </thead>
           <tbody>
@@ -160,19 +154,18 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
               onLineItemEdit ? (
                 <EditableLineItemRow key={item.id} item={item} onSave={onLineItemEdit} />
               ) : (
-                <tr key={item.id} className="border-b" style={{ borderColor: '#e8e8e8', borderStyle: headerStyle === 'minimal' ? 'solid' : 'dotted' }}>
-                  <td className="py-3 px-4 text-center" style={{ color: '#888' }}>{idx + 1}</td>
-                  <td className="py-3 px-4">{item.description}</td>
-                  <td className="text-center py-3 px-4">{item.quantity}</td>
-                  <td className="text-right py-3 px-4" style={{ color: '#555' }}>{item.unit}</td>
-                  <td className="text-right py-3 px-4">${formatCurrency(item.unit_price)}</td>
-                  <td className="text-right py-3 px-4 font-semibold">${formatCurrency(item.subtotal)}</td>
+                <tr key={item.id} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f9fafb', borderBottom: '1px solid #f0f0f0' }}>
+                  <td className="py-3.5 px-4 text-center" style={{ color: '#6b7280' }}>{idx + 1}</td>
+                  <td className="py-3.5 px-4" style={{ color: '#1f2937' }}>{item.description}</td>
+                  <td className="py-3.5 px-4 text-center" style={{ color: '#374151' }}>{item.quantity}</td>
+                  <td className="py-3.5 px-4 text-right" style={{ color: '#6b7280' }}>{item.unit}</td>
+                  <td className="py-3.5 px-4 text-right" style={{ color: '#374151' }}>${formatCurrency(item.unit_price)}</td>
+                  <td className="py-3.5 px-4 text-right font-semibold" style={{ color: '#111827' }}>${formatCurrency(item.subtotal)}</td>
                 </tr>
               )
             ))}
           </tbody>
         </table>
-        {headerStyle === 'filled' && <div className="h-0.5" style={{ backgroundColor: trade.accentColor }} />}
 
         {/* Totals */}
         {onTotalsEdit ? (
@@ -184,32 +177,32 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
             onSave={onTotalsEdit}
           />
         ) : (
-          <div className="mt-4">
+          <div className="mt-3">
             <div className="flex justify-end">
-              <div className="w-64 space-y-1.5">
-                <div className="flex justify-between text-sm">
-                  <span className="font-bold">Sub Total</span>
-                  <span className="font-bold">${formatCurrency(proposal.subtotal)}</span>
+              <div className="w-72" style={{ borderTop: '2px solid #e5e7eb' }}>
+                <div className="flex justify-between text-sm py-2 px-4">
+                  <span className="font-semibold" style={{ color: '#374151' }}>Subtotal</span>
+                  <span className="font-semibold" style={{ color: '#111827' }}>${formatCurrency(proposal.subtotal)}</span>
                 </div>
                 {Number(proposal.tax_rate) > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="font-bold">Tax {proposal.tax_rate}%</span>
-                    <span className="font-bold">${formatCurrency(proposal.tax_amount)}</span>
+                  <div className="flex justify-between text-sm py-2 px-4" style={{ borderTop: '1px solid #f0f0f0' }}>
+                    <span style={{ color: '#6b7280' }}>Tax ({proposal.tax_rate}%)</span>
+                    <span style={{ color: '#374151' }}>${formatCurrency(proposal.tax_amount)}</span>
                   </div>
                 )}
-                <div className="flex justify-between items-center text-white font-bold text-base px-4 py-2.5 rounded-sm mt-2" style={{ backgroundColor: trade.accentColor }}>
+                <div className="flex justify-between items-center font-bold text-base px-4 py-3 mt-1" style={{ backgroundColor: trade.accentColor, color: '#fff', borderRadius: '4px' }}>
                   <span>GRAND TOTAL</span>
                   <span>${formatCurrency(proposal.total)}</span>
                 </div>
                 {Number(proposal.deposit_amount) > 0 && (
                   <>
-                    <div className="flex justify-between text-sm mt-2">
-                      <span style={{ color: '#555' }}>Deposit Due Upon Signing</span>
-                      <span className="font-semibold">${formatCurrency(proposal.deposit_amount)}</span>
+                    <div className="flex justify-between text-sm py-2 px-4 mt-2">
+                      <span style={{ color: '#6b7280' }}>Deposit Due Upon Signing</span>
+                      <span className="font-semibold" style={{ color: '#374151' }}>${formatCurrency(proposal.deposit_amount)}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span style={{ color: '#555' }}>Balance Due Upon Completion</span>
-                      <span className="font-semibold">${formatCurrency(proposal.balance_due)}</span>
+                    <div className="flex justify-between text-sm py-1 px-4">
+                      <span style={{ color: '#6b7280' }}>Balance Due Upon Completion</span>
+                      <span className="font-semibold" style={{ color: '#374151' }}>${formatCurrency(proposal.balance_due)}</span>
                     </div>
                   </>
                 )}
@@ -345,7 +338,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
 
         <div className="px-10">
           {contentSections(ModernSection)}
-          {lineItemsTable('filled')}
+          {lineItemsTable()}
           {termsAndConditions(ModernSection)}
           {signatureBlock()}
         </div>
@@ -397,7 +390,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
 
         <div className="px-10">
           {contentSections(ClassicSection)}
-          {lineItemsTable('outlined')}
+          {lineItemsTable()}
           {termsAndConditions(ClassicSection)}
           {signatureBlock()}
         </div>
@@ -485,7 +478,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
 
         <div className="px-10">
           {contentSections(BoldSection)}
-          {lineItemsTable('filled')}
+          {lineItemsTable()}
           {termsAndConditions(BoldSection)}
           {signatureBlock()}
         </div>
@@ -535,7 +528,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
 
       <div className="px-12">
         {contentSections(MinimalSection)}
-        {lineItemsTable('minimal')}
+        {lineItemsTable()}
         {termsAndConditions(MinimalSection)}
         {signatureBlock()}
       </div>
