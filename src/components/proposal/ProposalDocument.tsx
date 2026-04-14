@@ -6,10 +6,17 @@ import type { ProposalExhibit } from '@/hooks/useProposalExhibits';
 import { getTradeStyle } from './tradeStyles';
 import { Phone, Mail, MapPin } from 'lucide-react';
 import type { TemplateId } from './TemplateSwitcher';
+import type { FontStyle, HeaderStyle } from './ProposalCustomizer';
 
 type Proposal = Database['public']['Tables']['proposals']['Row'];
 type LineItem = Database['public']['Tables']['proposal_line_items']['Row'];
 type CompanyProfile = Database['public']['Tables']['company_profiles']['Row'];
+
+const FONT_FAMILIES: Record<FontStyle, string> = {
+  modern: "'Inter', 'Helvetica Neue', sans-serif",
+  classic: "'Georgia', 'Times New Roman', serif",
+  bold: "'Impact', 'Arial Black', sans-serif",
+};
 
 interface Props {
   proposal: Proposal;
@@ -17,13 +24,18 @@ interface Props {
   profile: CompanyProfile | null | undefined;
   exhibits?: ProposalExhibit[];
   template?: TemplateId;
+  customAccentColor?: string;
+  fontStyle?: FontStyle;
+  customHeaderStyle?: HeaderStyle;
   onFieldEdit?: (field: string, value: string) => void;
   onLineItemEdit?: (id: string, updates: { description: string; quantity: number; unit: string; unit_price: number; subtotal: number }) => void;
   onTotalsEdit?: (updates: { tax_rate: number; deposit_mode: string; deposit_value: number }) => void;
 }
 
-export default function ProposalDocument({ proposal, lineItems, profile, exhibits, template = 'modern', onFieldEdit, onLineItemEdit, onTotalsEdit }: Props) {
-  const trade = getTradeStyle((proposal as any).trade_type || profile?.trade_type);
+export default function ProposalDocument({ proposal, lineItems, profile, exhibits, template = 'modern', customAccentColor, fontStyle = 'modern', customHeaderStyle = 'dark', onFieldEdit, onLineItemEdit, onTotalsEdit }: Props) {
+  const rawTrade = getTradeStyle((proposal as any).trade_type || profile?.trade_type);
+  const trade = customAccentColor ? { ...rawTrade, accentColor: customAccentColor } : rawTrade;
+  const fontFamily = FONT_FAMILIES[fontStyle];
   const address = [profile?.street_address, profile?.city, profile?.state, profile?.zip].filter(Boolean).join(', ');
 
   const editable = (field: string, value: string | null, children: React.ReactNode) => {
@@ -302,7 +314,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
   // ════════════════════════════════════════
   if (template === 'modern') {
     return (
-      <div className="bg-white text-sm" style={{ fontFamily: "'Inter', sans-serif", minHeight: '800px', color: '#1a1a1a' }}>
+      <div className="bg-white text-sm" style={{ fontFamily, minHeight: '800px', color: '#1a1a1a' }}>
         {/* Logo + Company */}
         <div className="px-10 pt-10 pb-6">
           <div className="flex items-start justify-between">
@@ -347,7 +359,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
   // ════════════════════════════════════════
   if (template === 'classic') {
     return (
-      <div className="bg-white text-sm" style={{ fontFamily: "'Inter', sans-serif", minHeight: '800px', color: '#1a1a1a' }}>
+      <div className="bg-white text-sm" style={{ fontFamily, minHeight: '800px', color: '#1a1a1a' }}>
         {/* Top accent line */}
         <div className="h-1" style={{ backgroundColor: trade.accentColor }} />
 
@@ -406,23 +418,57 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
   // ════════════════════════════════════════
   if (template === 'bold') {
     return (
-      <div className="bg-white text-sm" style={{ fontFamily: "'Inter', sans-serif", minHeight: '800px', color: '#1a1a1a' }}>
-        {/* Full-width colored header */}
-        <div className="px-10 py-8" style={{ backgroundColor: trade.accentColor }}>
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-4">
-              {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className="h-14 w-auto object-contain brightness-0 invert" />}
-              <div>
-                <div className="text-xl font-extrabold tracking-tight text-white">{profile?.company_name || 'Company Name'}</div>
-                {profile?.trade_type && <div className="text-xs uppercase tracking-widest mt-0.5 text-white/70">{trade.label}</div>}
+      <div className="bg-white text-sm" style={{ fontFamily, minHeight: '800px', color: '#1a1a1a' }}>
+        {/* Header — adapts to customHeaderStyle */}
+        {customHeaderStyle === 'dark' ? (
+          <div className="px-10 py-8" style={{ backgroundColor: trade.accentColor }}>
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-4">
+                {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className="h-14 w-auto object-contain brightness-0 invert" />}
+                <div>
+                  <div className="text-xl font-extrabold tracking-tight text-white">{profile?.company_name || 'Company Name'}</div>
+                  {profile?.trade_type && <div className="text-xs uppercase tracking-widest mt-0.5 text-white/70">{trade.label}</div>}
+                </div>
+              </div>
+              <div className="text-right text-white">
+                <div className="text-3xl font-black">PROPOSAL</div>
+                <div className="text-sm mt-1 text-white/70">{proposalNumber}</div>
               </div>
             </div>
-            <div className="text-right text-white">
-              <div className="text-3xl font-black">PROPOSAL</div>
-              <div className="text-sm mt-1 text-white/70">{proposalNumber}</div>
+          </div>
+        ) : customHeaderStyle === 'light' ? (
+          <div className="px-10 py-8 bg-white" style={{ borderTop: `4px solid ${trade.accentColor}` }}>
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-4">
+                {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className="h-14 w-auto object-contain" />}
+                <div>
+                  <div className="text-xl font-extrabold tracking-tight" style={{ color: '#1a1a1a' }}>{profile?.company_name || 'Company Name'}</div>
+                  {profile?.trade_type && <div className="text-xs uppercase tracking-widest mt-0.5" style={{ color: trade.accentColor }}>{trade.label}</div>}
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-3xl font-black" style={{ color: trade.accentColor }}>PROPOSAL</div>
+                <div className="text-sm mt-1" style={{ color: '#666' }}>{proposalNumber}</div>
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="px-10 py-8">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-4">
+                {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className="h-14 w-auto object-contain" />}
+                <div>
+                  <div className="text-xl font-extrabold tracking-tight" style={{ color: '#1a1a1a' }}>{profile?.company_name || 'Company Name'}</div>
+                  {profile?.trade_type && <div className="text-xs uppercase tracking-widest mt-0.5" style={{ color: '#888' }}>{trade.label}</div>}
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-3xl font-black" style={{ color: '#1a1a1a' }}>PROPOSAL</div>
+                <div className="text-sm mt-1" style={{ color: '#888' }}>{proposalNumber}</div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="px-10 py-6">
           <ClientInfoRow proposal={proposal} proposalNumber={proposalNumber} jobSiteAddress={jobSiteAddress} hideProposalNumber />
@@ -452,7 +498,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
   // TEMPLATE: MINIMAL
   // ════════════════════════════════════════
   return (
-    <div className="bg-white text-sm" style={{ fontFamily: "'Inter', sans-serif", minHeight: '800px', color: '#1a1a1a' }}>
+    <div className="bg-white text-sm" style={{ fontFamily, minHeight: '800px', color: '#1a1a1a' }}>
       <div className="px-12 pt-14 pb-8">
         <div className="flex items-start justify-between">
           <div>
