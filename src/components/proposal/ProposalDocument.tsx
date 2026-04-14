@@ -338,7 +338,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
 
         <div className="px-10">
           {contentSections(ModernSection)}
-          {lineItemsTable('filled')}
+          {lineItemsTable()}
           {termsAndConditions(ModernSection)}
           {signatureBlock()}
         </div>
@@ -390,7 +390,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
 
         <div className="px-10">
           {contentSections(ClassicSection)}
-          {lineItemsTable('outlined')}
+          {lineItemsTable()}
           {termsAndConditions(ClassicSection)}
           {signatureBlock()}
         </div>
@@ -478,7 +478,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
 
         <div className="px-10">
           {contentSections(BoldSection)}
-          {lineItemsTable('filled')}
+          {lineItemsTable()}
           {termsAndConditions(BoldSection)}
           {signatureBlock()}
         </div>
@@ -528,7 +528,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
 
       <div className="px-12">
         {contentSections(MinimalSection)}
-        {lineItemsTable('minimal')}
+        {lineItemsTable()}
         {termsAndConditions(MinimalSection)}
         {signatureBlock()}
       </div>
