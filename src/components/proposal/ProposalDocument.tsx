@@ -149,12 +149,13 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
               <th className="py-3 px-4 text-right text-xs font-bold uppercase tracking-wider" style={{ color: '#fff', width: '70px' }}>Unit</th>
               <th className="py-3 px-4 text-right text-xs font-bold uppercase tracking-wider" style={{ color: '#fff', width: '90px' }}>Price</th>
               <th className="py-3 px-4 text-right text-xs font-bold uppercase tracking-wider" style={{ color: '#fff', width: '100px' }}>Total</th>
+              {onDeleteLineItem && <th style={{ width: '32px' }} />}
             </tr>
           </thead>
           <tbody>
             {lineItems.map((item, idx) => (
               onLineItemEdit ? (
-                <EditableLineItemRow key={item.id} item={item} index={idx + 1} onSave={onLineItemEdit} />
+                <EditableLineItemRow key={item.id} item={item} index={idx + 1} onSave={onLineItemEdit} onDelete={onDeleteLineItem} />
               ) : (
                 <tr key={item.id} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f9fafb', borderBottom: '1px solid #f0f0f0' }}>
                   <td className="py-3.5 px-4 text-center" style={{ color: '#6b7280' }}>{idx + 1}</td>
