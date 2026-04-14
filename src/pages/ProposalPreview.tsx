@@ -10,6 +10,7 @@ import CountersignBanner from '@/components/proposal/CountersignBanner';
 import ExhibitsUpload from '@/components/proposal/ExhibitsUpload';
 import { useProposalExhibits } from '@/hooks/useProposalExhibits';
 import TemplateSwitcher, { type TemplateId } from '@/components/proposal/TemplateSwitcher';
+import ProposalCustomizer, { type FontStyle, type HeaderStyle } from '@/components/proposal/ProposalCustomizer';
 import { getTradeStyle } from '@/components/proposal/tradeStyles';
 import { useState, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
