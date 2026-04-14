@@ -168,6 +168,18 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
           </tbody>
         </table>
 
+        {/* Add line item button */}
+        {onAddLineItem && (
+          <button
+            type="button"
+            onClick={onAddLineItem}
+            className="mt-2 flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded border border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-colors"
+            style={{ color: trade.accentColor }}
+          >
+            <span className="text-lg leading-none">+</span> Add line item
+          </button>
+        )}
+
         {/* Totals */}
         {onTotalsEdit ? (
           <EditableTotals
