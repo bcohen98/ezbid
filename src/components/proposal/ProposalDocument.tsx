@@ -152,7 +152,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
           <tbody>
             {lineItems.map((item, idx) => (
               onLineItemEdit ? (
-                <EditableLineItemRow key={item.id} item={item} onSave={onLineItemEdit} />
+                <EditableLineItemRow key={item.id} item={item} index={idx + 1} onSave={onLineItemEdit} />
               ) : (
                 <tr key={item.id} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f9fafb', borderBottom: '1px solid #f0f0f0' }}>
                   <td className="py-3.5 px-4 text-center" style={{ color: '#6b7280' }}>{idx + 1}</td>

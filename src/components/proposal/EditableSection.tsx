@@ -80,10 +80,11 @@ export default function EditableSection({ field, value, onSave, children }: Prop
 
 interface EditableLineItemProps {
   item: { id: string; description: string; quantity: number; unit: string | null; unit_price: number; subtotal: number };
+  index?: number;
   onSave: (id: string, updates: { description: string; quantity: number; unit: string; unit_price: number; subtotal: number }) => void;
 }
 
-export function EditableLineItemRow({ item, onSave }: EditableLineItemProps) {
+export function EditableLineItemRow({ item, index, onSave }: EditableLineItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [desc, setDesc] = useState(item.description);
@@ -110,6 +111,7 @@ export function EditableLineItemRow({ item, onSave }: EditableLineItemProps) {
   if (isEditing) {
     return (
       <tr className="border-b bg-blue-50/50 dark:bg-blue-950/20">
+        {index !== undefined && <td className="py-2 px-4 text-center" style={{ color: '#6b7280' }}>{index}</td>}
         <td className="py-2 px-1">
           <Input value={desc} onChange={e => setDesc(e.target.value)} className="h-7 text-sm" />
         </td>
@@ -158,6 +160,7 @@ export function EditableLineItemRow({ item, onSave }: EditableLineItemProps) {
       onMouseLeave={() => setIsHovered(false)}
       onClick={() => setIsEditing(true)}
     >
+      {index !== undefined && <td className="py-3.5 px-4 text-center" style={{ color: '#6b7280' }}>{index}</td>}
       <td className="py-2 relative">
         {item.description}
         {isHovered && <Pencil className="inline-block ml-2 h-3 w-3 text-blue-500" />}
