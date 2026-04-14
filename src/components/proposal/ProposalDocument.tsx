@@ -388,12 +388,12 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
             <div className="flex items-center gap-4">
               {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className="h-12 w-auto object-contain" />}
               <div>
-                <div style={{ fontFamily: 'Georgia, Times New Roman, serif', fontSize: '22px', fontWeight: 700, color: '#111', letterSpacing: '-0.3px' }}>{profile?.company_name || 'Company Name'}</div>
+                <div style={{ fontFamily, fontSize: '22px', fontWeight: 700, color: '#111', letterSpacing: '-0.3px' }}>{profile?.company_name || 'Company Name'}</div>
                 {profile?.trade_type && <div className="text-xs uppercase mt-1" style={{ letterSpacing: '2px', color: '#999' }}>{trade.label}</div>}
               </div>
             </div>
             <div className="text-right">
-              <div style={{ fontFamily: 'Georgia, Times New Roman, serif', fontSize: '26px', fontWeight: 700, color: trade.accentColor }}>PROPOSAL</div>
+              <div style={{ fontFamily, fontSize: '26px', fontWeight: 700, color: trade.accentColor }}>PROPOSAL</div>
               <div className="text-xs mt-1" style={{ color: '#666' }}>{proposalNumber}</div>
               <div className="text-xs mt-1" style={{ color: '#666' }}>Date: {proposal.proposal_date}</div>
               <div className="text-xs" style={{ color: '#666' }}>Valid until: {proposal.valid_until}</div>
@@ -600,7 +600,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
   function ClassicSection({ title, children }: { title: string; children: React.ReactNode }) {
     return (
       <div className="mb-6">
-        <h3 style={{ fontFamily: 'Georgia, Times New Roman, serif', fontSize: '15px', fontWeight: 700, color: '#111', borderBottom: '1px solid #eee', paddingBottom: '4px', marginBottom: '8px' }}>{title}</h3>
+        <h3 style={{ fontFamily, fontSize: '15px', fontWeight: 700, color: '#111', borderBottom: '1px solid #eee', paddingBottom: '4px', marginBottom: '8px' }}>{title}</h3>
         {children}
       </div>
     );

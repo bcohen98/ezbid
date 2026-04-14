@@ -38,6 +38,7 @@ export default function ProposalPreview() {
   const [isSendingSelf, setIsSendingSelf] = useState(false);
   const [isSendingClient, setIsSendingClient] = useState(false);
   const [isUndoing, setIsUndoing] = useState(false);
+  const [isSuggestingMaterials, setIsSuggestingMaterials] = useState(false);
   const lastSnapshot = useRef<{ proposal: any; lineItems: any[] } | null>(null);
 
   // Template switching
@@ -431,32 +432,7 @@ export default function ProposalPreview() {
 
           {/* Side panel */}
           <div className="space-y-4">
-            {/* Template Switcher */}
-            <TemplateSwitcher
-              current={activeTemplate}
-              accentColor={accentColor || tradeStyle?.accentColor || '#374151'}
-              onSelect={handleTemplateChange}
-            />
-
-            {/* Style Customizer */}
-            <ProposalCustomizer
-              accentColor={accentColor || tradeStyle?.accentColor || '#374151'}
-              fontStyle={fontStyle}
-              headerStyle={headerStyle}
-              onAccentChange={handleAccentChange}
-              onFontChange={handleFontChange}
-              onHeaderChange={handleHeaderStyleChange}
-            />
-            {/* Countersign prompt */}
-            {proposal.status === 'signed' && proposal.client_signature_url && !(proposal as any).contractor_signature_url && (
-              <CountersignBanner
-                proposalId={proposal.id}
-                clientName={proposal.client_name}
-                onSigned={() => refetch()}
-              />
-            )}
-
-            {/* AI Revision — hidden when signed */}
+            {/* AI Revision — top of sidebar, hidden when signed */}
             {!isSigned && (
               <div className="border rounded-lg p-4 space-y-3">
                 <h3 className="text-sm font-medium flex items-center gap-2">
@@ -492,6 +468,115 @@ export default function ProposalPreview() {
                   </Button>
                 </div>
               </div>
+            )}
+
+            {/* Suggest Materials & Pricing */}
+            {!isSigned && (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full gap-2"
+                disabled={isSuggestingMaterials}
+                onClick={async () => {
+                  setIsSuggestingMaterials(true);
+                  try {
+                    saveSnapshot();
+                    const { data, error } = await supabase.functions.invoke('suggest-materials-pricing', {
+                      body: {
+                        trade_type: (proposal as any).trade_type || profile?.trade_type || 'general_contractor',
+                        job_description: proposal.job_description || proposal.scope_of_work || '',
+                        job_site_address: [proposal.job_site_street, proposal.job_site_city, proposal.job_site_state].filter(Boolean).join(', ') || null,
+                      },
+                    });
+                    if (error) throw error;
+                    if (data?.error) throw new Error(data.error);
+
+                    // Apply line items
+                    const aiItems = (data.line_items || []).map((li: any, i: number) => ({
+                      proposal_id: proposal.id,
+                      description: li.description,
+                      quantity: li.quantity,
+                      unit: li.unit || 'ea',
+                      unit_price: li.unit_price,
+                      subtotal: li.quantity * li.unit_price,
+                      sort_order: lineItems.length + i,
+                    }));
+
+                    const hasExisting = lineItems.some(li => li.description?.trim() && li.unit_price > 0);
+                    if (hasExisting && aiItems.length > 0) {
+                      if (!window.confirm('This will add suggested line items to your existing table. Continue?')) {
+                        aiItems.length = 0;
+                      }
+                    }
+
+                    if (aiItems.length > 0) {
+                      const allItems = [...lineItems.map((li, i) => ({
+                        proposal_id: proposal.id,
+                        description: li.description,
+                        quantity: li.quantity,
+                        unit: li.unit || 'ea',
+                        unit_price: li.unit_price,
+                        subtotal: li.subtotal,
+                        sort_order: i,
+                      })), ...aiItems];
+                      await upsertItems(allItems);
+                    }
+
+                    // Apply materials
+                    const updates: any = {};
+                    if (data.materials_included) {
+                      if (!proposal.materials_included?.trim() || window.confirm('This will replace your current materials list. Continue?')) {
+                        updates.materials_included = data.materials_included;
+                      }
+                    }
+                    if (data.materials_excluded) {
+                      if (!proposal.materials_excluded?.trim() || window.confirm('This will replace your current materials excluded list. Continue?')) {
+                        updates.materials_excluded = data.materials_excluded;
+                      }
+                    }
+
+                    if (Object.keys(updates).length > 0) {
+                      await updateProposal({ id: proposal.id, ...updates });
+                    }
+
+                    refetch();
+                    toast({ title: 'Suggestions applied!', description: 'Review and adjust as needed.' });
+                  } catch (err: any) {
+                    toast({ title: 'Suggestion failed', description: err.message, variant: 'destructive' });
+                  } finally {
+                    setIsSuggestingMaterials(false);
+                  }
+                }}
+              >
+                {isSuggestingMaterials ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                {isSuggestingMaterials ? 'Suggesting…' : 'Suggest Materials & Pricing'}
+              </Button>
+            )}
+
+            {/* Template Switcher */}
+            <TemplateSwitcher
+              current={activeTemplate}
+              accentColor={accentColor || tradeStyle?.accentColor || '#374151'}
+              onSelect={handleTemplateChange}
+            />
+
+            {/* Style Customizer */}
+            <ProposalCustomizer
+              accentColor={accentColor || tradeStyle?.accentColor || '#374151'}
+              fontStyle={fontStyle}
+              headerStyle={headerStyle}
+              onAccentChange={handleAccentChange}
+              onFontChange={handleFontChange}
+              onHeaderChange={handleHeaderStyleChange}
+            />
+
+            {/* Countersign prompt */}
+            {proposal.status === 'signed' && proposal.client_signature_url && !(proposal as any).contractor_signature_url && (
+              <CountersignBanner
+                proposalId={proposal.id}
+                clientName={proposal.client_name}
+                onSigned={() => refetch()}
+              />
             )}
 
             {isSigned && (
