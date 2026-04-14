@@ -613,9 +613,6 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
     );
   }
 }
-    return (
-      <div className="bg-white text-sm" style={{ fontFamily, minHeight: '800px', color: '#1a1a1a' }}>
-        {/* Logo + Company */}
         <div className="px-10 pt-10 pb-6">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
