@@ -395,8 +395,18 @@ export default function ProposalPreview() {
             {/* Template Switcher */}
             <TemplateSwitcher
               current={activeTemplate}
-              accentColor={tradeStyle?.accentColor || '#374151'}
+              accentColor={accentColor || tradeStyle?.accentColor || '#374151'}
               onSelect={handleTemplateChange}
+            />
+
+            {/* Style Customizer */}
+            <ProposalCustomizer
+              accentColor={accentColor || tradeStyle?.accentColor || '#374151'}
+              fontStyle={fontStyle}
+              headerStyle={headerStyle}
+              onAccentChange={handleAccentChange}
+              onFontChange={handleFontChange}
+              onHeaderChange={handleHeaderStyleChange}
             />
             {/* Countersign prompt */}
             {proposal.status === 'signed' && proposal.client_signature_url && !(proposal as any).contractor_signature_url && (
