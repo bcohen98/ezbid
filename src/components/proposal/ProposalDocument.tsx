@@ -34,7 +34,7 @@ interface Props {
   onTotalsEdit?: (updates: { tax_rate: number; deposit_mode: string; deposit_value: number }) => void;
 }
 
-export default function ProposalDocument({ proposal, lineItems, profile, exhibits, template = 'modern', customAccentColor, fontStyle = 'modern', customHeaderStyle = 'dark', onFieldEdit, onLineItemEdit, onAddLineItem, onTotalsEdit }: Props) {
+export default function ProposalDocument({ proposal, lineItems, profile, exhibits, template = 'edge', customAccentColor, fontStyle = 'modern', customHeaderStyle = 'dark', onFieldEdit, onLineItemEdit, onAddLineItem, onTotalsEdit }: Props) {
   const rawTrade = getTradeStyle((proposal as any).trade_type || profile?.trade_type);
   const trade = customAccentColor ? { ...rawTrade, accentColor: customAccentColor } : rawTrade;
   const fontFamily = FONT_FAMILIES[fontStyle];
@@ -317,9 +317,9 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
   };
 
   // ════════════════════════════════════════
-  // TEMPLATE: MODERN
+  // TEMPLATE: EDGE (was Modern)
   // ════════════════════════════════════════
-  if (template === 'modern') {
+  if (template === 'edge') {
     return (
       <div className="bg-white text-sm" style={{ fontFamily, minHeight: '800px', color: '#1a1a1a' }}>
         <div style={{ borderTop: `3px solid ${trade.accentColor}` }} />
@@ -377,9 +377,9 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
   }
 
   // ════════════════════════════════════════
-  // TEMPLATE: CLASSIC
+  // TEMPLATE: HERITAGE (was Classic)
   // ════════════════════════════════════════
-  if (template === 'classic') {
+  if (template === 'heritage') {
     return (
       <div className="bg-white text-sm" style={{ fontFamily, minHeight: '800px', color: '#1a1a1a' }}>
         <div className="h-1" style={{ backgroundColor: trade.accentColor }} />
@@ -438,9 +438,9 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
   }
 
   // ════════════════════════════════════════
-  // TEMPLATE: BOLD
+  // TEMPLATE: COMMAND (was Bold)
   // ════════════════════════════════════════
-  if (template === 'bold') {
+  if (template === 'command') {
     return (
       <div className="bg-white text-sm" style={{ fontFamily, minHeight: '800px', color: '#1a1a1a' }}>
         {customHeaderStyle === 'dark' ? (
