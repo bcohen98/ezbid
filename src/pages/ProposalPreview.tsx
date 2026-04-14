@@ -12,7 +12,7 @@ import { useProposalExhibits } from '@/hooks/useProposalExhibits';
 import TemplateSwitcher, { type TemplateId } from '@/components/proposal/TemplateSwitcher';
 import ProposalCustomizer, { type FontStyle, type HeaderStyle } from '@/components/proposal/ProposalCustomizer';
 import { getTradeStyle } from '@/components/proposal/tradeStyles';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { trackEvent } from '@/lib/trackEvent';
@@ -62,13 +62,26 @@ export default function ProposalPreview() {
   const tradeStyle = proposal ? getTradeStyle((proposal as any).trade_type || profile?.trade_type) : null;
 
   // Initialize customization from saved proposal data
-  useState(() => {
+  useEffect(() => {
     if (proposal) {
       if ((proposal as any).custom_accent_color) setAccentColor((proposal as any).custom_accent_color);
       if ((proposal as any).font_style) setFontStyle((proposal as any).font_style as FontStyle);
       if ((proposal as any).header_style) setHeaderStyle((proposal as any).header_style as HeaderStyle);
     }
-  });
+  }, [proposal?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleAccentChange = async (color: string) => {
+    setAccentColor(color);
+    if (proposal) await updateProposal({ id: proposal.id, custom_accent_color: color } as any);
+  };
+  const handleFontChange = async (font: FontStyle) => {
+    setFontStyle(font);
+    if (proposal) await updateProposal({ id: proposal.id, font_style: font } as any);
+  };
+  const handleHeaderStyleChange = async (hs: HeaderStyle) => {
+    setHeaderStyle(hs);
+    if (proposal) await updateProposal({ id: proposal.id, header_style: hs } as any);
+  };
 
   if (isLoading) {
     return <AppLayout><div className="container py-8"><p className="text-sm text-muted-foreground">Loading preview...</p></div></AppLayout>;
