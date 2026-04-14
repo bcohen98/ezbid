@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pencil, Check, X } from 'lucide-react';
+import { Pencil, Check, X, Trash2 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 
@@ -82,9 +82,10 @@ interface EditableLineItemProps {
   item: { id: string; description: string; quantity: number; unit: string | null; unit_price: number; subtotal: number };
   index?: number;
   onSave: (id: string, updates: { description: string; quantity: number; unit: string; unit_price: number; subtotal: number }) => void;
+  onDelete?: (id: string) => void;
 }
 
-export function EditableLineItemRow({ item, index, onSave }: EditableLineItemProps) {
+export function EditableLineItemRow({ item, index, onSave, onDelete }: EditableLineItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [desc, setDesc] = useState(item.description);
@@ -169,6 +170,19 @@ export function EditableLineItemRow({ item, index, onSave }: EditableLineItemPro
       <td className="text-right py-2">{item.unit}</td>
       <td className="text-right py-2">${fmt(item.unit_price)}</td>
       <td className="text-right py-2">${fmt(item.subtotal)}</td>
+      {onDelete && (
+        <td className="py-2 px-1 text-center w-8">
+          {isHovered && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
+              className="inline-flex items-center p-1 rounded hover:bg-red-100 text-red-400 hover:text-red-600 transition-colors"
+              title="Delete line item"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </td>
+      )}
     </tr>
   );
 }
