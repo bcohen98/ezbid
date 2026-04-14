@@ -7,6 +7,7 @@ const corsHeaders = {
 };
 
 const FROM_ADDRESS = "EZ-Bid <proposals@ezbid.pro>";
+const REPLY_TO = "brett@ezbid.pro";
 const RESEND_API = "https://api.resend.com/emails";
 
 interface ResendPayload {
@@ -14,6 +15,7 @@ interface ResendPayload {
   to: string[];
   subject: string;
   html: string;
+  reply_to?: string;
 }
 
 function createErrorResponse(message: string, status = 400) {
@@ -265,8 +267,9 @@ serve(async (req) => {
       await sendEmail(RESEND_API_KEY, {
         from: FROM_ADDRESS,
         to: [clientEmail],
-        subject: `${companyName} — Proposal Fully Signed`,
+        subject: `${companyName} — Proposal #${proposalNumber} Fully Signed`,
         html: countersignedEmailHtml(companyName, ownerName, logoUrl, proposalNumber, jobTitle, total, viewUrl),
+        reply_to: REPLY_TO,
       });
 
       return new Response(JSON.stringify({
@@ -289,8 +292,9 @@ serve(async (req) => {
       await sendEmail(RESEND_API_KEY, {
         from: FROM_ADDRESS,
         to: [contractorEmail],
-        subject: `Your EZ-Bid Proposal is Ready — ${jobTitle}`,
+        subject: `EZ-Bid: Your Proposal #${proposalNumber} for ${jobTitle} is Ready`,
         html: selfEmailHtml(companyName, clientName, proposalNumber, jobTitle, total, proposalUrl),
+        reply_to: REPLY_TO,
       });
 
       return new Response(JSON.stringify({
@@ -313,8 +317,9 @@ serve(async (req) => {
     await sendEmail(RESEND_API_KEY, {
       from: FROM_ADDRESS,
       to: [clientEmail],
-      subject: `${companyName} sent you a proposal`,
+      subject: `${companyName} — Proposal #${proposalNumber} for ${jobTitle}`,
       html: clientEmailHtml(companyName, ownerName, logoUrl, proposalNumber, jobTitle, total, signUrl),
+      reply_to: REPLY_TO,
     });
 
     if (contractorEmail) {
@@ -322,8 +327,9 @@ serve(async (req) => {
       await sendEmail(RESEND_API_KEY, {
         from: FROM_ADDRESS,
         to: [contractorEmail],
-        subject: `Proposal sent to ${clientName}`,
+        subject: `EZ-Bid: Proposal #${proposalNumber} Sent to ${clientName}`,
         html: confirmationEmailHtml(clientName, clientEmail),
+        reply_to: REPLY_TO,
       });
     }
 
