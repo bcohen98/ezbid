@@ -314,7 +314,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
   // ════════════════════════════════════════
   if (template === 'modern') {
     return (
-      <div className="bg-white text-sm" style={{ fontFamily: "'Inter', sans-serif", minHeight: '800px', color: '#1a1a1a' }}>
+      <div className="bg-white text-sm" style={{ fontFamily, minHeight: '800px', color: '#1a1a1a' }}>
         {/* Logo + Company */}
         <div className="px-10 pt-10 pb-6">
           <div className="flex items-start justify-between">
@@ -359,7 +359,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
   // ════════════════════════════════════════
   if (template === 'classic') {
     return (
-      <div className="bg-white text-sm" style={{ fontFamily: "'Inter', sans-serif", minHeight: '800px', color: '#1a1a1a' }}>
+      <div className="bg-white text-sm" style={{ fontFamily, minHeight: '800px', color: '#1a1a1a' }}>
         {/* Top accent line */}
         <div className="h-1" style={{ backgroundColor: trade.accentColor }} />
 
@@ -418,7 +418,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
   // ════════════════════════════════════════
   if (template === 'bold') {
     return (
-      <div className="bg-white text-sm" style={{ fontFamily: "'Inter', sans-serif", minHeight: '800px', color: '#1a1a1a' }}>
+      <div className="bg-white text-sm" style={{ fontFamily, minHeight: '800px', color: '#1a1a1a' }}>
         {/* Full-width colored header */}
         <div className="px-10 py-8" style={{ backgroundColor: trade.accentColor }}>
           <div className="flex items-start justify-between">
@@ -464,7 +464,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
   // TEMPLATE: MINIMAL
   // ════════════════════════════════════════
   return (
-    <div className="bg-white text-sm" style={{ fontFamily: "'Inter', sans-serif", minHeight: '800px', color: '#1a1a1a' }}>
+    <div className="bg-white text-sm" style={{ fontFamily, minHeight: '800px', color: '#1a1a1a' }}>
       <div className="px-12 pt-14 pb-8">
         <div className="flex items-start justify-between">
           <div>
