@@ -27,6 +27,7 @@ interface RevisionEntry {
 export default function ProposalPreview() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const { data: proposal, isLoading, refetch } = useProposal(id);
   const { lineItems, upsertItems } = useProposalLineItems(id);
