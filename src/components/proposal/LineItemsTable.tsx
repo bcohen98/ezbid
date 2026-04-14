@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
+import UnitCombobox from './UnitCombobox';
 import type { TradeType } from './TradeSelector';
 
 export interface LineItem {
@@ -240,9 +241,9 @@ export default function LineItemsTable({
                   />
                 </td>
                 <td className="p-2">
-                  <Input
+                  <UnitCombobox
                     value={item.unit}
-                    onChange={e => updateItem(item.id, 'unit', e.target.value)}
+                    onChange={v => updateItem(item.id, 'unit', v)}
                     className="border-0 bg-transparent shadow-none focus-visible:ring-1 text-center h-10"
                   />
                 </td>
@@ -301,9 +302,9 @@ export default function LineItemsTable({
               </div>
               <div>
                 <label className="text-xs text-muted-foreground">Unit</label>
-                <Input
+                <UnitCombobox
                   value={item.unit}
-                  onChange={e => updateItem(item.id, 'unit', e.target.value)}
+                  onChange={v => updateItem(item.id, 'unit', v)}
                   className="h-11"
                 />
               </div>
