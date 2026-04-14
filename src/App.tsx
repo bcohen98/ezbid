@@ -23,6 +23,7 @@ import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminReferrals from "./pages/admin/AdminReferrals";
 import ReferAndEarn from "./pages/ReferAndEarn";
 import Tutorial from "./pages/Tutorial";
+import ReviewsPage from "./pages/ReviewsPage";
 import NotFound from "./pages/NotFound";
 import HelpChatWidget from "./components/HelpChatWidget";
 import { usePageTracking } from "./hooks/usePageTracking";
@@ -69,6 +70,7 @@ const App = () => (
             <Route path="/admin/referrals" element={<AdminReferrals />} />
             <Route path="/referrals" element={<ReferAndEarn />} />
             <Route path="/tutorial" element={<Tutorial />} />
+            <Route path="/reviews" element={<ReviewsPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <HelpChatWidgetWrapper />
