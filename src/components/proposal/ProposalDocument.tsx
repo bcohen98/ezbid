@@ -600,7 +600,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
   function ClassicSection({ title, children }: { title: string; children: React.ReactNode }) {
     return (
       <div className="mb-6">
-        <h3 style={{ fontFamily: 'Georgia, Times New Roman, serif', fontSize: '15px', fontWeight: 700, color: '#111', borderBottom: '1px solid #eee', paddingBottom: '4px', marginBottom: '8px' }}>{title}</h3>
+        <h3 style={{ fontFamily, fontSize: '15px', fontWeight: 700, color: '#111', borderBottom: '1px solid #eee', paddingBottom: '4px', marginBottom: '8px' }}>{title}</h3>
         {children}
       </div>
     );
