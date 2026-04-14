@@ -8,7 +8,8 @@ const corsHeaders = {
 };
 
 const RESEND_API = "https://api.resend.com/emails";
-const FROM = "Brett <brett@ezbid.pro>";
+const FROM = "EZ-Bid <brett@ezbid.pro>";
+const REPLY_TO = "brett@ezbid.pro";
 
 interface EmailRequest {
   email_type: "welcome" | "day1_nudge" | "free_limit" | "day10_inactive";
@@ -185,7 +186,7 @@ serve(async (req) => {
         to: [recipient_email],
         subject: email.subject,
         text: email.text,
-        reply_to: "brett@cottagerosecapital.com",
+        reply_to: REPLY_TO,
         headers: {
           "List-Unsubscribe": `<${unsubUrl}>`,
           "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
