@@ -536,7 +536,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
   }
 
   // ════════════════════════════════════════
-  // TEMPLATE: MINIMAL
+  // TEMPLATE: LINEN (was Minimal) — default fallback
   // ════════════════════════════════════════
   return (
     <div className="bg-white text-sm" style={{ fontFamily, minHeight: '800px', color: '#1a1a1a' }}>
