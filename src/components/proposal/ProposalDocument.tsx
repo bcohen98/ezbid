@@ -1,6 +1,7 @@
 import type { Database } from '@/integrations/supabase/types';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { formatPhone } from '@/lib/formatPhone';
+import { renderMarkdown } from '@/lib/renderMarkdown';
 import EditableSection, { EditableLineItemRow, EditableTotals } from './EditableSection';
 import type { ProposalExhibit } from '@/hooks/useProposalExhibits';
 import { getTradeStyle } from './tradeStyles';
@@ -57,28 +58,28 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
       {(proposal.enhanced_job_description || proposal.job_description) && (
         <SectionComp title="Job Description">
           {editable('job_description', proposal.enhanced_job_description || proposal.job_description,
-            <p className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: '#333' }}>{proposal.enhanced_job_description || proposal.job_description}</p>
+            <div className="text-sm leading-relaxed" style={{ color: '#333' }} dangerouslySetInnerHTML={{ __html: renderMarkdown(proposal.enhanced_job_description || proposal.job_description) }} />
           )}
         </SectionComp>
       )}
       {(proposal.enhanced_scope_of_work || proposal.scope_of_work) && (
         <SectionComp title="Scope of Work">
           {editable('scope_of_work', proposal.enhanced_scope_of_work || proposal.scope_of_work,
-            <p className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: '#333' }}>{proposal.enhanced_scope_of_work || proposal.scope_of_work}</p>
+            <div className="text-sm leading-relaxed" style={{ color: '#333' }} dangerouslySetInnerHTML={{ __html: renderMarkdown(proposal.enhanced_scope_of_work || proposal.scope_of_work) }} />
           )}
         </SectionComp>
       )}
       {proposal.materials_included && (
         <SectionComp title="Materials Included">
           {editable('materials_included', proposal.materials_included,
-            <p className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: '#333' }}>{proposal.materials_included}</p>
+            <div className="text-sm leading-relaxed" style={{ color: '#333' }} dangerouslySetInnerHTML={{ __html: renderMarkdown(proposal.materials_included) }} />
           )}
         </SectionComp>
       )}
       {proposal.materials_excluded && (
         <SectionComp title="Materials Excluded">
           {editable('materials_excluded', proposal.materials_excluded,
-            <p className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: '#333' }}>{proposal.materials_excluded}</p>
+            <div className="text-sm leading-relaxed" style={{ color: '#333' }} dangerouslySetInnerHTML={{ __html: renderMarkdown(proposal.materials_excluded) }} />
           )}
         </SectionComp>
       )}
@@ -100,7 +101,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
       {proposal.payment_terms && (
         <SectionComp title="Payment Terms">
           {editable('payment_terms', proposal.payment_terms,
-            <p className="text-sm leading-relaxed" style={{ color: '#333' }}>{proposal.payment_terms}</p>
+            <div className="text-sm leading-relaxed" style={{ color: '#333' }} dangerouslySetInnerHTML={{ __html: renderMarkdown(proposal.payment_terms) }} />
           )}
           {proposal.accepted_payment_methods?.length ? (
             <p className="text-xs mt-2" style={{ color: '#888' }}>Accepted: {proposal.accepted_payment_methods.join(', ')}</p>
@@ -110,21 +111,21 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
       {proposal.warranty_terms && (
         <SectionComp title="Warranty">
           {editable('warranty_terms', proposal.warranty_terms,
-            <p className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: '#333' }}>{proposal.warranty_terms}</p>
+            <div className="text-sm leading-relaxed" style={{ color: '#333' }} dangerouslySetInnerHTML={{ __html: renderMarkdown(proposal.warranty_terms) }} />
           )}
         </SectionComp>
       )}
       {proposal.disclosures && (
         <SectionComp title="Disclosures">
           {editable('disclosures', proposal.disclosures,
-            <p className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: '#333' }}>{proposal.disclosures}</p>
+            <div className="text-sm leading-relaxed" style={{ color: '#333' }} dangerouslySetInnerHTML={{ __html: renderMarkdown(proposal.disclosures) }} />
           )}
         </SectionComp>
       )}
       {proposal.special_conditions && (
         <SectionComp title="Special Conditions">
           {editable('special_conditions', proposal.special_conditions,
-            <p className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: '#333' }}>{proposal.special_conditions}</p>
+            <div className="text-sm leading-relaxed" style={{ color: '#333' }} dangerouslySetInnerHTML={{ __html: renderMarkdown(proposal.special_conditions) }} />
           )}
         </SectionComp>
       )}
