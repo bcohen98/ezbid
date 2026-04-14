@@ -38,6 +38,7 @@ export default function ProposalPreview() {
   const [isSendingSelf, setIsSendingSelf] = useState(false);
   const [isSendingClient, setIsSendingClient] = useState(false);
   const [isUndoing, setIsUndoing] = useState(false);
+  const [isSuggestingMaterials, setIsSuggestingMaterials] = useState(false);
   const lastSnapshot = useRef<{ proposal: any; lineItems: any[] } | null>(null);
 
   // Template switching
