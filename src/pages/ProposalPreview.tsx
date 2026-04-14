@@ -191,6 +191,35 @@ export default function ProposalPreview() {
     }
   };
 
+  const handleDeleteLineItem = async (itemId: string) => {
+    try {
+      saveSnapshot();
+      const remaining = lineItems.filter(li => li.id !== itemId);
+      const newSubtotal = remaining.reduce((sum, li) => sum + (li.subtotal || li.quantity * li.unit_price), 0);
+      const taxRate = Number(proposal.tax_rate) || 0;
+      const newTaxAmount = newSubtotal * taxRate / 100;
+      const newTotal = newSubtotal + newTaxAmount;
+      const depositValue = Number(proposal.deposit_value) || 0;
+      const depositMode = proposal.deposit_mode || 'percentage';
+      const newDepositAmount = depositMode === 'percentage' ? newTotal * depositValue / 100 : depositValue;
+      const newBalanceDue = newTotal - newDepositAmount;
+
+      await supabase.from('proposal_line_items').delete().eq('id', itemId);
+      await updateProposal({
+        id: proposal.id,
+        subtotal: newSubtotal,
+        tax_amount: newTaxAmount,
+        total: newTotal,
+        deposit_amount: newDepositAmount,
+        balance_due: newBalanceDue,
+      });
+      refetch();
+      toast({ title: 'Line item deleted' });
+    } catch (err: any) {
+      toast({ title: 'Delete failed', description: err.message, variant: 'destructive' });
+    }
+  };
+
   const handleAddLineItem = async () => {
     try {
       saveSnapshot();
