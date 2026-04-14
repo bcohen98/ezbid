@@ -282,7 +282,13 @@ export default function ProposalPreview() {
     setIsGeneratingPdf(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-pdf', {
-        body: { proposal_id: proposal.id },
+        body: {
+          proposal_id: proposal.id,
+          template: activeTemplate,
+          accent_color: accentColor || undefined,
+          font_style: fontStyle,
+          header_style: headerStyle,
+        },
       });
       if (error) throw error;
       if (data?.html) {
