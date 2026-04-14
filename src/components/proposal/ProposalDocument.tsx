@@ -30,10 +30,11 @@ interface Props {
   customHeaderStyle?: HeaderStyle;
   onFieldEdit?: (field: string, value: string) => void;
   onLineItemEdit?: (id: string, updates: { description: string; quantity: number; unit: string; unit_price: number; subtotal: number }) => void;
+  onAddLineItem?: () => void;
   onTotalsEdit?: (updates: { tax_rate: number; deposit_mode: string; deposit_value: number }) => void;
 }
 
-export default function ProposalDocument({ proposal, lineItems, profile, exhibits, template = 'modern', customAccentColor, fontStyle = 'modern', customHeaderStyle = 'dark', onFieldEdit, onLineItemEdit, onTotalsEdit }: Props) {
+export default function ProposalDocument({ proposal, lineItems, profile, exhibits, template = 'modern', customAccentColor, fontStyle = 'modern', customHeaderStyle = 'dark', onFieldEdit, onLineItemEdit, onAddLineItem, onTotalsEdit }: Props) {
   const rawTrade = getTradeStyle((proposal as any).trade_type || profile?.trade_type);
   const trade = customAccentColor ? { ...rawTrade, accentColor: customAccentColor } : rawTrade;
   const fontFamily = FONT_FAMILIES[fontStyle];
@@ -166,6 +167,18 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
             ))}
           </tbody>
         </table>
+
+        {/* Add line item button */}
+        {onAddLineItem && (
+          <button
+            type="button"
+            onClick={onAddLineItem}
+            className="mt-2 flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded border border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-colors"
+            style={{ color: trade.accentColor }}
+          >
+            <span className="text-lg leading-none">+</span> Add line item
+          </button>
+        )}
 
         {/* Totals */}
         {onTotalsEdit ? (

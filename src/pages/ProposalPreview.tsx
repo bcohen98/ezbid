@@ -187,6 +187,35 @@ export default function ProposalPreview() {
     }
   };
 
+  const handleAddLineItem = async () => {
+    try {
+      saveSnapshot();
+      const newSortOrder = lineItems.length;
+      const newItem = {
+        proposal_id: proposal.id,
+        description: '',
+        quantity: 1,
+        unit: 'ea',
+        unit_price: 0,
+        subtotal: 0,
+        sort_order: newSortOrder,
+      };
+      await upsertItems([...lineItems.map((li, i) => ({
+        proposal_id: proposal.id,
+        description: li.description,
+        quantity: li.quantity,
+        unit: li.unit || 'ea',
+        unit_price: li.unit_price,
+        subtotal: li.subtotal,
+        sort_order: i,
+      })), newItem]);
+      refetch();
+      toast({ title: 'Line item added' });
+    } catch (err: any) {
+      toast({ title: 'Failed to add item', description: err.message, variant: 'destructive' });
+    }
+  };
+
   const handleTotalsEdit = async (updates: { tax_rate: number; deposit_mode: string; deposit_value: number }) => {
     try {
       saveSnapshot();
@@ -394,7 +423,7 @@ export default function ProposalPreview() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
           {/* Preview */}
           <div className="border rounded-lg overflow-x-auto bg-background shadow-sm">
-            <ProposalDocument proposal={proposal} lineItems={lineItems} profile={profile} exhibits={exhibits} template={activeTemplate} customAccentColor={accentColor || undefined} fontStyle={fontStyle} customHeaderStyle={headerStyle} onFieldEdit={isSigned ? undefined : handleFieldEdit} onLineItemEdit={isSigned ? undefined : handleLineItemEdit} onTotalsEdit={isSigned ? undefined : handleTotalsEdit} />
+            <ProposalDocument proposal={proposal} lineItems={lineItems} profile={profile} exhibits={exhibits} template={activeTemplate} customAccentColor={accentColor || undefined} fontStyle={fontStyle} customHeaderStyle={headerStyle} onFieldEdit={isSigned ? undefined : handleFieldEdit} onLineItemEdit={isSigned ? undefined : handleLineItemEdit} onAddLineItem={isSigned ? undefined : handleAddLineItem} onTotalsEdit={isSigned ? undefined : handleTotalsEdit} />
           </div>
 
           {/* Side panel */}
