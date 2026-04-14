@@ -316,11 +316,12 @@ export default function ProposalPreview() {
 
         await html2pdf()
           .set({
-            margin: [0.5, 0.5, 0.5, 0.5],
+            margin: [0.4, 0.4, 0.6, 0.4],
             filename: fileName,
             image: { type: 'jpeg', quality: 0.98 },
             html2canvas: { scale: 2, useCORS: true, letterRendering: true, windowWidth: 816 },
             jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
           })
           .from(iframeDoc.body)
           .save();
