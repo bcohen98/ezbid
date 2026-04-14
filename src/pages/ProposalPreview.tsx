@@ -13,6 +13,7 @@ import TemplateSwitcher, { type TemplateId } from '@/components/proposal/Templat
 import ProposalCustomizer, { type FontStyle, type HeaderStyle } from '@/components/proposal/ProposalCustomizer';
 import { getTradeStyle } from '@/components/proposal/tradeStyles';
 import { useState, useRef, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { trackEvent } from '@/lib/trackEvent';
@@ -26,6 +27,7 @@ interface RevisionEntry {
 export default function ProposalPreview() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const { data: proposal, isLoading, refetch } = useProposal(id);
   const { lineItems, upsertItems } = useProposalLineItems(id);
@@ -213,6 +215,7 @@ export default function ProposalPreview() {
         deposit_amount: newDepositAmount,
         balance_due: newBalanceDue,
       });
+      queryClient.invalidateQueries({ queryKey: ['line-items', id] });
       refetch();
       toast({ title: 'Line item deleted' });
     } catch (err: any) {
