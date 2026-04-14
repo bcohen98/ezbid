@@ -29,19 +29,21 @@ export function renderMarkdown(text: string | null | undefined): string {
   for (const line of lines) {
     const trimmed = line.trim();
 
-    // Unordered list item: - item or * item
-    const ulMatch = trimmed.match(/^[-*]\s+(.+)/);
+    // Unordered list item: - item or * item (but not ** bold)
+    const ulMatch = trimmed.match(/^[-•]\s+(.+)/);
+    const starBullet = !trimmed.startsWith('<strong>') && trimmed.match(/^\*\s+(.+)/);
     // Ordered list item: 1. item
     const olMatch = trimmed.match(/^(\d+)\.\s+(.+)/);
 
-    if (ulMatch) {
+    if (ulMatch || starBullet) {
       if (inOl) { result.push('</ol>'); inOl = false; }
-      if (!inUl) { result.push('<ul style="margin:4px 0;padding-left:20px;">'); inUl = true; }
-      result.push(`<li style="margin:2px 0;">${ulMatch[1]}</li>`);
+      if (!inUl) { result.push('<ul style="margin:6px 0 6px 0;padding-left:22px;list-style-type:disc;">'); inUl = true; }
+      const content = ulMatch ? ulMatch[1] : starBullet![1];
+      result.push(`<li style="margin:4px 0;line-height:1.6;">${content}</li>`);
     } else if (olMatch) {
       if (inUl) { result.push('</ul>'); inUl = false; }
-      if (!inOl) { result.push('<ol style="margin:4px 0;padding-left:20px;">'); inOl = true; }
-      result.push(`<li style="margin:2px 0;">${olMatch[2]}</li>`);
+      if (!inOl) { result.push('<ol style="margin:6px 0 6px 0;padding-left:22px;">'); inOl = true; }
+      result.push(`<li style="margin:4px 0;line-height:1.6;">${olMatch[2]}</li>`);
     } else {
       if (inUl) { result.push('</ul>'); inUl = false; }
       if (inOl) { result.push('</ol>'); inOl = false; }
@@ -55,6 +57,5 @@ export function renderMarkdown(text: string | null | undefined): string {
   if (inUl) result.push('</ul>');
   if (inOl) result.push('</ol>');
 
-  // Join non-list lines with <br/>
   return result.join('\n');
 }
