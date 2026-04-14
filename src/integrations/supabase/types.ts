@@ -588,6 +588,7 @@ export type Database = {
           contractor_signature_url: string | null
           contractor_signed_at: string | null
           created_at: string
+          custom_accent_color: string | null
           delivery_method: string | null
           deposit_amount: number | null
           deposit_mode: Database["public"]["Enums"]["deposit_mode"] | null
@@ -597,6 +598,8 @@ export type Database = {
           enhanced_scope_of_work: string | null
           estimated_duration: string | null
           estimated_start_date: string | null
+          font_style: string | null
+          header_style: string | null
           id: string
           job_description: string | null
           job_id: string | null
@@ -642,6 +645,7 @@ export type Database = {
           contractor_signature_url?: string | null
           contractor_signed_at?: string | null
           created_at?: string
+          custom_accent_color?: string | null
           delivery_method?: string | null
           deposit_amount?: number | null
           deposit_mode?: Database["public"]["Enums"]["deposit_mode"] | null
@@ -651,6 +655,8 @@ export type Database = {
           enhanced_scope_of_work?: string | null
           estimated_duration?: string | null
           estimated_start_date?: string | null
+          font_style?: string | null
+          header_style?: string | null
           id?: string
           job_description?: string | null
           job_id?: string | null
@@ -696,6 +702,7 @@ export type Database = {
           contractor_signature_url?: string | null
           contractor_signed_at?: string | null
           created_at?: string
+          custom_accent_color?: string | null
           delivery_method?: string | null
           deposit_amount?: number | null
           deposit_mode?: Database["public"]["Enums"]["deposit_mode"] | null
@@ -705,6 +712,8 @@ export type Database = {
           enhanced_scope_of_work?: string | null
           estimated_duration?: string | null
           estimated_start_date?: string | null
+          font_style?: string | null
+          header_style?: string | null
           id?: string
           job_description?: string | null
           job_id?: string | null
