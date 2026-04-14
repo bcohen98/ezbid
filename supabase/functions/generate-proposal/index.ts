@@ -92,7 +92,8 @@ RULES:
 6. Do NOT invent additional costs or items not in the line items.
 7. The proposal should be ready to send — no placeholders.
 8. NEVER use bracket placeholders like [Number], [Percentage], [Payment Methods], [Timeline], [Date], [Company], etc. Every value must be filled in with a real number, a sensible default, or omitted entirely. For example write "50% deposit required" not "[Percentage]% deposit required". Write "2-3 weeks" not "[Timeline]".
-9. Do NOT use markdown formatting — no **bold**, no *italic*, no bullet points with * or -. Write in plain prose paragraphs only.${deposit_label ? `\n10. The payment terms section MUST include the deposit/balance breakdown: deposit of $${(deposit_amount || 0).toFixed(2)} due upon signing, balance of $${(balance_due || 0).toFixed(2)} due upon completion.` : ""}`;
+9. For scope_of_work, materials_included, and materials_excluded: format each item as a markdown bullet point using "- " prefix (one item per line). Do NOT use prose paragraphs for these three sections — use a bulleted list only.
+10. For all OTHER sections (cover_letter, warranty_terms, payment_terms, disclosures, special_conditions, project_timeline): write in plain prose paragraphs. Do NOT use markdown bullet points, **bold**, or *italic* in these sections.${deposit_label ? `\n11. The payment terms section MUST include the deposit/balance breakdown: deposit of $${(deposit_amount || 0).toFixed(2)} due upon signing, balance of $${(balance_due || 0).toFixed(2)} due upon completion.` : ""}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -117,9 +118,9 @@ RULES:
                 properties: {
                   title: { type: "string", description: "Proposal title, e.g. 'Roof Replacement Proposal'" },
                   cover_letter: { type: "string", description: "Professional cover letter paragraph addressed to the client" },
-                  scope_of_work: { type: "string", description: "Detailed scope of work referencing actual line items and materials" },
-                  materials_included: { type: "string", description: "Materials included in the project" },
-                  materials_excluded: { type: "string", description: "What is NOT included" },
+                  scope_of_work: { type: "string", description: "Detailed scope of work as markdown bullet points (- item). One bullet per task or deliverable." },
+                  materials_included: { type: "string", description: "Materials included as markdown bullet points (- item). One bullet per material." },
+                  materials_excluded: { type: "string", description: "What is NOT included as markdown bullet points (- item). One bullet per exclusion." },
                   project_timeline: { type: "string", description: "Estimated timeline and schedule" },
                   warranty_terms: { type: "string", description: "Warranty details appropriate for the trade" },
                   payment_terms: { type: "string", description: "Payment schedule and terms" },
