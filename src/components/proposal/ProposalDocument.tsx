@@ -304,9 +304,315 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
   };
 
   // ════════════════════════════════════════
-  // TEMPLATE: MODERN (default — current design)
+  // TEMPLATE: MODERN
   // ════════════════════════════════════════
   if (template === 'modern') {
+    return (
+      <div className="bg-white text-sm" style={{ fontFamily, minHeight: '800px', color: '#1a1a1a' }}>
+        <div style={{ borderTop: `3px solid ${trade.accentColor}` }} />
+        <div className="px-10 pt-8 pb-0">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-4">
+              {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className="h-12 w-auto object-contain" />}
+              <div>
+                <div className="text-xl font-bold tracking-tight" style={{ color: '#111', letterSpacing: '-0.5px' }}>{profile?.company_name || 'Company Name'}</div>
+                {profile?.trade_type && <div className="text-xs uppercase mt-0.5" style={{ letterSpacing: '2px', color: '#999' }}>{trade.label}</div>}
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-xs uppercase" style={{ letterSpacing: '3px', color: '#999' }}>Proposal</div>
+              <div className="text-lg font-semibold mt-0.5" style={{ color: trade.accentColor }}>{proposalNumber}</div>
+            </div>
+          </div>
+          <div className="mt-6" style={{ borderBottom: `2px solid ${trade.accentColor}` }} />
+        </div>
+        <div className="px-10 py-5" style={{ borderBottom: '1px solid #eee' }}>
+          <div className="grid grid-cols-3 gap-6">
+            <div>
+              <div className="text-xs uppercase mb-1" style={{ letterSpacing: '2px', color: '#aaa' }}>Prepared for</div>
+              <div className="text-sm font-semibold" style={{ color: '#111' }}>{proposal.client_name}</div>
+              {proposal.client_phone && <div className="text-xs mt-0.5" style={{ color: '#555' }}>{formatPhone(proposal.client_phone)}</div>}
+              {proposal.client_email && <div className="text-xs" style={{ color: '#555' }}>{proposal.client_email}</div>}
+            </div>
+            <div>
+              <div className="text-xs uppercase mb-1" style={{ letterSpacing: '2px', color: '#aaa' }}>Job site</div>
+              <div className="text-xs" style={{ color: '#555' }}>{jobSiteAddress || '—'}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-xs uppercase mb-1" style={{ letterSpacing: '2px', color: '#aaa' }}>Date</div>
+              <div className="text-xs font-medium" style={{ color: '#111' }}>{proposal.proposal_date}</div>
+              <div className="text-xs uppercase mt-2" style={{ letterSpacing: '2px', color: '#aaa' }}>Valid until</div>
+              <div className="text-xs font-medium" style={{ color: '#111' }}>{proposal.valid_until}</div>
+            </div>
+          </div>
+        </div>
+        {proposal.title && (
+          <div className="px-10 mt-6 mb-2">
+            {editable('title', proposal.title, <h2 className="text-base font-bold" style={{ color: '#111' }}>{proposal.title}</h2>)}
+          </div>
+        )}
+        <div className="px-10 pt-4">
+          {contentSections(ModernSection)}
+          {lineItemsTable()}
+          {termsAndConditions(ModernSection)}
+          {signatureBlock()}
+        </div>
+        {footer()}
+        {exhibitsSection()}
+      </div>
+    );
+  }
+
+  // ════════════════════════════════════════
+  // TEMPLATE: CLASSIC
+  // ════════════════════════════════════════
+  if (template === 'classic') {
+    return (
+      <div className="bg-white text-sm" style={{ fontFamily, minHeight: '800px', color: '#1a1a1a' }}>
+        <div className="h-1" style={{ backgroundColor: trade.accentColor }} />
+        <div className="px-10 pt-8 pb-6">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-4">
+              {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className="h-12 w-auto object-contain" />}
+              <div>
+                <div style={{ fontFamily: 'Georgia, Times New Roman, serif', fontSize: '22px', fontWeight: 700, color: '#111', letterSpacing: '-0.3px' }}>{profile?.company_name || 'Company Name'}</div>
+                {profile?.trade_type && <div className="text-xs uppercase mt-1" style={{ letterSpacing: '2px', color: '#999' }}>{trade.label}</div>}
+              </div>
+            </div>
+            <div className="text-right">
+              <div style={{ fontFamily: 'Georgia, Times New Roman, serif', fontSize: '26px', fontWeight: 700, color: trade.accentColor }}>PROPOSAL</div>
+              <div className="text-xs mt-1" style={{ color: '#666' }}>{proposalNumber}</div>
+              <div className="text-xs mt-1" style={{ color: '#666' }}>Date: {proposal.proposal_date}</div>
+              <div className="text-xs" style={{ color: '#666' }}>Valid until: {proposal.valid_until}</div>
+            </div>
+          </div>
+        </div>
+        <div className="mx-10" style={{ borderBottom: `1px solid ${trade.accentColor}` }} />
+        <div className="px-10 py-6" style={{ borderBottom: '1px solid #eee' }}>
+          <div className="grid grid-cols-2 gap-8">
+            <div>
+              <div className="text-xs font-bold uppercase mb-2" style={{ letterSpacing: '1px', color: '#888' }}>Bill To</div>
+              <div className="text-sm font-semibold">{proposal.client_name}</div>
+              {proposal.client_phone && <div className="text-xs mt-0.5" style={{ color: '#555' }}>{formatPhone(proposal.client_phone)}</div>}
+              {proposal.client_email && <div className="text-xs" style={{ color: '#555' }}>{proposal.client_email}</div>}
+              {jobSiteAddress && <div className="text-xs mt-1" style={{ color: '#555' }}>Job site: {jobSiteAddress}</div>}
+            </div>
+            <div className="text-right">
+              <div className="text-xs" style={{ color: '#888' }}>Proposal No: <span className="font-semibold" style={{ color: '#111' }}>{proposalNumber}</span></div>
+            </div>
+          </div>
+        </div>
+        {proposal.title && (
+          <div className="px-10 mt-6 mb-4">
+            {editable('title', proposal.title, <h2 className="text-base font-bold pb-2" style={{ color: '#111', borderBottom: '1px solid #ddd', fontFamily: 'Georgia, Times New Roman, serif' }}>{proposal.title}</h2>)}
+          </div>
+        )}
+        <div className="px-10">
+          {contentSections(ClassicSection)}
+          {lineItemsTable()}
+          {termsAndConditions(ClassicSection)}
+          {signatureBlock()}
+        </div>
+        <div className="mt-12 mx-10">
+          <div className="h-1" style={{ backgroundColor: trade.accentColor }} />
+          <div className="text-center py-4 text-xs" style={{ color: '#888' }}>
+            {profile?.company_name} {profile?.phone && `• ${formatPhone(profile.phone)}`} {profile?.email && `• ${profile.email}`}
+          </div>
+        </div>
+        {exhibitsSection()}
+      </div>
+    );
+  }
+
+  // ════════════════════════════════════════
+  // TEMPLATE: BOLD
+  // ════════════════════════════════════════
+  if (template === 'bold') {
+    return (
+      <div className="bg-white text-sm" style={{ fontFamily, minHeight: '800px', color: '#1a1a1a' }}>
+        {customHeaderStyle === 'dark' ? (
+          <>
+            <div className="px-10 py-8" style={{ backgroundColor: trade.accentColor }}>
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-4">
+                  {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className="h-14 w-auto object-contain brightness-0 invert" />}
+                  <div>
+                    <div style={{ fontSize: '26px', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>{profile?.company_name || 'Company Name'}</div>
+                    {profile?.trade_type && <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '3px', color: 'rgba(255,255,255,0.6)', marginTop: '4px' }}>{trade.label}</div>}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div style={{ fontSize: '46px', fontWeight: 900, color: '#fff', letterSpacing: '-1px', lineHeight: 1 }}>PROPOSAL</div>
+                  <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.55)', marginTop: '6px' }}>{proposalNumber}</div>
+                </div>
+              </div>
+            </div>
+            <div style={{ height: '4px', backgroundColor: 'rgba(0,0,0,0.2)' }} />
+            <div className="grid grid-cols-4 gap-0 px-10 py-4" style={{ backgroundColor: '#111' }}>
+              <div><div style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '2px', color: 'rgba(255,255,255,0.35)' }}>Prepared for</div><div style={{ fontSize: '13px', fontWeight: 500, color: '#fff', marginTop: '3px' }}>{proposal.client_name}</div></div>
+              <div><div style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '2px', color: 'rgba(255,255,255,0.35)' }}>Job site</div><div style={{ fontSize: '12px', color: '#fff', marginTop: '3px' }}>{jobSiteAddress || '—'}</div></div>
+              <div><div style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '2px', color: 'rgba(255,255,255,0.35)' }}>Date</div><div style={{ fontSize: '12px', color: '#fff', marginTop: '3px' }}>{proposal.proposal_date}</div></div>
+              <div><div style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '2px', color: 'rgba(255,255,255,0.35)' }}>Valid until</div><div style={{ fontSize: '12px', color: '#fff', marginTop: '3px' }}>{proposal.valid_until}</div></div>
+            </div>
+          </>
+        ) : customHeaderStyle === 'light' ? (
+          <>
+            <div className="px-10 py-8 bg-white" style={{ borderLeft: `6px solid ${trade.accentColor}` }}>
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-4">
+                  {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className="h-14 w-auto object-contain" />}
+                  <div>
+                    <div style={{ fontSize: '24px', fontWeight: 800, color: trade.accentColor, letterSpacing: '-0.5px' }}>{profile?.company_name || 'Company Name'}</div>
+                    {profile?.trade_type && <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '3px', color: '#999', marginTop: '4px' }}>{trade.label}</div>}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div style={{ fontSize: '36px', fontWeight: 900, color: '#111', letterSpacing: '-1px', lineHeight: 1 }}>PROPOSAL</div>
+                  <div style={{ fontSize: '13px', color: '#999', marginTop: '6px' }}>{proposalNumber}</div>
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-4 gap-0 px-10 py-4" style={{ backgroundColor: `${trade.accentColor}15`, borderTop: `1px solid ${trade.accentColor}30` }}>
+              <div><div style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '2px', color: '#999' }}>Prepared for</div><div style={{ fontSize: '13px', fontWeight: 500, color: '#111', marginTop: '3px' }}>{proposal.client_name}</div></div>
+              <div><div style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '2px', color: '#999' }}>Job site</div><div style={{ fontSize: '12px', color: '#444', marginTop: '3px' }}>{jobSiteAddress || '—'}</div></div>
+              <div><div style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '2px', color: '#999' }}>Date</div><div style={{ fontSize: '12px', color: '#111', marginTop: '3px' }}>{proposal.proposal_date}</div></div>
+              <div><div style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '2px', color: '#999' }}>Valid until</div><div style={{ fontSize: '12px', color: '#111', marginTop: '3px' }}>{proposal.valid_until}</div></div>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="px-10 py-8">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-4">
+                  {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className="h-14 w-auto object-contain" />}
+                  <div>
+                    <div style={{ fontSize: '24px', fontWeight: 800, color: '#111', letterSpacing: '-0.5px' }}>{profile?.company_name || 'Company Name'}</div>
+                    {profile?.trade_type && <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '3px', color: '#888', marginTop: '4px' }}>{trade.label}</div>}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '4px', color: '#999' }}>Proposal</div>
+                  <div style={{ fontSize: '18px', fontWeight: 600, color: '#111', marginTop: '4px' }}>{proposalNumber}</div>
+                </div>
+              </div>
+              <div style={{ borderBottom: `2px solid ${trade.accentColor}`, marginTop: '1.5rem' }} />
+            </div>
+            <div className="grid grid-cols-4 gap-0 px-10 pb-6" style={{ borderBottom: '1px solid #eee' }}>
+              <div><div style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '2px', color: '#aaa' }}>Prepared for</div><div style={{ fontSize: '13px', fontWeight: 500, color: '#111', marginTop: '3px' }}>{proposal.client_name}</div></div>
+              <div><div style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '2px', color: '#aaa' }}>Job site</div><div style={{ fontSize: '12px', color: '#444', marginTop: '3px' }}>{jobSiteAddress || '—'}</div></div>
+              <div><div style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '2px', color: '#aaa' }}>Date</div><div style={{ fontSize: '12px', color: '#111', marginTop: '3px' }}>{proposal.proposal_date}</div></div>
+              <div><div style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '2px', color: '#aaa' }}>Valid until</div><div style={{ fontSize: '12px', color: '#111', marginTop: '3px' }}>{proposal.valid_until}</div></div>
+            </div>
+          </>
+        )}
+        {proposal.title && (
+          <div className="px-10 mt-6 mb-4">
+            {editable('title', proposal.title, <h2 style={{ fontSize: '16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', color: trade.accentColor }}>{proposal.title}</h2>)}
+          </div>
+        )}
+        <div className="px-10 pt-2">
+          {contentSections(BoldSection)}
+          {lineItemsTable()}
+          {termsAndConditions(BoldSection)}
+          {signatureBlock()}
+        </div>
+        {footer()}
+        {exhibitsSection()}
+      </div>
+    );
+  }
+
+  // ════════════════════════════════════════
+  // TEMPLATE: MINIMAL
+  // ════════════════════════════════════════
+  return (
+    <div className="bg-white text-sm" style={{ fontFamily, minHeight: '800px', color: '#1a1a1a' }}>
+      <div style={{ height: '1px', backgroundColor: trade.accentColor }} />
+      <div className="px-12 pt-12 pb-8">
+        <div className="flex items-start justify-between">
+          <div>
+            {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className="h-10 w-auto object-contain mb-4" />}
+            <div style={{ fontSize: '22px', fontWeight: 300, color: '#111', letterSpacing: '1px' }}>{profile?.company_name || 'Company Name'}</div>
+            {profile?.trade_type && <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '3px', color: '#bbb', marginTop: '6px' }}>{trade.label}</div>}
+          </div>
+          <div className="text-right">
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '4px', color: '#bbb' }}>Proposal</div>
+            <div style={{ fontSize: '16px', fontWeight: 500, color: '#111', marginTop: '4px' }}>{proposalNumber}</div>
+            {proposal.proposal_date && <div style={{ fontSize: '12px', color: '#bbb', marginTop: '8px' }}>{proposal.proposal_date}</div>}
+          </div>
+        </div>
+      </div>
+      <div className="mx-12" style={{ borderBottom: '1px solid #f0f0f0' }} />
+      <div className="px-12 py-8" style={{ borderBottom: '1px solid #f0f0f0' }}>
+        <div className="grid grid-cols-4 gap-4">
+          <div><div style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '2px', color: '#ccc' }}>Prepared for</div><div style={{ fontSize: '13px', color: '#111', marginTop: '4px' }}>{proposal.client_name}</div></div>
+          <div><div style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '2px', color: '#ccc' }}>Job site</div><div style={{ fontSize: '12px', color: '#555', marginTop: '4px' }}>{jobSiteAddress || '—'}</div></div>
+          <div><div style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '2px', color: '#ccc' }}>Date</div><div style={{ fontSize: '12px', color: '#111', marginTop: '4px' }}>{proposal.proposal_date}</div></div>
+          <div><div style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '2px', color: '#ccc' }}>Valid until</div><div style={{ fontSize: '12px', color: '#111', marginTop: '4px' }}>{proposal.valid_until}</div></div>
+        </div>
+      </div>
+      {proposal.title && (
+        <div className="px-12 mt-8 mb-4">
+          {editable('title', proposal.title, <h2 style={{ fontSize: '15px', fontWeight: 500, color: '#111' }}>{proposal.title}</h2>)}
+        </div>
+      )}
+      <div className="px-12 pt-4">
+        {contentSections(MinimalSection)}
+        {lineItemsTable()}
+        {termsAndConditions(MinimalSection)}
+        {signatureBlock()}
+      </div>
+      <div className="mt-12 mx-12">
+        <div style={{ borderTop: '1px solid #f0f0f0' }} />
+        <div className="flex justify-center gap-8 py-5 text-xs" style={{ color: '#bbb' }}>
+          {profile?.phone && <span>{formatPhone(profile.phone)}</span>}
+          {profile?.email && <span>{profile.email}</span>}
+          {profile?.website && <span>{profile.website}</span>}
+        </div>
+      </div>
+      {exhibitsSection()}
+    </div>
+  );
+
+  // ─── Sub-components ───
+  function ModernSection({ title, children }: { title: string; children: React.ReactNode }) {
+    return (
+      <div className="mb-6">
+        <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 600, color: trade.accentColor, marginBottom: '8px' }}>{title}</div>
+        {children}
+      </div>
+    );
+  }
+
+  function ClassicSection({ title, children }: { title: string; children: React.ReactNode }) {
+    return (
+      <div className="mb-6">
+        <h3 style={{ fontFamily: 'Georgia, Times New Roman, serif', fontSize: '15px', fontWeight: 700, color: '#111', borderBottom: '1px solid #eee', paddingBottom: '4px', marginBottom: '8px' }}>{title}</h3>
+        {children}
+      </div>
+    );
+  }
+
+  function BoldSection({ title, children }: { title: string; children: React.ReactNode }) {
+    return (
+      <div className="mb-6">
+        <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '3px', fontWeight: 700, color: trade.accentColor, marginBottom: '6px' }}>{title}</div>
+        <div style={{ borderLeft: `3px solid ${trade.accentColor}`, paddingLeft: '1rem' }}>
+          {children}
+        </div>
+      </div>
+    );
+  }
+
+  function MinimalSection({ title, children }: { title: string; children: React.ReactNode }) {
+    return (
+      <div className="mb-10">
+        <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '3px', fontWeight: 400, color: '#bbb', marginBottom: '10px' }}>{title}</div>
+        {children}
+      </div>
+    );
+  }
+}
     return (
       <div className="bg-white text-sm" style={{ fontFamily, minHeight: '800px', color: '#1a1a1a' }}>
         {/* Logo + Company */}
