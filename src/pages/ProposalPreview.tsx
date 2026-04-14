@@ -43,8 +43,11 @@ export default function ProposalPreview() {
   // Template switching
   const getDefaultTemplate = (): TemplateId => {
     const saved = localStorage.getItem('ezbid_default_template');
-    if (saved && ['modern', 'classic', 'bold', 'minimal'].includes(saved)) return saved as TemplateId;
-    return ((proposal?.template as TemplateId) || 'modern');
+    if (saved && ['edge', 'heritage', 'command', 'linen'].includes(saved)) return saved as TemplateId;
+    const dbTemplate = (proposal?.template as string) || 'edge';
+    // Map legacy names
+    const legacyMap: Record<string, TemplateId> = { modern: 'edge', classic: 'heritage', bold: 'command', minimal: 'linen' };
+    return (legacyMap[dbTemplate] || dbTemplate) as TemplateId;
   };
   const [activeTemplate, setActiveTemplate] = useState<TemplateId>(getDefaultTemplate);
   const [accentColor, setAccentColor] = useState<string>('');

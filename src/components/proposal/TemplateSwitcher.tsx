@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Palette, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type TemplateId = 'modern' | 'classic' | 'bold' | 'minimal';
+export type TemplateId = 'edge' | 'heritage' | 'command' | 'linen';
 
 interface TemplateSwitcherProps {
   current: TemplateId;
@@ -12,10 +12,10 @@ interface TemplateSwitcherProps {
 }
 
 const TEMPLATES: { id: TemplateId; label: string; description: string }[] = [
-  { id: 'modern', label: 'Modern', description: 'Clean layout, bold section headers, minimal color accents' },
-  { id: 'classic', label: 'Classic', description: 'Traditional business document, formal and structured' },
-  { id: 'bold', label: 'Bold', description: 'Full color header, strong typography, high contrast' },
-  { id: 'minimal', label: 'Minimal', description: 'Ultra clean, generous white space, subtle accents' },
+  { id: 'edge', label: 'Edge', description: 'Clean layout, bold section headers, minimal color accents' },
+  { id: 'heritage', label: 'Heritage', description: 'Traditional business document, formal and structured' },
+  { id: 'command', label: 'Command', description: 'Full color header, strong typography, high contrast' },
+  { id: 'linen', label: 'Linen', description: 'Ultra clean, generous white space, subtle accents' },
 ];
 
 export default function TemplateSwitcher({ current, accentColor, onSelect }: TemplateSwitcherProps) {
@@ -77,7 +77,7 @@ function TemplateThumbnail({ template, accentColor }: { template: TemplateId; ac
   const bar = { backgroundColor: accentColor };
   const lightBar = { backgroundColor: accentColor, opacity: 0.15 };
 
-  if (template === 'modern') {
+  if (template === 'edge') {
     return (
       <div className="h-16 bg-white border rounded-sm p-1.5 flex flex-col gap-1">
         <div className="flex items-center gap-1">
@@ -93,7 +93,7 @@ function TemplateThumbnail({ template, accentColor }: { template: TemplateId; ac
     );
   }
 
-  if (template === 'classic') {
+  if (template === 'heritage') {
     return (
       <div className="h-16 bg-white border rounded-sm p-1.5 flex flex-col gap-1">
         <div className="h-0.5" style={bar} />
@@ -111,7 +111,7 @@ function TemplateThumbnail({ template, accentColor }: { template: TemplateId; ac
     );
   }
 
-  if (template === 'bold') {
+  if (template === 'command') {
     return (
       <div className="h-16 bg-white border rounded-sm flex flex-col">
         <div className="h-5 rounded-t-sm flex items-center px-1.5" style={bar}>
@@ -126,7 +126,7 @@ function TemplateThumbnail({ template, accentColor }: { template: TemplateId; ac
     );
   }
 
-  // minimal
+  // linen
   return (
     <div className="h-16 bg-white border rounded-sm p-2 flex flex-col justify-between">
       <div className="h-1 w-10 rounded-full bg-gray-200" />

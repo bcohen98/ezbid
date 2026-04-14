@@ -13,7 +13,7 @@ export default function GuestProposalPreview() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [showWall, setShowWall] = useState(false);
-  const [activeTemplate, setActiveTemplate] = useState<TemplateId>('modern');
+  const [activeTemplate, setActiveTemplate] = useState<TemplateId>('edge');
 
   // Redirect logged-in users
   useEffect(() => {

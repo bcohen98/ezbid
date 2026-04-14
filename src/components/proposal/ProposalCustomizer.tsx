@@ -3,16 +3,21 @@ import { Check } from 'lucide-react';
 export type FontStyle = 'modern' | 'classic' | 'bold';
 export type HeaderStyle = 'dark' | 'light' | 'minimal';
 
-const COLOR_PRESETS = [
-  { label: 'Deep Red', value: '#c0392b' },
-  { label: 'Navy', value: '#1a2332' },
-  { label: 'Forest Green', value: '#2d4a1e' },
-  { label: 'Charcoal', value: '#2c2c2c' },
-  { label: 'Electric Yellow', value: '#f5c800' },
-  { label: 'Sky Blue', value: '#5bc4f5' },
-  { label: 'Slate', value: '#4a5568' },
-  { label: 'Black', value: '#111111' },
+export type PaletteId = 'iron' | 'grove' | 'blueprint' | 'studio' | 'forge' | 'current';
+
+const PALETTE_PRESETS: { id: PaletteId; label: string; primary: string; accent: string }[] = [
+  { id: 'iron',      label: 'Iron',      primary: '#1a1a1a', accent: '#c0392b' },
+  { id: 'grove',     label: 'Grove',     primary: '#2d4a1e', accent: '#c8e6a0' },
+  { id: 'blueprint', label: 'Blueprint', primary: '#1a2332', accent: '#38bdf8' },
+  { id: 'studio',    label: 'Studio',    primary: '#2c2c2c', accent: '#e8c547' },
+  { id: 'forge',     label: 'Forge',     primary: '#111111', accent: '#f5c800' },
+  { id: 'current',   label: 'Current',   primary: '#1e3a5f', accent: '#5bc4f5' },
 ];
+
+export const TRADE_PALETTE_MAP: Record<string, PaletteId> = {
+  roofing: 'iron', landscaping: 'grove', hvac: 'blueprint',
+  painting: 'studio', electrical: 'forge', plumbing: 'current',
+};
 
 const FONT_OPTIONS: { id: FontStyle; label: string; desc: string }[] = [
   { id: 'modern', label: 'Modern', desc: 'Clean sans-serif' },
@@ -33,32 +38,43 @@ interface Props {
   onAccentChange: (color: string) => void;
   onFontChange: (font: FontStyle) => void;
   onHeaderChange: (header: HeaderStyle) => void;
+  onPaletteChange?: (palette: PaletteId) => void;
+  activePalette?: PaletteId | null;
 }
 
-export default function ProposalCustomizer({ accentColor, fontStyle, headerStyle, onAccentChange, onFontChange, onHeaderChange }: Props) {
+export default function ProposalCustomizer({ accentColor, fontStyle, headerStyle, onAccentChange, onFontChange, onHeaderChange, onPaletteChange, activePalette }: Props) {
   return (
     <div className="border rounded-lg p-4 space-y-5">
       <h3 className="text-sm font-medium">Customize Style</h3>
 
-      {/* Color swatches */}
+      {/* Palette swatches */}
       <div>
-        <p className="text-xs text-muted-foreground mb-2">Accent Color</p>
-        <div className="flex flex-wrap gap-2">
-          {COLOR_PRESETS.map((c) => (
-            <button
-              key={c.value}
-              title={c.label}
-              className="w-8 h-8 rounded-full border-2 flex items-center justify-center transition-transform hover:scale-110"
-              style={{
-                backgroundColor: c.value,
-                borderColor: accentColor === c.value ? '#fff' : 'transparent',
-                boxShadow: accentColor === c.value ? `0 0 0 2px ${c.value}` : undefined,
-              }}
-              onClick={() => onAccentChange(c.value)}
-            >
-              {accentColor === c.value && <Check className="h-4 w-4 text-white drop-shadow" />}
-            </button>
-          ))}
+        <p className="text-xs text-muted-foreground mb-2">Color Palette</p>
+        <div className="grid grid-cols-3 gap-2">
+          {PALETTE_PRESETS.map((p) => {
+            const isActive = activePalette === p.id || (!activePalette && accentColor === p.accent);
+            return (
+              <button
+                key={p.id}
+                title={p.label}
+                className={`rounded-md border px-2 py-2 text-center transition-colors ${
+                  isActive
+                    ? 'border-foreground bg-secondary'
+                    : 'border-border hover:bg-muted'
+                }`}
+                onClick={() => {
+                  onAccentChange(p.accent);
+                  onPaletteChange?.(p.id);
+                }}
+              >
+                <div className="flex items-center justify-center gap-1.5 mb-1">
+                  <div className="w-4 h-4 rounded-full border" style={{ backgroundColor: p.primary }} />
+                  <div className="w-4 h-4 rounded-full border" style={{ backgroundColor: p.accent }} />
+                </div>
+                <span className="block text-[10px] font-medium">{p.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
