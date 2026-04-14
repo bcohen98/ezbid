@@ -128,12 +128,12 @@ export default function NewProposal() {
   }
 
   const validate = () => {
-    if (!clientName.trim()) {
-      toast({ title: 'Client name is required', variant: 'destructive' });
-      return false;
-    }
-    if (!jobDescription.trim()) {
-      toast({ title: 'Please describe the job', variant: 'destructive' });
+    const missing: string[] = [];
+    if (!clientName.trim()) missing.push('Client Name');
+    if (!jobAddress.trim()) missing.push('Job Address');
+    if (!jobDescription.trim()) missing.push('Job Description');
+    if (missing.length > 0) {
+      toast({ title: 'Missing required fields', description: `Please fill in: ${missing.join(', ')}`, variant: 'destructive' });
       return false;
     }
     if (items.length === 0 || items.every(i => !i.description.trim())) {

@@ -90,7 +90,9 @@ RULES:
 4. Write a brief professional cover letter addressed to the client.
 5. Include realistic warranty terms and payment terms appropriate for ${tradeLabel} work.
 6. Do NOT invent additional costs or items not in the line items.
-7. The proposal should be ready to send — no placeholders.${deposit_label ? `\n8. The payment terms section MUST include the deposit/balance breakdown: deposit of $${(deposit_amount || 0).toFixed(2)} due upon signing, balance of $${(balance_due || 0).toFixed(2)} due upon completion.` : ""}`;
+7. The proposal should be ready to send — no placeholders.
+8. NEVER use bracket placeholders like [Number], [Percentage], [Payment Methods], [Timeline], [Date], [Company], etc. Every value must be filled in with a real number, a sensible default, or omitted entirely. For example write "50% deposit required" not "[Percentage]% deposit required". Write "2-3 weeks" not "[Timeline]".
+9. Do NOT use markdown formatting — no **bold**, no *italic*, no bullet points with * or -. Write in plain prose paragraphs only.${deposit_label ? `\n10. The payment terms section MUST include the deposit/balance breakdown: deposit of $${(deposit_amount || 0).toFixed(2)} due upon signing, balance of $${(balance_due || 0).toFixed(2)} due upon completion.` : ""}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
