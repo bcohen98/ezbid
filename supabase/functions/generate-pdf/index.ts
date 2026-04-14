@@ -99,7 +99,7 @@ function buildHtml(proposal: any, lineItems: any[], profile: any, exhibits: any[
 
   const section = (title: string, content: string | null | undefined) => {
     if (!content) return '';
-    return `<div style="margin-bottom:20px;"><h3 style="font-size:13px;font-weight:700;margin-bottom:6px;color:#1a1a1a;">${esc(title)}</h3><div style="font-size:13px;line-height:1.7;color:#333;margin:0;">${mdToHtml(content)}</div></div>`;
+    return `<div style="margin-bottom:20px;page-break-inside:avoid;"><h3 style="font-size:13px;font-weight:700;margin-bottom:6px;color:#1a1a1a;">${esc(title)}</h3><div style="font-size:13px;line-height:1.7;color:#333;margin:0;">${mdToHtml(content)}</div></div>`;
   };
 
   const lineItemRows = lineItems.map((item: any, idx: number) => `
@@ -367,8 +367,10 @@ function buildHtml(proposal: any, lineItems: any[], profile: any, exhibits: any[
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
   * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family:${fontFamily}; font-size:13px; color:#1a1a1a; background:#fff; }
-  @page { size:letter; margin:0; }
+  body { font-family:${fontFamily}; font-size:13px; color:#1a1a1a; background:#fff; padding-bottom:40px; }
+  @page { size:letter; margin:0.5in 0 0.6in 0; }
+  tr { page-break-inside:avoid; }
+  div { orphans:3; widows:3; }
 </style></head><body>
 
 ${headerHtml}
