@@ -59,15 +59,18 @@ export default function AuthPage() {
 
         // Send welcome lifecycle email (non-blocking)
         try {
-          const namePart = email.split('@')[0];
-          await supabase.functions.invoke('send-lifecycle-email', {
-            body: {
-              email_type: 'welcome',
-              user_id: (await supabase.auth.getUser())?.data?.user?.id || '',
-              recipient_email: email,
-              first_name: namePart,
-            },
-          });
+          const userId = (await supabase.auth.getUser())?.data?.user?.id;
+          if (userId) {
+            const namePart = email.split('@')[0];
+            await supabase.functions.invoke('send-lifecycle-email', {
+              body: {
+                email_type: 'welcome',
+                user_id: userId,
+                recipient_email: email,
+                first_name: namePart,
+              },
+            });
+          }
         } catch {
           // Non-blocking
         }

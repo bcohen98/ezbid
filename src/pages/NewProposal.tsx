@@ -296,15 +296,16 @@ export default function NewProposal() {
       // EMAIL 3: If this was their 3rd (last free) proposal, send free_limit email
       if (subscription && subscription.status !== 'active' && subscription.proposals_used === 2) {
         try {
-          const userEmail = user?.email || '';
-          await supabase.functions.invoke('send-lifecycle-email', {
-            body: {
-              email_type: 'free_limit',
-              user_id: user?.id || '',
-              recipient_email: userEmail,
-              first_name: profile?.owner_name,
-            },
-          });
+          if (user?.id && user?.email) {
+            await supabase.functions.invoke('send-lifecycle-email', {
+              body: {
+                email_type: 'free_limit',
+                user_id: user.id,
+                recipient_email: user.email,
+                first_name: profile?.owner_name,
+              },
+            });
+          }
         } catch {
           // Non-blocking
         }
