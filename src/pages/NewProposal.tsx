@@ -83,6 +83,11 @@ export default function NewProposal() {
   const [jobAddress, setJobAddress] = useState('');
   const [jobDescription, setJobDescription] = useState('');
 
+  // Materials (populated by AI suggest)
+  const [materialsIncluded, setMaterialsIncluded] = useState('');
+  const [materialsExcluded, setMaterialsExcluded] = useState('');
+  const [isSuggestingMaterials, setIsSuggestingMaterials] = useState(false);
+
   // Line items
   const [items, setItems] = useState<LineItem[]>(() => makeDefaults(defaultTrade));
 
@@ -369,6 +374,105 @@ export default function NewProposal() {
             />
           </div>
         </div>
+
+        {/* AI Suggest Materials & Pricing */}
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            disabled={isSuggestingMaterials}
+            onClick={async () => {
+              setIsSuggestingMaterials(true);
+              try {
+                const { data, error } = await supabase.functions.invoke('suggest-materials-pricing', {
+                  body: {
+                    trade_type: trade,
+                    job_description: jobDescription,
+                    job_site_address: jobAddress || null,
+                  },
+                });
+                if (error) throw error;
+                if (data?.error) throw new Error(data.error);
+
+                const aiItems: LineItem[] = (data.line_items || []).map((li: any, i: number) => ({
+                  id: `ai_mat_${Date.now()}_${i}`,
+                  description: li.description,
+                  quantity: li.quantity,
+                  unit: li.unit,
+                  unit_price: li.unit_price,
+                  aiSuggested: true,
+                }));
+
+                // Line items
+                const hasExistingItems = items.some(i => i.description.trim() && i.unit_price > 0);
+                if (hasExistingItems && aiItems.length > 0) {
+                  if (window.confirm('This will add suggested line items to your existing table. Continue?')) {
+                    setItems(prev => [...prev, ...aiItems]);
+                  }
+                } else if (aiItems.length > 0) {
+                  setItems(aiItems);
+                }
+
+                // Materials included
+                if (data.materials_included) {
+                  if (materialsIncluded.trim() && !window.confirm('This will replace your current materials list. Continue?')) {
+                    // skip
+                  } else {
+                    setMaterialsIncluded(data.materials_included);
+                  }
+                }
+
+                // Materials excluded
+                if (data.materials_excluded) {
+                  if (materialsExcluded.trim() && !window.confirm('This will replace your current materials excluded list. Continue?')) {
+                    // skip
+                  } else {
+                    setMaterialsExcluded(data.materials_excluded);
+                  }
+                }
+
+                toast({ title: 'Suggestions applied!', description: 'Review and adjust the line items and materials as needed.' });
+              } catch (err: any) {
+                toast({ title: 'Suggestion failed', description: err.message || 'Could not get AI suggestions', variant: 'destructive' });
+              } finally {
+                setIsSuggestingMaterials(false);
+              }
+            }}
+          >
+            {isSuggestingMaterials ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            {isSuggestingMaterials ? 'Suggesting…' : 'Suggest Materials & Pricing'}
+          </Button>
+        </div>
+
+        {/* Materials fields */}
+        {(materialsIncluded || materialsExcluded) && (
+          <div className="space-y-4">
+            {materialsIncluded && (
+              <div>
+                <label className="text-sm font-medium text-foreground mb-1 block">Materials Included</label>
+                <Textarea
+                  value={materialsIncluded}
+                  onChange={e => setMaterialsIncluded(e.target.value)}
+                  rows={3}
+                  className="text-base"
+                />
+              </div>
+            )}
+            {materialsExcluded && (
+              <div>
+                <label className="text-sm font-medium text-foreground mb-1 block">Materials Excluded</label>
+                <Textarea
+                  value={materialsExcluded}
+                  onChange={e => setMaterialsExcluded(e.target.value)}
+                  rows={3}
+                  className="text-base"
+                />
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Step 3: Line Items */}
         <LineItemsTable
