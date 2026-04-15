@@ -322,9 +322,9 @@ export default function LineItemsTable({
                     value={item.unit_price || ''}
                     onChange={e => updateItem(item.id, 'unit_price', parseFloat(e.target.value) || 0)}
                     className="h-11 pl-5"
-                />
+                  />
+                </div>
               </div>
-            </div>
             <div className="text-right font-medium text-sm">{fmt(item.quantity * item.unit_price)}</div>
           </div>
         ))}
