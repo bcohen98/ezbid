@@ -253,7 +253,10 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
                   <select value={item.unit} onChange={(e) => updateLineItem(i, 'unit', e.target.value)} className="h-8 text-sm border rounded px-1 bg-background w-full">
                     <option value="ea">ea</option><option value="hr">hr</option><option value="ft">ft</option><option value="sqft">sqft</option><option value="lnft">lnft</option><option value="lot">lot</option><option value="day">day</option><option value="wk">wk</option><option value="mo">mo</option><option value="ton">ton</option><option value="yd">yd</option><option value="gal">gal</option><option value="bag">bag</option><option value="box">box</option><option value="pallet">pallet</option>
                   </select>
-                  <Input type="number" value={item.unit_price || ''} onChange={(e) => updateLineItem(i, 'unit_price', parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} className="h-8 text-sm" min={0} step="0.01" />
+                  <div className="relative">
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">$</span>
+                    <Input type="number" value={item.unit_price || ''} onChange={(e) => updateLineItem(i, 'unit_price', parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} className="h-8 text-sm pl-5" min={0} step="0.01" />
+                  </div>
                   <span className="text-sm font-medium text-right">${formatCurrency(item.quantity * item.unit_price)}</span>
                   <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeLineItem(i)} disabled={form.line_items.length <= 1}>
                     <Trash2 className="h-3.5 w-3.5" />
@@ -288,7 +291,10 @@ export default function ProposalForm({ template, profile, onSubmit, isSubmitting
                     </div>
                     <div className="space-y-1">
                       <Label className="text-xs">Price</Label>
-                      <Input type="number" value={item.unit_price || ''} onChange={(e) => updateLineItem(i, 'unit_price', parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} min={0} step="0.01" />
+                      <div className="relative">
+                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">$</span>
+                        <Input type="number" value={item.unit_price || ''} onChange={(e) => updateLineItem(i, 'unit_price', parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} min={0} step="0.01" className="pl-5" />
+                      </div>
                     </div>
                   </div>
                   <div className="text-right text-sm font-medium">Total: ${formatCurrency(item.quantity * item.unit_price)}</div>
