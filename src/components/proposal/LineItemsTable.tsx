@@ -324,7 +324,7 @@ export default function LineItemsTable({
                     className="h-11 pl-5"
                   />
                 </div>
-              </div>
+            </div>
             <div className="text-right font-medium text-sm">{fmt(item.quantity * item.unit_price)}</div>
           </div>
         ))}
