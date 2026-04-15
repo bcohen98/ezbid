@@ -248,14 +248,17 @@ export default function LineItemsTable({
                   />
                 </td>
                 <td className="p-2">
-                  <Input
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    value={item.unit_price || ''}
-                    onChange={e => updateItem(item.id, 'unit_price', parseFloat(e.target.value) || 0)}
-                    className="border-0 bg-transparent shadow-none focus-visible:ring-1 text-right h-10"
-                  />
+                  <div className="relative">
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">$</span>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={0.01}
+                      value={item.unit_price || ''}
+                      onChange={e => updateItem(item.id, 'unit_price', parseFloat(e.target.value) || 0)}
+                      className="border-0 bg-transparent shadow-none focus-visible:ring-1 text-right h-10 pl-5"
+                    />
+                  </div>
                 </td>
                 <td className="p-2 text-right font-medium pr-3">{fmt(item.quantity * item.unit_price)}</td>
                 <td className="p-2">
@@ -310,13 +313,15 @@ export default function LineItemsTable({
               </div>
               <div>
                 <label className="text-xs text-muted-foreground">Price</label>
-                <Input
-                  type="number"
-                  min={0}
-                  step={0.01}
-                  value={item.unit_price || ''}
-                  onChange={e => updateItem(item.id, 'unit_price', parseFloat(e.target.value) || 0)}
-                  className="h-11"
+                <div className="relative">
+                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">$</span>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={item.unit_price || ''}
+                    onChange={e => updateItem(item.id, 'unit_price', parseFloat(e.target.value) || 0)}
+                    className="h-11 pl-5"
                 />
               </div>
             </div>
