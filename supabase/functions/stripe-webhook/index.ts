@@ -1,3 +1,4 @@
+// Requires: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, RESEND_API_KEY, LOVABLE_API_KEY
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
@@ -45,13 +46,13 @@ serve(async (req) => {
 
   try {
     switch (event.type) {
+      // ── Subscription events (existing) ──
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
         if (session.mode === "subscription") {
           const customerId = session.customer as string;
           const subscriptionId = session.subscription as string;
 
-          // Try to find user by stripe_customer_id first
           const { data: existingSubs } = await supabase
             .from("user_subscriptions")
             .select("user_id")
@@ -59,12 +60,10 @@ serve(async (req) => {
             .limit(1);
 
           let userId: string | null = existingSubs?.[0]?.user_id ?? null;
-
-          // Fallback: look up by email from session or Stripe customer
           let lookupEmail: string | null = null;
+
           if (!userId) {
-            const email = session.customer_email
-              || (session as any).customer_details?.email;
+            const email = session.customer_email || (session as any).customer_details?.email;
             lookupEmail = email;
             if (!lookupEmail && customerId) {
               const customer = await stripe.customers.retrieve(customerId);
@@ -91,7 +90,6 @@ serve(async (req) => {
               .eq("user_id", userId);
             console.log(`[STRIPE-WEBHOOK] Activated subscription for user ${userId}`);
 
-            // ── Referral conversion check ──
             if (lookupEmail) {
               await processReferralConversion(supabase, stripe, lookupEmail, subscriptionId);
             }
@@ -122,7 +120,6 @@ serve(async (req) => {
               current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
             })
             .eq("stripe_customer_id", customerId);
-          console.log(`[STRIPE-WEBHOOK] Updated subscription for customer ${customerId}: ${subscription.status}`);
         }
         break;
       }
@@ -134,7 +131,145 @@ serve(async (req) => {
           .from("user_subscriptions")
           .update({ status: "canceled", plan: "starter" })
           .eq("stripe_customer_id", customerId);
-        console.log(`[STRIPE-WEBHOOK] Canceled subscription for customer ${customerId}`);
+        break;
+      }
+
+      // ── Connect payment events (new) ──
+      case "payment_intent.succeeded": {
+        const pi = event.data.object as Stripe.PaymentIntent;
+        const proposalId = pi.metadata?.proposal_id;
+        const paymentType = pi.metadata?.payment_type;
+        const userId = pi.metadata?.user_id;
+
+        if (!proposalId || !paymentType) {
+          console.log("[STRIPE-WEBHOOK] payment_intent.succeeded without proposal metadata, skipping");
+          break;
+        }
+
+        const amountDollars = pi.amount / 100;
+        const platformFeeDollars = (pi.application_fee_amount || 0) / 100;
+
+        // Estimate Stripe fee (2.9% + $0.30)
+        const stripeFee = Math.round((pi.amount * 0.029 + 30)) / 100;
+        const netAmount = amountDollars - stripeFee - platformFeeDollars;
+
+        // Update transaction
+        await supabase
+          .from("payment_transactions")
+          .update({
+            status: "succeeded",
+            stripe_payment_intent_id: pi.id,
+            stripe_fee: stripeFee,
+            net_amount: netAmount,
+          })
+          .eq("proposal_id", proposalId)
+          .eq("status", "pending")
+          .eq("type", paymentType);
+
+        // Update proposal
+        if (paymentType === "deposit") {
+          await supabase.from("proposals").update({
+            payment_status: "deposit_paid",
+            deposit_paid_at: new Date().toISOString(),
+            deposit_paid_amount: amountDollars,
+          }).eq("id", proposalId);
+        } else {
+          await supabase.from("proposals").update({
+            payment_status: "paid",
+            payment_paid_at: new Date().toISOString(),
+            payment_paid_amount: amountDollars,
+          }).eq("id", proposalId);
+        }
+
+        // Send confirmation emails
+        if (userId) {
+          const { data: proposal } = await supabase.from("proposals").select("title, client_name, client_email").eq("id", proposalId).single();
+          const { data: profile } = await supabase.from("company_profiles").select("company_name, email").eq("user_id", userId).single();
+          
+          const resendKey = Deno.env.get("RESEND_API_KEY");
+          const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+
+          if (resendKey && lovableKey && proposal) {
+            const amountStr = amountDollars.toLocaleString("en-US", { minimumFractionDigits: 2 });
+            // Email to contractor
+            if (profile?.email) {
+              await fetch("https://connector-gateway.lovable.dev/resend/emails", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${lovableKey}`, "X-Connection-Api-Key": resendKey },
+                body: JSON.stringify({
+                  from: "EZ-Bid <onboarding@resend.dev>",
+                  to: [profile.email],
+                  subject: `Payment received: $${amountStr} from ${proposal.client_name}`,
+                  html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:30px 20px;"><h1 style="font-size:22px;color:#1a1a1a;">Payment Received! 💰</h1><p style="font-size:15px;color:#555;line-height:1.6;"><strong>$${amountStr}</strong> has been received from <strong>${proposal.client_name}</strong> for <strong>${proposal.title}</strong>.</p><p style="font-size:13px;color:#888;">Funds will be deposited to your bank account, typically next business day.</p></div>`,
+                }),
+              });
+            }
+            // Email to client
+            if (proposal.client_email) {
+              await fetch("https://connector-gateway.lovable.dev/resend/emails", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${lovableKey}`, "X-Connection-Api-Key": resendKey },
+                body: JSON.stringify({
+                  from: `${profile?.company_name || "EZ-Bid"} <onboarding@resend.dev>`,
+                  to: [proposal.client_email],
+                  subject: `Payment Confirmation — $${amountStr}`,
+                  html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:30px 20px;"><h1 style="font-size:22px;color:#1a1a1a;">Payment Confirmed ✓</h1><p style="font-size:15px;color:#555;line-height:1.6;">Your payment of <strong>$${amountStr}</strong> for <strong>${proposal.title}</strong> has been received. Thank you!</p><p style="font-size:12px;color:#999;margin-top:20px;">— ${profile?.company_name || "Your contractor"}</p></div>`,
+                }),
+              });
+            }
+          }
+        }
+
+        console.log(`[STRIPE-WEBHOOK] Payment succeeded for proposal ${proposalId}: $${amountDollars}`);
+        break;
+      }
+
+      case "payment_intent.payment_failed": {
+        const pi = event.data.object as Stripe.PaymentIntent;
+        const proposalId = pi.metadata?.proposal_id;
+        const paymentType = pi.metadata?.payment_type;
+
+        if (!proposalId) break;
+
+        await supabase
+          .from("payment_transactions")
+          .update({ status: "failed" })
+          .eq("proposal_id", proposalId)
+          .eq("status", "pending")
+          .eq("type", paymentType || "full_payment");
+
+        // Revert proposal status
+        const { data: proposal } = await supabase.from("proposals").select("payment_status, deposit_paid_amount").eq("id", proposalId).single();
+        if (proposal) {
+          let revertStatus = "unpaid";
+          if (paymentType === "full_payment" && Number(proposal.deposit_paid_amount) > 0) {
+            revertStatus = "deposit_paid";
+          }
+          await supabase.from("proposals").update({ payment_status: revertStatus }).eq("id", proposalId);
+        }
+
+        console.log(`[STRIPE-WEBHOOK] Payment failed for proposal ${proposalId}`);
+        break;
+      }
+
+      case "account.updated": {
+        const account = event.data.object as Stripe.Account;
+        const { data: profiles } = await supabase
+          .from("company_profiles")
+          .select("user_id")
+          .eq("stripe_connect_account_id", account.id);
+
+        if (profiles && profiles.length > 0) {
+          await supabase
+            .from("company_profiles")
+            .update({
+              stripe_connect_onboarded: account.details_submitted ?? false,
+              stripe_connect_charges_enabled: account.charges_enabled ?? false,
+              stripe_connect_payouts_enabled: account.payouts_enabled ?? false,
+            })
+            .eq("stripe_connect_account_id", account.id);
+          console.log(`[STRIPE-WEBHOOK] Updated Connect account status for ${account.id}`);
+        }
         break;
       }
 
@@ -160,7 +295,6 @@ async function processReferralConversion(
   subscriptionId: string
 ) {
   try {
-    // Find a referral for this email that is signed_up (not yet converted)
     const { data: referral } = await supabase
       .from("referrals")
       .select("*")
@@ -171,7 +305,6 @@ async function processReferralConversion(
 
     if (!referral) return;
 
-    // Update referral to converted
     await supabase
       .from("referrals")
       .update({
@@ -182,14 +315,12 @@ async function processReferralConversion(
       })
       .eq("id", referral.id);
 
-    // Create credit for referrer
     await supabase.from("referral_credits").insert({
       user_id: referral.referrer_user_id,
       referral_id: referral.id,
       credit_months: 1,
     });
 
-    // Apply credit to referrer's Stripe subscription
     const { data: referrerSub } = await supabase
       .from("user_subscriptions")
       .select("stripe_customer_id")
@@ -197,16 +328,12 @@ async function processReferralConversion(
       .maybeSingle();
 
     if (referrerSub?.stripe_customer_id) {
-      // Add negative balance (credit) of $29 (one month)
       await stripe.customers.createBalanceTransaction(referrerSub.stripe_customer_id, {
-        amount: -2900, // -$29.00 in cents
+        amount: -2900,
         currency: "usd",
         description: `Referral credit: ${email} subscribed`,
       });
 
-      console.log(`[STRIPE-WEBHOOK] Applied $29 referral credit to customer ${referrerSub.stripe_customer_id}`);
-
-      // Update the credit record
       await supabase
         .from("referral_credits")
         .update({ applied_at: new Date().toISOString() })
@@ -214,7 +341,6 @@ async function processReferralConversion(
         .eq("user_id", referral.referrer_user_id);
     }
 
-    // Send congratulations email to referrer
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
 
@@ -237,26 +363,13 @@ async function processReferralConversion(
             from: "EZ-Bid <onboarding@resend.dev>",
             to: [referrerProfile.email],
             subject: "Your referral just subscribed! 🎉",
-            html: `
-              <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 30px 20px;">
-                <h1 style="font-size: 22px; font-weight: bold; color: #1a1a1a;">Great news!</h1>
-                <p style="font-size: 15px; color: #555; line-height: 1.6;">
-                  Your referral (${email}) just subscribed to EZ-Bid Pro! 
-                  We've added <strong>1 free month ($29)</strong> as a credit to your account. 
-                  It'll be automatically applied to your next billing cycle.
-                </p>
-                <p style="font-size: 15px; color: #555; line-height: 1.6;">
-                  Keep referring — there's no cap on how many free months you can earn!
-                </p>
-                <p style="font-size: 12px; color: #999; margin-top: 30px;">— The EZ-Bid Team</p>
-              </div>
-            `,
+            html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:30px 20px;"><h1 style="font-size:22px;font-weight:bold;color:#1a1a1a;">Great news!</h1><p style="font-size:15px;color:#555;line-height:1.6;">Your referral (${email}) just subscribed to EZ-Bid Pro! We've added <strong>1 free month ($29)</strong> as a credit to your account.</p><p style="font-size:12px;color:#999;margin-top:30px;">— The EZ-Bid Team</p></div>`,
           }),
         });
       }
     }
 
-    console.log(`[STRIPE-WEBHOOK] Referral conversion processed for ${email}, referrer: ${referral.referrer_user_id}`);
+    console.log(`[STRIPE-WEBHOOK] Referral conversion processed for ${email}`);
   } catch (err) {
     console.error("[STRIPE-WEBHOOK] Referral conversion error:", err);
   }

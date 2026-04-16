@@ -25,6 +25,8 @@ import AdminSeeder from "./pages/admin/AdminSeeder";
 import ReferAndEarn from "./pages/ReferAndEarn";
 import Tutorial from "./pages/Tutorial";
 import ReviewsPage from "./pages/ReviewsPage";
+import Earnings from "./pages/Earnings";
+import PaymentComplete from "./pages/PaymentComplete";
 import NotFound from "./pages/NotFound";
 import HelpChatWidget from "./components/HelpChatWidget";
 import { usePageTracking } from "./hooks/usePageTracking";
@@ -71,6 +73,8 @@ const App = () => (
             <Route path="/admin/referrals" element={<AdminReferrals />} />
             <Route path="/admin/seed" element={<AdminSeeder />} />
             <Route path="/referrals" element={<ReferAndEarn />} />
+            <Route path="/earnings" element={<Earnings />} />
+            <Route path="/payment-complete" element={<PaymentComplete />} />
             <Route path="/tutorial" element={<Tutorial />} />
             <Route path="/reviews" element={<ReviewsPage />} />
             <Route path="*" element={<NotFound />} />
