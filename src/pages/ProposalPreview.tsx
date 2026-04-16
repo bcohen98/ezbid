@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Send, Mail, Sparkles, Loader2, Download, FileText, Undo2, DollarSign } from 'lucide-react';
 import CountersignBanner from '@/components/proposal/CountersignBanner';
 import ExhibitsUpload from '@/components/proposal/ExhibitsUpload';
+import { formatCurrency } from '@/lib/formatCurrency';
 import { useProposalExhibits } from '@/hooks/useProposalExhibits';
 import TemplateSwitcher, { type TemplateId } from '@/components/proposal/TemplateSwitcher';
 import ProposalCustomizer, { type FontStyle, type HeaderStyle } from '@/components/proposal/ProposalCustomizer';
