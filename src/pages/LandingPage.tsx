@@ -99,17 +99,16 @@ export default function LandingPage() {
 
       {/* How It Works */}
       <section className="py-12 md:py-16 bg-secondary/50">
-        <div className="container max-w-4xl mx-auto px-4">
-          <h2 className="text-2xl md:text-3xl font-bold text-center">How it works</h2>
-          <p className="mt-2 text-center text-muted-foreground">Three steps. One minute. Done.</p>
-          <div className="mt-10 md:mt-12 grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="container max-w-6xl mx-auto px-4">
+          <h2 className="text-2xl md:text-3xl font-bold text-center">How It Works</h2>
+          <p className="mt-2 text-center text-muted-foreground">Most contractors send their first proposal in under 5 minutes.</p>
+          <div className="mt-10 md:mt-12 grid grid-cols-1 md:grid-cols-5 gap-8 md:gap-6">
             {steps.map((step, i) => (
               <div key={i} className="text-center">
-                <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-foreground text-background">
-                  <step.icon className="h-5 w-5" />
+                <div className="mx-auto flex items-center justify-center h-10 w-10 rounded-full bg-foreground text-background text-sm font-semibold">
+                  {i + 1}
                 </div>
-                <div className="mt-2 text-xs font-bold text-muted-foreground">STEP {i + 1}</div>
-                <h3 className="mt-2 text-base font-semibold">{step.title}</h3>
+                <h3 className="mt-4 text-base font-semibold">{step.title}</h3>
                 <p className="mt-2 text-sm text-muted-foreground">{step.description}</p>
               </div>
             ))}
