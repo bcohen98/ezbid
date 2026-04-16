@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -10,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, X, Sparkles, Loader2, CreditCard } from 'lucide-react';
+import { Upload, X, Sparkles, Loader2, CreditCard, CheckCircle2, AlertTriangle, ExternalLink } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import PhoneInput from '@/components/PhoneInput';
 import { supabase as supabaseClient } from '@/integrations/supabase/client';
@@ -38,6 +39,7 @@ export default function CompanyProfile() {
   const { user } = useAuth();
   const { profile, isLoading, updateProfile, isUpdating } = useCompanyProfile();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
 
   const [form, setForm] = useState({
     company_name: '',
@@ -64,6 +66,48 @@ export default function CompanyProfile() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [refining, setRefining] = useState(false);
+  const [connectStatus, setConnectStatus] = useState<{
+    connected: boolean;
+    charges_enabled?: boolean;
+    payouts_enabled?: boolean;
+    details_submitted?: boolean;
+  } | null>(null);
+  const [connectLoading, setConnectLoading] = useState(false);
+
+  // Check Stripe Connect status on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('stripe-connect-status');
+        if (!error && data) setConnectStatus(data);
+      } catch {}
+    })();
+  }, []);
+
+  // Handle Stripe redirect params
+  useEffect(() => {
+    const stripeParam = searchParams.get('stripe');
+    if (stripeParam === 'success') {
+      toast({ title: 'Bank account connected!', description: 'You can now collect payments from clients.' });
+      // Refresh status
+      supabase.functions.invoke('stripe-connect-status').then(({ data }) => { if (data) setConnectStatus(data); });
+    } else if (stripeParam === 'refresh') {
+      toast({ title: 'Setup incomplete', description: 'Please try connecting again.', variant: 'destructive' });
+    }
+  }, [searchParams]);
+
+  const handleConnectOnboard = async () => {
+    setConnectLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('stripe-connect-onboard');
+      if (error) throw error;
+      if (data?.url) window.location.href = data.url;
+    } catch (err: any) {
+      toast({ title: 'Connection failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setConnectLoading(false);
+    }
+  };
 
   const handleRefineWithAI = async () => {
     const textFields = {
