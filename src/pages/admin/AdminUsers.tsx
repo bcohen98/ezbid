@@ -9,7 +9,44 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Brain, Loader2 } from 'lucide-react';
+import { Brain, Loader2, Mail } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+const EMAIL_TEMPLATES: Record<string, { subject: string; body: string }> = {
+  free_credits: {
+    subject: 'I added more free credits to your EZ-Bid account',
+    body: `Hey [first name],
+
+I noticed you used all 3 of your free credits — that tells me you were actually putting EZ-Bid to work, and I appreciate that.
+
+I went ahead and added more credits to your account so you can keep going.
+
+I'd also love to show you everything the platform can do. I'm offering a free demo — guaranteed 5 minutes or less. If you're interested, give me a call or text at (954) 200-9149.
+
+Thanks,
+Brett Cohen
+EZ-Bid`,
+  },
+  check_in: {
+    subject: 'Quick check-in from EZ-Bid',
+    body: `Hey [first name],
+
+Just wanted to check in and see how things are going with EZ-Bid. If you have any questions or ran into anything, I'm easy to reach — just reply here or call/text me at (954) 200-9149.
+
+Thanks,
+Brett Cohen
+EZ-Bid`,
+  },
+};
+
+function getFirstName(email: string): string {
+  if (!email) return 'there';
+  const local = email.split('@')[0];
+  const first = local.split(/[._-]/)[0];
+  if (!first || /\d/.test(first)) return 'there';
+  return first.charAt(0).toUpperCase() + first.slice(1).toLowerCase();
+}
 
 export default function AdminUsers() {
   const { data, isLoading, refetch } = useAdminUsers();
@@ -25,6 +62,50 @@ export default function AdminUsers() {
   const [intelUser, setIntelUser] = useState<any>(null);
   const [intelData, setIntelData] = useState<any>(null);
   const [intelLoading, setIntelLoading] = useState(false);
+
+  // Email dialog state
+  const [emailUser, setEmailUser] = useState<any>(null);
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
+  const [emailTemplate, setEmailTemplate] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
+
+  const openEmailDialog = (u: any) => {
+    setEmailUser(u);
+    setEmailTemplate('');
+    setEmailSubject('');
+    setEmailBody('');
+  };
+
+  const applyTemplate = (key: string) => {
+    setEmailTemplate(key);
+    const tpl = EMAIL_TEMPLATES[key];
+    if (!tpl || !emailUser) return;
+    const firstName = getFirstName(emailUser.email);
+    setEmailSubject(tpl.subject);
+    setEmailBody(tpl.body.replace(/\[first name\]/g, firstName));
+  };
+
+  const handleSendEmail = async () => {
+    if (!emailUser || !emailSubject.trim() || !emailBody.trim()) {
+      toast({ title: 'Subject and body are required', variant: 'destructive' });
+      return;
+    }
+    setSendingEmail(true);
+    try {
+      const { data: result, error } = await supabase.functions.invoke('admin-send-email', {
+        body: { to: emailUser.email, subject: emailSubject, body: emailBody },
+      });
+      if (error) throw error;
+      if (result?.error) throw new Error(result.error);
+      toast({ title: `Email sent to ${emailUser.email}` });
+      setEmailUser(null);
+    } catch (err: any) {
+      toast({ title: 'Failed to send', description: err.message || 'Unknown error', variant: 'destructive' });
+    } finally {
+      setSendingEmail(false);
+    }
+  };
 
   const filtered = useMemo(() => {
     if (!data?.users) return [];
@@ -157,6 +238,14 @@ export default function AdminUsers() {
                             Grant Proposals
                           </Button>
                         )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openEmailDialog(u)}
+                          title="Send Email"
+                        >
+                          <Mail className="h-4 w-4 mr-1" /> Send Email
+                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -302,6 +391,54 @@ export default function AdminUsers() {
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+      {/* Email Dialog */}
+      <Dialog open={!!emailUser} onOpenChange={(open) => !open && setEmailUser(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-4 w-4" /> Send Email
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 pt-2">
+            <div>
+              <Label className="text-sm">To</Label>
+              <Input value={emailUser?.email || ''} readOnly className="mt-1 bg-muted" />
+            </div>
+            <div>
+              <Label className="text-sm">Use Template</Label>
+              <Select value={emailTemplate} onValueChange={applyTemplate}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Choose a pre-made template…" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="free_credits">Free Credits + Demo Offer</SelectItem>
+                  <SelectItem value="check_in">Just Checking In</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-sm">Subject</Label>
+              <Input value={emailSubject} onChange={(e) => setEmailSubject(e.target.value)} className="mt-1" />
+            </div>
+            <div>
+              <Label className="text-sm">Body</Label>
+              <Textarea
+                value={emailBody}
+                onChange={(e) => setEmailBody(e.target.value)}
+                rows={12}
+                className="mt-1 font-mono text-xs"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">Sent from brett@ezbid.pro via Resend.</p>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setEmailUser(null)} disabled={sendingEmail}>Cancel</Button>
+              <Button onClick={handleSendEmail} disabled={sendingEmail}>
+                {sendingEmail ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Sending…</> : 'Send'}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </AdminLayout>
