@@ -132,6 +132,7 @@ export default function NewProposal() {
 
   // User intelligence context — fetched silently in background
   const userContextRef = useRef<any>(null);
+  const [userContextReady, setUserContextReady] = useState(false);
   const [smartDefaultsApplied, setSmartDefaultsApplied] = useState(false);
   const [historyBadges, setHistoryBadges] = useState<Record<string, boolean>>({});
 
