@@ -192,6 +192,7 @@ async function getUsers(client: ReturnType<typeof createClient>) {
     const hitFreeLimit = !isActive && proposalsUsed >= 3;
 
     return {
+      userId: p.user_id,
       email: p.email,
       signupDate: p.created_at,
       plan: isActive ? "Paid" : "Free",
