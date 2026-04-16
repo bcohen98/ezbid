@@ -77,6 +77,7 @@ export type Database = {
       company_profiles: {
         Row: {
           brand_color: string | null
+          brand_font: string | null
           city: string | null
           company_name: string | null
           created_at: string
@@ -103,6 +104,7 @@ export type Database = {
         }
         Insert: {
           brand_color?: string | null
+          brand_font?: string | null
           city?: string | null
           company_name?: string | null
           created_at?: string
@@ -129,6 +131,7 @@ export type Database = {
         }
         Update: {
           brand_color?: string | null
+          brand_font?: string | null
           city?: string | null
           company_name?: string | null
           created_at?: string
