@@ -502,6 +502,7 @@ export default function NewProposal() {
         : 0;
       const finalBalance = finalGrandTotal - finalDepositAmount;
 
+      const uc = userContextRef.current?.intelligence_profile || null;
       const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-proposal', {
         body: {
           trade,
@@ -519,6 +520,9 @@ export default function NewProposal() {
             : null,
           balance_due: finalBalance,
           company: profile,
+          user_context: uc,
+          smart_defaults: uc?.smart_defaults || null,
+          signature_line_items: uc?.signature_line_items || null,
         },
       });
 
