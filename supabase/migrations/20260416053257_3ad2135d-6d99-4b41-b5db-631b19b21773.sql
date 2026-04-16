@@ -1,0 +1,1 @@
+ALTER TABLE public.user_subscriptions ADD COLUMN bonus_proposals integer NOT NULL DEFAULT 0;

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { trackEvent } from '@/lib/trackEvent';
 
 // Legacy type exports used by ProposalForm and TemplateSelector
@@ -42,7 +42,7 @@ export interface ProposalFormData {
 }
 
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, Loader2, X, Check } from 'lucide-react';
+import { Sparkles, Loader2, X, Check, Mic, MicOff } from 'lucide-react';
 import { useProposals } from '@/hooks/useProposals';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
@@ -54,6 +54,10 @@ import LineItemsTable, { type LineItem, makeDefaults } from '@/components/propos
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -64,6 +68,71 @@ interface AiSuggestion {
   unit_price: number;
   reason: string;
   accepted: boolean;
+}
+
+interface SavedClient {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+}
+
+const CLIENTS_KEY = 'ezbid_clients';
+
+function getSavedClients(): SavedClient[] {
+  try {
+    return JSON.parse(localStorage.getItem(CLIENTS_KEY) || '[]');
+  } catch { return []; }
+}
+
+function saveClient(c: SavedClient) {
+  const existing = getSavedClients();
+  const deduped = existing.filter(e => !(e.name === c.name && e.email === c.email));
+  deduped.unshift(c);
+  localStorage.setItem(CLIENTS_KEY, JSON.stringify(deduped.slice(0, 50)));
+}
+
+// Speech recognition hook
+function useSpeechRecognition() {
+  const recognitionRef = useRef<any>(null);
+  const [isRecording, setIsRecording] = useState(false);
+
+  const start = useCallback((onResult: (text: string) => void, onEnd?: () => void) => {
+    const SR = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+    if (!SR) return;
+    stop();
+    const recognition = new SR();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+    let finalTranscript = '';
+    recognition.onresult = (e: any) => {
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) {
+          finalTranscript += e.results[i][0].transcript + ' ';
+        } else {
+          interim += e.results[i][0].transcript;
+        }
+      }
+      onResult(finalTranscript + interim);
+    };
+    recognition.onend = () => { setIsRecording(false); onEnd?.(); };
+    recognition.onerror = () => { setIsRecording(false); };
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsRecording(true);
+  }, []);
+
+  const stop = useCallback(() => {
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch {}
+      recognitionRef.current = null;
+    }
+    setIsRecording(false);
+  }, []);
+
+  return { isRecording, start, stop };
 }
 
 export default function NewProposal() {
@@ -78,12 +147,36 @@ export default function NewProposal() {
   const defaultTrade = (profile?.trade_type as TradeType) || 'general_contractor';
   const [trade, setTrade] = useState<TradeType>(defaultTrade);
 
-  // Client / Job
+  // Client Info
   const [clientName, setClientName] = useState('');
+  const [clientEmail, setClientEmail] = useState('');
+  const [clientPhone, setClientPhone] = useState('');
   const [jobAddress, setJobAddress] = useState('');
-  const [jobDescription, setJobDescription] = useState('');
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
+  const savedClients = getSavedClients();
+  const filteredClients = clientName.length > 0
+    ? savedClients.filter(c => c.name.toLowerCase().includes(clientName.toLowerCase()))
+    : [];
 
-  // Materials (populated by AI suggest)
+  // Job Description
+  const [jobDescription, setJobDescription] = useState('');
+  const descSpeech = useSpeechRecognition();
+  const [descBaseText, setDescBaseText] = useState('');
+
+  // Steps
+  const [step, setStep] = useState<'input' | 'questions' | 'pricing' | 'build'>('input');
+
+  // Clarifying questions
+  const [questions, setQuestions] = useState<string[]>([]);
+  const [answers, setAnswers] = useState<string[]>([]);
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
+  const [activeQMic, setActiveQMic] = useState<number | null>(null);
+  const qSpeechRef = useRef<any>(null);
+
+  // Pricing toggle
+  const [aiPricing, setAiPricing] = useState(true);
+
+  // Materials
   const [materialsIncluded, setMaterialsIncluded] = useState('');
   const [materialsExcluded, setMaterialsExcluded] = useState('');
   const [isSuggestingMaterials, setIsSuggestingMaterials] = useState(false);
@@ -101,7 +194,7 @@ export default function NewProposal() {
   const [depositMode, setDepositMode] = useState<'flat' | 'percentage'>('percentage');
   const [depositValue, setDepositValue] = useState(50);
 
-  // AI suggestion review step
+  // AI suggestion review
   const [suggestions, setSuggestions] = useState<AiSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
@@ -141,76 +234,138 @@ export default function NewProposal() {
       toast({ title: 'Missing required fields', description: `Please fill in: ${missing.join(', ')}`, variant: 'destructive' });
       return false;
     }
-    if (items.length === 0 || items.every(i => !i.description.trim())) {
-      toast({ title: 'Add at least one line item', variant: 'destructive' });
-      return false;
-    }
     return true;
   };
 
-  // Step 1: Get AI suggestions before generating proposal
-  const handleBuildClick = async () => {
+  // STEP 3: Continue → get clarifying questions
+  const handleContinue = async () => {
     if (!validate()) return;
     trackEvent('proposal_started', { trade });
-
-    setIsSuggesting(true);
+    setIsLoadingQuestions(true);
     try {
-      const { data, error } = await supabase.functions.invoke('suggest-line-items', {
+      const { data, error } = await supabase.functions.invoke('generate-clarifying-questions', {
         body: {
           trade,
           job_description: jobDescription,
-          existing_items: items.filter(i => i.description.trim()),
+          company_profile: {
+            company_name: profile?.company_name || '',
+            trade_type: profile?.trade_type || trade,
+            owner_name: profile?.owner_name || '',
+          },
         },
       });
-
       if (error) throw error;
-
-      const sug = data?.suggestions || [];
-      if (sug.length > 0) {
-        setSuggestions(sug.map((s: any) => ({ ...s, accepted: true })));
-        setShowSuggestions(true);
-      } else {
-        // No suggestions — go straight to generate
-        await generateProposal(items);
-      }
+      const qs = data?.questions || ["Any specific materials or brands required?", "What is your target start date?"];
+      setQuestions(qs);
+      setAnswers(new Array(qs.length).fill(''));
+      setStep('questions');
     } catch (err: any) {
-      console.error('Suggestion error:', err);
-      // On error, skip suggestions and generate directly
-      await generateProposal(items);
+      console.error('Clarifying questions error:', err);
+      setQuestions(["Any specific materials or brands required?", "What is your target start date?"]);
+      setAnswers(['', '']);
+      setStep('questions');
     } finally {
-      setIsSuggesting(false);
+      setIsLoadingQuestions(false);
     }
   };
 
-  // Step 2: Accept suggestions and generate
-  const handleAcceptSuggestions = async () => {
-    const accepted = suggestions.filter(s => s.accepted);
-    let idCounter = Date.now();
-    const newItems: LineItem[] = accepted.map(s => ({
-      id: `ai_${idCounter++}`,
-      description: s.description,
-      quantity: s.quantity,
-      unit: s.unit,
-      unit_price: s.unit_price,
-      aiSuggested: true,
-    }));
-
-    const allItems = [...items, ...newItems];
-    setItems(allItems);
-    setShowSuggestions(false);
-    setSuggestions([]);
-    await generateProposal(allItems);
+  // Question mic
+  const startQMic = (idx: number) => {
+    stopQMic();
+    const SR = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+    if (!SR) return;
+    const recognition = new SR();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+    let finalT = '';
+    recognition.onresult = (e: any) => {
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) finalT += e.results[i][0].transcript + ' ';
+        else interim += e.results[i][0].transcript;
+      }
+      setAnswers(prev => { const n = [...prev]; n[idx] = finalT + interim; return n; });
+    };
+    recognition.onend = () => setActiveQMic(null);
+    recognition.onerror = () => setActiveQMic(null);
+    qSpeechRef.current = recognition;
+    recognition.start();
+    setActiveQMic(idx);
   };
 
-  const handleSkipSuggestions = async () => {
-    setShowSuggestions(false);
-    setSuggestions([]);
-    await generateProposal(items);
+  const stopQMic = () => {
+    if (qSpeechRef.current) {
+      try { qSpeechRef.current.stop(); } catch {}
+      qSpeechRef.current = null;
+    }
+    setActiveQMic(null);
+  };
+
+  // After questions → pricing toggle
+  const handleAfterQuestions = () => {
+    stopQMic();
+    setStep('pricing');
+  };
+
+  // After pricing → build
+  const handleAfterPricing = async () => {
+    if (aiPricing) {
+      setIsSuggestingMaterials(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('suggest-materials-pricing', {
+          body: { trade_type: trade, job_description: jobDescription, job_site_address: jobAddress || null },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+
+        const aiItems: LineItem[] = (data.line_items || []).map((li: any, i: number) => ({
+          id: `ai_mat_${Date.now()}_${i}`,
+          description: li.description,
+          quantity: li.quantity,
+          unit: li.unit,
+          unit_price: li.unit_price,
+          aiSuggested: true,
+        }));
+        if (aiItems.length > 0) setItems(aiItems);
+        if (data.materials_included) setMaterialsIncluded(data.materials_included);
+        if (data.materials_excluded) setMaterialsExcluded(data.materials_excluded);
+      } catch (err: any) {
+        toast({ title: 'AI pricing failed', description: err.message || 'Could not get suggestions', variant: 'destructive' });
+      } finally {
+        setIsSuggestingMaterials(false);
+      }
+    }
+    setStep('build');
+  };
+
+  // Build the enriched job description with Q&A
+  const getEnrichedDescription = () => {
+    let desc = jobDescription;
+    const qaLines: string[] = [];
+    questions.forEach((q, i) => {
+      if (answers[i]?.trim()) {
+        qaLines.push(`${q.replace(/\?$/, '')}: ${answers[i].trim()}.`);
+      }
+    });
+    if (qaLines.length > 0) desc += '\n\n' + qaLines.join(' ');
+    return desc;
+  };
+
+  // Build proposal
+  const handleBuildClick = async () => {
+    const finalItems = items.filter(i => i.description.trim());
+    if (finalItems.length === 0) {
+      toast({ title: 'Add at least one line item', variant: 'destructive' });
+      return;
+    }
+    await generateProposal(finalItems);
   };
 
   const generateProposal = async (finalItems: LineItem[]) => {
     setIsGenerating(true);
     try {
+      const enrichedDesc = getEnrichedDescription();
       const finalSubtotal = finalItems.reduce((s, i) => s + i.quantity * i.unit_price, 0);
       const finalTax = taxEnabled ? finalSubtotal * (taxRate / 100) : 0;
       const finalDiscount = discountEnabled
@@ -227,8 +382,8 @@ export default function NewProposal() {
           trade,
           client_name: clientName,
           job_address: jobAddress,
-          job_description: jobDescription,
-          line_items: finalItems.filter(i => i.description.trim()),
+          job_description: enrichedDesc,
+          line_items: finalItems,
           subtotal: finalSubtotal,
           tax_amount: finalTax,
           discount_amount: finalDiscount,
@@ -249,14 +404,14 @@ export default function NewProposal() {
         template: 'clean' as any,
         trade_type: trade as any,
         client_name: clientName,
-        client_email: null,
-        client_phone: null,
+        client_email: clientEmail || null,
+        client_phone: clientPhone || null,
         job_site_street: jobAddress,
         job_site_city: null,
         job_site_state: null,
         job_site_zip: null,
         title: aiData.title || `${trade.replace(/_/g, ' ')} Proposal`,
-        job_description: aiData.cover_letter || jobDescription,
+        job_description: aiData.cover_letter || enrichedDesc,
         scope_of_work: aiData.scope_of_work || '',
         materials_included: materialsIncluded || aiData.materials_included || '',
         materials_excluded: materialsExcluded || aiData.materials_excluded || null,
@@ -298,6 +453,9 @@ export default function NewProposal() {
 
       await incrementProposalCount();
 
+      // Save client to localStorage
+      saveClient({ name: clientName, email: clientEmail, phone: clientPhone, address: jobAddress });
+
       // EMAIL 3: If this was their 3rd (last free) proposal, send free_limit email
       if (subscription && subscription.status !== 'active' && subscription.proposals_used === 2) {
         try {
@@ -311,9 +469,7 @@ export default function NewProposal() {
               },
             });
           }
-        } catch {
-          // Non-blocking
-        }
+        } catch {}
       }
 
       toast({ title: 'Proposal generated!' });
@@ -327,255 +483,334 @@ export default function NewProposal() {
     }
   };
 
-  const isWorking = isSuggesting || isGenerating;
+  const isWorking = isSuggesting || isGenerating || isSuggestingMaterials;
 
   return (
     <AppLayout>
       <div className="container max-w-4xl px-4 py-8 animate-fade-in space-y-8">
         <div>
           <h1 className="text-2xl font-bold text-foreground">New Proposal</h1>
-          <p className="text-muted-foreground mt-1">Select your trade, describe the job, add your quote, and let AI build a professional proposal.</p>
+          <p className="text-muted-foreground mt-1">Select your trade, describe the job, and let AI build a professional proposal.</p>
         </div>
 
-        {/* Step 1: Trade */}
+        {/* Trade */}
         <TradeSelector selected={trade} onSelect={setTrade} />
 
-        {/* Step 2: Job Info */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-foreground">Job Details</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium text-foreground mb-1 block">Client Name</label>
-              <Input
-                value={clientName}
-                onChange={e => setClientName(e.target.value)}
-                placeholder="John Smith"
-                className="h-12"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground mb-1 block">Job Address</label>
-              <Input
-                value={jobAddress}
-                onChange={e => setJobAddress(e.target.value)}
-                placeholder="123 Main St, City, State"
-                className="h-12"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="text-sm font-medium text-foreground mb-1 block">Job Description</label>
-            <Textarea
-              value={jobDescription}
-              onChange={e => setJobDescription(e.target.value)}
-              placeholder="Describe the job in your own words. What needs to be done, what materials are you using, any special details, timeline, warranty — anything relevant."
-              rows={5}
-              className="text-base"
-            />
-          </div>
-        </div>
-
-        {/* AI Suggest Materials & Pricing */}
-        <div className="flex justify-end">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="gap-2"
-            disabled={isSuggestingMaterials}
-            onClick={async () => {
-              setIsSuggestingMaterials(true);
-              try {
-                const { data, error } = await supabase.functions.invoke('suggest-materials-pricing', {
-                  body: {
-                    trade_type: trade,
-                    job_description: jobDescription,
-                    job_site_address: jobAddress || null,
-                  },
-                });
-                if (error) throw error;
-                if (data?.error) throw new Error(data.error);
-
-                const aiItems: LineItem[] = (data.line_items || []).map((li: any, i: number) => ({
-                  id: `ai_mat_${Date.now()}_${i}`,
-                  description: li.description,
-                  quantity: li.quantity,
-                  unit: li.unit,
-                  unit_price: li.unit_price,
-                  aiSuggested: true,
-                }));
-
-                // Line items
-                const hasExistingItems = items.some(i => i.description.trim() && i.unit_price > 0);
-                if (hasExistingItems && aiItems.length > 0) {
-                  if (window.confirm('This will add suggested line items to your existing table. Continue?')) {
-                    setItems(prev => [...prev, ...aiItems]);
-                  }
-                } else if (aiItems.length > 0) {
-                  setItems(aiItems);
-                }
-
-                // Materials included
-                if (data.materials_included) {
-                  if (materialsIncluded.trim() && !window.confirm('This will replace your current materials list. Continue?')) {
-                    // skip
-                  } else {
-                    setMaterialsIncluded(data.materials_included);
-                  }
-                }
-
-                // Materials excluded
-                if (data.materials_excluded) {
-                  if (materialsExcluded.trim() && !window.confirm('This will replace your current materials excluded list. Continue?')) {
-                    // skip
-                  } else {
-                    setMaterialsExcluded(data.materials_excluded);
-                  }
-                }
-
-                toast({ title: 'Suggestions applied!', description: 'Review and adjust the line items and materials as needed.' });
-              } catch (err: any) {
-                toast({ title: 'Suggestion failed', description: err.message || 'Could not get AI suggestions', variant: 'destructive' });
-              } finally {
-                setIsSuggestingMaterials(false);
-              }
-            }}
-          >
-            {isSuggestingMaterials ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-            {isSuggestingMaterials ? 'Suggesting…' : 'Suggest Materials & Pricing'}
-          </Button>
-        </div>
-
-        {/* Materials fields */}
-        {(materialsIncluded || materialsExcluded) && (
-          <div className="space-y-4">
-            {materialsIncluded && (
-              <div>
-                <label className="text-sm font-medium text-foreground mb-1 block">Materials Included</label>
-                <Textarea
-                  value={materialsIncluded}
-                  onChange={e => setMaterialsIncluded(e.target.value)}
-                  rows={3}
-                  className="text-base"
-                />
+        {/* STEP 1: Client Info */}
+        {step === 'input' && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="space-y-4">
+              <h2 className="text-lg font-semibold text-foreground">Client Information</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="relative">
+                  <div className="flex items-center gap-2 mb-1">
+                    <label className="text-sm font-medium text-foreground">Client Name</label>
+                    {savedClients.length > 0 && (
+                      <Badge variant="secondary" className="text-xs">{savedClients.length} saved</Badge>
+                    )}
+                  </div>
+                  <Input
+                    value={clientName}
+                    onChange={e => { setClientName(e.target.value); setShowClientDropdown(true); }}
+                    onFocus={() => setShowClientDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowClientDropdown(false), 200)}
+                    placeholder="John Smith"
+                    className="h-11"
+                  />
+                  {showClientDropdown && filteredClients.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg max-h-40 overflow-auto">
+                      {filteredClients.map((c, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          className="w-full text-left px-3 py-2 hover:bg-muted text-sm"
+                          onMouseDown={e => {
+                            e.preventDefault();
+                            setClientName(c.name);
+                            setClientEmail(c.email);
+                            setClientPhone(c.phone);
+                            setJobAddress(c.address);
+                            setShowClientDropdown(false);
+                          }}
+                        >
+                          <div className="font-medium">{c.name}</div>
+                          {c.email && <div className="text-xs text-muted-foreground">{c.email}</div>}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-1 block">Job Address</label>
+                  <Input
+                    value={jobAddress}
+                    onChange={e => setJobAddress(e.target.value)}
+                    placeholder="123 Main St, City, State"
+                    className="h-11"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-1 block">Client Email</label>
+                  <Input
+                    type="email"
+                    value={clientEmail}
+                    onChange={e => setClientEmail(e.target.value)}
+                    placeholder="client@email.com"
+                    className="h-11"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-1 block">Client Phone</label>
+                  <Input
+                    type="tel"
+                    value={clientPhone}
+                    onChange={e => setClientPhone(e.target.value)}
+                    placeholder="(555) 123-4567"
+                    className="h-11"
+                  />
+                </div>
               </div>
-            )}
-            {materialsExcluded && (
-              <div>
-                <label className="text-sm font-medium text-foreground mb-1 block">Materials Excluded</label>
-                <Textarea
-                  value={materialsExcluded}
-                  onChange={e => setMaterialsExcluded(e.target.value)}
-                  rows={3}
-                  className="text-base"
-                />
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Step 3: Line Items */}
-        <LineItemsTable
-          trade={trade}
-          items={items}
-          onChange={setItems}
-          taxEnabled={taxEnabled}
-          taxRate={taxRate}
-          discountEnabled={discountEnabled}
-          discountMode={discountMode}
-          discountValue={discountValue}
-          depositEnabled={depositEnabled}
-          depositMode={depositMode}
-          depositValue={depositValue}
-          onTaxToggle={setTaxEnabled}
-          onTaxRateChange={setTaxRate}
-          onDiscountToggle={setDiscountEnabled}
-          onDiscountModeChange={setDiscountMode}
-          onDiscountValueChange={setDiscountValue}
-          onDepositToggle={setDepositEnabled}
-          onDepositModeChange={setDepositMode}
-          onDepositValueChange={setDepositValue}
-        />
-
-        {/* AI Suggestions Review */}
-        {showSuggestions && suggestions.length > 0 && (
-          <div className="border-2 border-blue-200 rounded-lg p-5 bg-blue-50/30 space-y-4">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-blue-600" />
-              <h3 className="font-semibold text-foreground">AI-Suggested Line Items</h3>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Based on your job description, we found items that may be missing from your quote. Review and uncheck any you don't want.
-            </p>
-            <div className="space-y-2">
-              {suggestions.map((s, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-start gap-3 p-3 rounded-lg border bg-background"
-                >
+
+            {/* STEP 2: Describe the Work */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-foreground">Describe the Work</h2>
+                {jobDescription.trim() && (
                   <button
                     type="button"
-                    onClick={() => {
-                      const updated = [...suggestions];
-                      updated[idx] = { ...updated[idx], accepted: !updated[idx].accepted };
-                      setSuggestions(updated);
-                    }}
-                    className={`mt-0.5 shrink-0 h-5 w-5 rounded border flex items-center justify-center transition-colors ${
-                      s.accepted ? 'bg-foreground border-foreground text-background' : 'border-border'
-                    }`}
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                    onClick={() => { setJobDescription(''); setDescBaseText(''); }}
                   >
-                    {s.accepted && <Check className="h-3 w-3" />}
+                    Clear
                   </button>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm">{s.description}</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">
-                      {s.quantity} {s.unit} · {s.reason}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-3 pt-2">
-              <Button onClick={handleAcceptSuggestions} disabled={isGenerating} className="flex-1 h-12">
-                {isGenerating ? (
-                  <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Building…</>
+                )}
+              </div>
+              <Textarea
+                value={jobDescription}
+                onChange={e => { setJobDescription(e.target.value); setDescBaseText(e.target.value); }}
+                placeholder="Walk us through the job — what needs to be done, materials, timeline, anything relevant..."
+                rows={6}
+                className="text-base"
+              />
+              <Button
+                type="button"
+                variant={descSpeech.isRecording ? 'destructive' : 'outline'}
+                className="gap-2"
+                onMouseDown={() => {
+                  if (descSpeech.isRecording) {
+                    descSpeech.stop();
+                  } else {
+                    const base = jobDescription;
+                    setDescBaseText(base);
+                    descSpeech.start((transcript) => {
+                      setJobDescription(base + (base ? ' ' : '') + transcript);
+                    });
+                  }
+                }}
+              >
+                {descSpeech.isRecording ? (
+                  <><Mic className="h-4 w-4 animate-pulse text-white" /> Recording… tap to stop</>
                 ) : (
-                  <><Check className="h-4 w-4 mr-2" /> Accept & Build Proposal</>
+                  <><Mic className="h-4 w-4" /> 🎤 Hold to Speak</>
                 )}
               </Button>
-              <Button variant="outline" onClick={handleSkipSuggestions} disabled={isGenerating} className="h-12">
-                Skip
-              </Button>
             </div>
+
+            {/* Continue Button */}
+            <Button
+              onClick={handleContinue}
+              disabled={isLoadingQuestions}
+              className="w-full h-12 text-base font-semibold"
+            >
+              {isLoadingQuestions ? (
+                <><Loader2 className="h-5 w-5 animate-spin mr-2" /> Thinking about your project…</>
+              ) : (
+                <>Continue →</>
+              )}
+            </Button>
           </div>
         )}
 
-        {/* Step 4: Build */}
-        {!showSuggestions && (
-          <div className="pt-4 pb-8">
+        {/* STEP 3: Clarifying Questions */}
+        {step === 'questions' && (
+          <div className="space-y-6 animate-fade-in">
+            <Card>
+              <CardContent className="p-6 space-y-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">✨</span>
+                  <h3 className="font-semibold text-foreground">A few quick questions</h3>
+                </div>
+                {questions.map((q, idx) => (
+                  <div key={idx} className="space-y-1">
+                    <Label className="text-sm">{q}</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        value={answers[idx] || ''}
+                        onChange={e => {
+                          const n = [...answers]; n[idx] = e.target.value; setAnswers(n);
+                        }}
+                        placeholder="Type your answer..."
+                        className="h-10 flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className={`shrink-0 ${activeQMic === idx ? 'text-red-500' : ''}`}
+                        onClick={() => {
+                          if (activeQMic === idx) stopQMic();
+                          else startQMic(idx);
+                        }}
+                      >
+                        <Mic className={`h-4 w-4 ${activeQMic === idx ? 'animate-pulse' : ''}`} />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                <Button onClick={handleAfterQuestions} className="w-full h-12 text-base font-semibold">
+                  Continue →
+                </Button>
+                <div className="text-center">
+                  <button
+                    type="button"
+                    className="text-sm text-muted-foreground hover:text-foreground"
+                    onClick={handleAfterQuestions}
+                  >
+                    Skip →
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* STEP 4: Pricing Toggle */}
+        {step === 'pricing' && (
+          <div className="space-y-6 animate-fade-in">
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-foreground">Want AI to estimate materials & pricing?</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      We'll generate line items with regionally-accurate pricing based on your job details.
+                    </p>
+                  </div>
+                  <Switch checked={aiPricing} onCheckedChange={setAiPricing} />
+                </div>
+              </CardContent>
+            </Card>
+
+            {!aiPricing && (
+              <div className="animate-fade-in">
+                <LineItemsTable
+                  trade={trade}
+                  items={items}
+                  onChange={setItems}
+                  taxEnabled={taxEnabled}
+                  taxRate={taxRate}
+                  discountEnabled={discountEnabled}
+                  discountMode={discountMode}
+                  discountValue={discountValue}
+                  depositEnabled={depositEnabled}
+                  depositMode={depositMode}
+                  depositValue={depositValue}
+                  onTaxToggle={setTaxEnabled}
+                  onTaxRateChange={setTaxRate}
+                  onDiscountToggle={setDiscountEnabled}
+                  onDiscountModeChange={setDiscountMode}
+                  onDiscountValueChange={setDiscountValue}
+                  onDepositToggle={setDepositEnabled}
+                  onDepositModeChange={setDepositMode}
+                  onDepositValueChange={setDepositValue}
+                />
+              </div>
+            )}
+
             <Button
-              onClick={handleBuildClick}
-              disabled={isWorking || isCreating}
-              className="w-full h-14 text-lg font-semibold"
-              size="lg"
+              onClick={handleAfterPricing}
+              disabled={isSuggestingMaterials}
+              className="w-full h-12 text-base font-semibold"
             >
-              {isSuggesting ? (
-                <>
-                  <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                  Analyzing Your Quote…
-                </>
-              ) : isGenerating ? (
-                <>
-                  <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                  Building Your Proposal…
-                </>
+              {isSuggestingMaterials ? (
+                <><Loader2 className="h-5 w-5 animate-spin mr-2" /> Getting AI pricing…</>
               ) : (
-                <>
-                  <Sparkles className="h-5 w-5 mr-2" />
-                  Build Proposal with AI
-                </>
+                <>Continue →</>
               )}
             </Button>
+          </div>
+        )}
+
+        {/* STEP 5: Build */}
+        {step === 'build' && (
+          <div className="space-y-6 animate-fade-in">
+            {/* Materials fields */}
+            {(materialsIncluded || materialsExcluded) && (
+              <div className="space-y-4">
+                {materialsIncluded && (
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-1 block">Materials Included</label>
+                    <Textarea
+                      value={materialsIncluded}
+                      onChange={e => setMaterialsIncluded(e.target.value)}
+                      rows={3}
+                      className="text-base"
+                    />
+                  </div>
+                )}
+                {materialsExcluded && (
+                  <div>
+                    <label className="text-sm font-medium text-foreground mb-1 block">Materials Excluded</label>
+                    <Textarea
+                      value={materialsExcluded}
+                      onChange={e => setMaterialsExcluded(e.target.value)}
+                      rows={3}
+                      className="text-base"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Line items */}
+            <LineItemsTable
+              trade={trade}
+              items={items}
+              onChange={setItems}
+              taxEnabled={taxEnabled}
+              taxRate={taxRate}
+              discountEnabled={discountEnabled}
+              discountMode={discountMode}
+              discountValue={discountValue}
+              depositEnabled={depositEnabled}
+              depositMode={depositMode}
+              depositValue={depositValue}
+              onTaxToggle={setTaxEnabled}
+              onTaxRateChange={setTaxRate}
+              onDiscountToggle={setDiscountEnabled}
+              onDiscountModeChange={setDiscountMode}
+              onDiscountValueChange={setDiscountValue}
+              onDepositToggle={setDepositEnabled}
+              onDepositModeChange={setDepositMode}
+              onDepositValueChange={setDepositValue}
+            />
+
+            {/* Build button */}
+            <div className="pt-4 pb-8">
+              <Button
+                onClick={handleBuildClick}
+                disabled={isWorking || isCreating}
+                className="w-full h-14 text-lg font-semibold"
+                size="lg"
+              >
+                {isGenerating ? (
+                  <><Loader2 className="h-5 w-5 animate-spin mr-2" /> Building Your Proposal…</>
+                ) : (
+                  <><Sparkles className="h-5 w-5 mr-2" /> Build Proposal →</>
+                )}
+              </Button>
+            </div>
           </div>
         )}
       </div>

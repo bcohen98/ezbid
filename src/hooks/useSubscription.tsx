@@ -24,7 +24,8 @@ export function useSubscription() {
   const canCreateProposal = (() => {
     if (!query.data) return true; // Allow while loading — don't block
     if (query.data.status === 'active') return true;
-    return query.data.proposals_used < 3;
+    const freeLimit = 3 + ((query.data as any).bonus_proposals || 0);
+    return query.data.proposals_used < freeLimit;
   })();
 
   const incrementProposalCount = useMutation({
