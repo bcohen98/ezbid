@@ -230,6 +230,9 @@ export default function LineItemsTable({
                     {item.aiSuggested && (
                       <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">AI</span>
                     )}
+                    {item.fromHistory && (
+                      <span className="shrink-0 text-xs text-muted-foreground italic">✓ From your history</span>
+                    )}
                   </div>
                 </td>
                 <td className="p-2">
