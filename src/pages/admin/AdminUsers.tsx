@@ -393,6 +393,54 @@ export default function AdminUsers() {
           )}
         </DialogContent>
       </Dialog>
+      {/* Email Dialog */}
+      <Dialog open={!!emailUser} onOpenChange={(open) => !open && setEmailUser(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-4 w-4" /> Send Email
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 pt-2">
+            <div>
+              <Label className="text-sm">To</Label>
+              <Input value={emailUser?.email || ''} readOnly className="mt-1 bg-muted" />
+            </div>
+            <div>
+              <Label className="text-sm">Use Template</Label>
+              <Select value={emailTemplate} onValueChange={applyTemplate}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Choose a pre-made template…" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="free_credits">Free Credits + Demo Offer</SelectItem>
+                  <SelectItem value="check_in">Just Checking In</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-sm">Subject</Label>
+              <Input value={emailSubject} onChange={(e) => setEmailSubject(e.target.value)} className="mt-1" />
+            </div>
+            <div>
+              <Label className="text-sm">Body</Label>
+              <Textarea
+                value={emailBody}
+                onChange={(e) => setEmailBody(e.target.value)}
+                rows={12}
+                className="mt-1 font-mono text-xs"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">Sent from brett@ezbid.pro via Resend.</p>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setEmailUser(null)} disabled={sendingEmail}>Cancel</Button>
+              <Button onClick={handleSendEmail} disabled={sendingEmail}>
+                {sendingEmail ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Sending…</> : 'Send'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }
