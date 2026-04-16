@@ -630,7 +630,88 @@ export default function ProposalPreview() {
               />
             )}
 
-            {/* Download & Send */}
+            {/* Payments Section */}
+            {isSigned && (profile as any)?.stripe_connect_charges_enabled && (
+              <div className="border rounded-lg p-4 space-y-3">
+                <h3 className="text-sm font-medium flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" /> Payments
+                </h3>
+                {(() => {
+                  const ps = (proposal as any).payment_status || 'unpaid';
+                  const depositAmt = Number(proposal.deposit_amount) || 0;
+                  const depositPaid = Number((proposal as any).deposit_paid_amount) || 0;
+                  const total = Number(proposal.total) || 0;
+                  const balanceDue = total - depositPaid;
+
+                  return (
+                    <div className="space-y-3">
+                      {ps === 'unpaid' && <Badge variant="outline" className="text-muted-foreground">No Payment Collected</Badge>}
+                      {ps === 'deposit_requested' && <Badge variant="outline" className="border-blue-300 text-blue-700 bg-blue-50">Deposit Requested — Awaiting Payment</Badge>}
+                      {ps === 'deposit_paid' && <Badge variant="outline" className="border-green-300 text-green-700 bg-green-50">Deposit Paid ✓ — ${formatCurrency(depositPaid)}</Badge>}
+                      {ps === 'payment_requested' && <Badge variant="outline" className="border-blue-300 text-blue-700 bg-blue-50">Payment Requested — Awaiting Payment</Badge>}
+                      {ps === 'paid' && <Badge variant="outline" className="border-green-300 text-green-700 bg-green-50">Paid in Full ✓ — ${formatCurrency((proposal as any).payment_paid_amount)}</Badge>}
+
+                      {(ps === 'unpaid' || ps === 'deposit_paid') && (
+                        <>
+                          {ps === 'unpaid' && depositAmt > 0 && (
+                            <Button
+                              variant="outline"
+                              className="w-full gap-2"
+                              disabled={isRequestingPayment}
+                              onClick={async () => {
+                                setIsRequestingPayment(true);
+                                try {
+                                  const { data, error } = await supabase.functions.invoke('create-payment-link', {
+                                    body: { proposal_id: proposal.id, payment_type: 'deposit' },
+                                  });
+                                  if (error) throw error;
+                                  refetch();
+                                  toast({ title: 'Deposit requested!', description: `Payment link sent to ${proposal.client_email}` });
+                                } catch (err: any) {
+                                  toast({ title: 'Failed', description: err.message, variant: 'destructive' });
+                                } finally {
+                                  setIsRequestingPayment(false);
+                                }
+                              }}
+                            >
+                              {isRequestingPayment ? <Loader2 className="h-4 w-4 animate-spin" /> : <DollarSign className="h-4 w-4" />}
+                              Request Deposit (${formatCurrency(depositAmt)})
+                            </Button>
+                          )}
+                          <Button
+                            className="w-full gap-2"
+                            disabled={isRequestingPayment}
+                            onClick={async () => {
+                              setIsRequestingPayment(true);
+                              try {
+                                const { data, error } = await supabase.functions.invoke('create-payment-link', {
+                                  body: { proposal_id: proposal.id, payment_type: 'full_payment' },
+                                });
+                                if (error) throw error;
+                                refetch();
+                                toast({ title: 'Payment requested!', description: `Payment link sent to ${proposal.client_email}` });
+                              } catch (err: any) {
+                                toast({ title: 'Failed', description: err.message, variant: 'destructive' });
+                              } finally {
+                                setIsRequestingPayment(false);
+                              }
+                            }}
+                          >
+                            {isRequestingPayment ? <Loader2 className="h-4 w-4 animate-spin" /> : <DollarSign className="h-4 w-4" />}
+                            Request Full Payment (${formatCurrency(balanceDue)})
+                          </Button>
+                        </>
+                      )}
+
+                      <p className="text-xs text-muted-foreground">
+                        Client will receive a secure Stripe payment link via email. EZ-Bid charges 1% + Stripe fees (2.9% + 30¢).
+                      </p>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
             <div className="border rounded-lg p-4 space-y-3">
               <h3 className="text-sm font-medium flex items-center gap-2">
                 <FileText className="h-4 w-4" /> Download & Send
