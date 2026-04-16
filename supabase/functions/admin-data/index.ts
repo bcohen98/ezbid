@@ -179,7 +179,17 @@ async function getUsers(client: ReturnType<typeof createClient>) {
 
   const { data: subscriptions } = await client
     .from("user_subscriptions")
-    .select("user_id, status, proposals_used, updated_at");
+    .select("user_id, status, proposals_used, updated_at, bonus_proposals");
+
+  // Get actual proposal counts per user
+  const { data: proposalCounts } = await client
+    .from("proposals")
+    .select("user_id");
+
+  const proposalCountMap = new Map<string, number>();
+  for (const p of proposalCounts || []) {
+    proposalCountMap.set(p.user_id, (proposalCountMap.get(p.user_id) || 0) + 1);
+  }
 
   const subMap = new Map(
     (subscriptions || []).map((s) => [s.user_id, s])
@@ -189,7 +199,10 @@ async function getUsers(client: ReturnType<typeof createClient>) {
     const sub = subMap.get(p.user_id);
     const isActive = sub?.status === "active";
     const proposalsUsed = sub?.proposals_used ?? 0;
-    const hitFreeLimit = !isActive && proposalsUsed >= 3;
+    const bonusProposals = (sub as any)?.bonus_proposals ?? 0;
+    const freeLimit = 3 + bonusProposals;
+    const hitFreeLimit = !isActive && proposalsUsed >= freeLimit;
+    const actualProposalCount = proposalCountMap.get(p.user_id) || 0;
 
     return {
       userId: p.user_id,
@@ -197,6 +210,9 @@ async function getUsers(client: ReturnType<typeof createClient>) {
       signupDate: p.created_at,
       plan: isActive ? "Paid" : "Free",
       proposalsUsed,
+      bonusProposals,
+      freeLimit,
+      actualProposalCount,
       lastActive: sub?.updated_at || p.created_at,
       status: isActive ? "Subscriber" : hitFreeLimit ? "Hit free limit" : "Active",
       hitFreeLimit,
