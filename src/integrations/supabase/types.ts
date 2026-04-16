@@ -95,6 +95,10 @@ export type Database = {
           state: string | null
           street_address: string | null
           stripe_account_id: string | null
+          stripe_connect_account_id: string | null
+          stripe_connect_charges_enabled: boolean
+          stripe_connect_onboarded: boolean
+          stripe_connect_payouts_enabled: boolean
           stripe_enabled: boolean
           trade_type: Database["public"]["Enums"]["trade_type"] | null
           updated_at: string
@@ -122,6 +126,10 @@ export type Database = {
           state?: string | null
           street_address?: string | null
           stripe_account_id?: string | null
+          stripe_connect_account_id?: string | null
+          stripe_connect_charges_enabled?: boolean
+          stripe_connect_onboarded?: boolean
+          stripe_connect_payouts_enabled?: boolean
           stripe_enabled?: boolean
           trade_type?: Database["public"]["Enums"]["trade_type"] | null
           updated_at?: string
@@ -149,6 +157,10 @@ export type Database = {
           state?: string | null
           street_address?: string | null
           stripe_account_id?: string | null
+          stripe_connect_account_id?: string | null
+          stripe_connect_charges_enabled?: boolean
+          stripe_connect_onboarded?: boolean
+          stripe_connect_payouts_enabled?: boolean
           stripe_enabled?: boolean
           trade_type?: Database["public"]["Enums"]["trade_type"] | null
           updated_at?: string
@@ -410,6 +422,68 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_transactions: {
+        Row: {
+          amount: number
+          client_email: string | null
+          client_name: string | null
+          created_at: string
+          currency: string
+          id: string
+          net_amount: number | null
+          platform_fee: number | null
+          proposal_id: string
+          status: string
+          stripe_fee: number | null
+          stripe_payment_intent_id: string | null
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          client_email?: string | null
+          client_name?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          net_amount?: number | null
+          platform_fee?: number | null
+          proposal_id: string
+          status?: string
+          stripe_fee?: number | null
+          stripe_payment_intent_id?: string | null
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          client_email?: string | null
+          client_name?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          net_amount?: number | null
+          platform_fee?: number | null
+          proposal_id?: string
+          status?: string
+          stripe_fee?: number | null
+          stripe_payment_intent_id?: string | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_transactions_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number
@@ -595,6 +669,8 @@ export type Database = {
           delivery_method: string | null
           deposit_amount: number | null
           deposit_mode: Database["public"]["Enums"]["deposit_mode"] | null
+          deposit_paid_amount: number | null
+          deposit_paid_at: string | null
           deposit_value: number | null
           disclosures: string | null
           enhanced_job_description: string | null
@@ -614,6 +690,10 @@ export type Database = {
           logo_size: string | null
           materials_excluded: string | null
           materials_included: string | null
+          payment_paid_amount: number | null
+          payment_paid_at: string | null
+          payment_requested_at: string | null
+          payment_status: string
           payment_terms: string | null
           pdf_url: string | null
           proposal_date: string | null
@@ -624,6 +704,8 @@ export type Database = {
           signing_token: string
           special_conditions: string | null
           status: Database["public"]["Enums"]["proposal_status"]
+          stripe_deposit_intent_id: string | null
+          stripe_payment_intent_id: string | null
           subtotal: number | null
           tax_amount: number | null
           tax_rate: number | null
@@ -652,6 +734,8 @@ export type Database = {
           delivery_method?: string | null
           deposit_amount?: number | null
           deposit_mode?: Database["public"]["Enums"]["deposit_mode"] | null
+          deposit_paid_amount?: number | null
+          deposit_paid_at?: string | null
           deposit_value?: number | null
           disclosures?: string | null
           enhanced_job_description?: string | null
@@ -671,6 +755,10 @@ export type Database = {
           logo_size?: string | null
           materials_excluded?: string | null
           materials_included?: string | null
+          payment_paid_amount?: number | null
+          payment_paid_at?: string | null
+          payment_requested_at?: string | null
+          payment_status?: string
           payment_terms?: string | null
           pdf_url?: string | null
           proposal_date?: string | null
@@ -681,6 +769,8 @@ export type Database = {
           signing_token?: string
           special_conditions?: string | null
           status?: Database["public"]["Enums"]["proposal_status"]
+          stripe_deposit_intent_id?: string | null
+          stripe_payment_intent_id?: string | null
           subtotal?: number | null
           tax_amount?: number | null
           tax_rate?: number | null
@@ -709,6 +799,8 @@ export type Database = {
           delivery_method?: string | null
           deposit_amount?: number | null
           deposit_mode?: Database["public"]["Enums"]["deposit_mode"] | null
+          deposit_paid_amount?: number | null
+          deposit_paid_at?: string | null
           deposit_value?: number | null
           disclosures?: string | null
           enhanced_job_description?: string | null
@@ -728,6 +820,10 @@ export type Database = {
           logo_size?: string | null
           materials_excluded?: string | null
           materials_included?: string | null
+          payment_paid_amount?: number | null
+          payment_paid_at?: string | null
+          payment_requested_at?: string | null
+          payment_status?: string
           payment_terms?: string | null
           pdf_url?: string | null
           proposal_date?: string | null
@@ -738,6 +834,8 @@ export type Database = {
           signing_token?: string
           special_conditions?: string | null
           status?: Database["public"]["Enums"]["proposal_status"]
+          stripe_deposit_intent_id?: string | null
+          stripe_payment_intent_id?: string | null
           subtotal?: number | null
           tax_amount?: number | null
           tax_rate?: number | null
