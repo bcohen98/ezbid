@@ -901,6 +901,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_intelligence_cache: {
+        Row: {
+          computed_stats: Json | null
+          created_at: string | null
+          id: string
+          intelligence_profile: Json | null
+          proposal_count_at_computation: number | null
+          trade_type: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          computed_stats?: Json | null
+          created_at?: string | null
+          id?: string
+          intelligence_profile?: Json | null
+          proposal_count_at_computation?: number | null
+          trade_type?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          computed_stats?: Json | null
+          created_at?: string | null
+          id?: string
+          intelligence_profile?: Json | null
+          proposal_count_at_computation?: number | null
+          trade_type?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string

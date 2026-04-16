@@ -130,6 +130,12 @@ export default function NewProposal() {
   const { subscription, canCreateProposal, isLoading: subLoading, incrementProposalCount } = useSubscription();
   const { profile } = useCompanyProfile();
 
+  // User intelligence context — fetched silently in background
+  const userContextRef = useRef<any>(null);
+  const [userContextReady, setUserContextReady] = useState(false);
+  const [smartDefaultsApplied, setSmartDefaultsApplied] = useState(false);
+  const [historyBadges, setHistoryBadges] = useState<Record<string, boolean>>({});
+
   // Trade
   const defaultTrade = (profile?.trade_type as TradeType) || 'general_contractor';
   const [trade, setTrade] = useState<TradeType>(defaultTrade);
@@ -177,6 +183,19 @@ export default function NewProposal() {
     return () => { document.removeEventListener('keydown', handleKey); document.removeEventListener('mousedown', handleClick); };
   }, []);
 
+  // Fire-and-forget: fetch user intelligence context on mount
+  useEffect(() => {
+    if (!user) return;
+    supabase.functions.invoke('build-user-context', {
+      body: { trade, job_description: '', job_address: '' },
+    }).then(({ data }) => {
+      if (data?.has_sufficient_history && data?.intelligence_profile) {
+        userContextRef.current = data;
+        setUserContextReady(true);
+      }
+    }).catch(() => {}); // Silent failure
+  }, [user, trade]);
+
   // Job Description
   const [jobDescription, setJobDescription] = useState('');
   const descSpeech = useSpeechRecognition();
@@ -218,6 +237,50 @@ export default function NewProposal() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // Apply smart defaults from intelligence when available
+  useEffect(() => {
+    if (smartDefaultsApplied) return;
+    const ctx = userContextRef.current;
+    if (!ctx?.intelligence_profile?.smart_defaults) return;
+    const sd = ctx.intelligence_profile.smart_defaults;
+    const badges: Record<string, boolean> = {};
+
+    if (sd.suggested_tax_rate && taxRate === 0) {
+      setTaxRate(sd.suggested_tax_rate);
+      setTaxEnabled(true);
+      badges.taxRate = true;
+    }
+    if (sd.suggested_deposit_pct && depositValue === 50) {
+      setDepositValue(sd.suggested_deposit_pct);
+      setDepositEnabled(true);
+      badges.depositValue = true;
+    }
+    if (sd.suggested_deposit_mode) {
+      setDepositMode(sd.suggested_deposit_mode as 'percentage' | 'flat');
+    }
+
+    setHistoryBadges(badges);
+    setSmartDefaultsApplied(true);
+
+    // Pre-populate high-confidence signature line items
+    const sigItems = ctx.intelligence_profile.signature_line_items || [];
+    const highConf = sigItems.filter((si: any) => si.confidence === 'high');
+    if (highConf.length > 0) {
+      const newItems: LineItem[] = highConf.map((si: any, i: number) => ({
+        id: `sig_${Date.now()}_${i}`,
+        description: si.description,
+        quantity: si.suggested_quantity || 1,
+        unit: si.suggested_unit || 'ea',
+        unit_price: si.suggested_unit_price || 0,
+        fromHistory: true,
+      }));
+      setItems(prev => {
+        const hasContent = prev.some(i => i.description.trim());
+        return hasContent ? [...newItems, ...prev] : newItems;
+      });
+    }
+  }, [userContextReady, smartDefaultsApplied]);
 
   const subtotal = useMemo(() => items.reduce((s, i) => s + i.quantity * i.unit_price, 0), [items]);
   const taxAmount = taxEnabled ? subtotal * (taxRate / 100) : 0;
@@ -262,6 +325,7 @@ export default function NewProposal() {
     trackEvent('proposal_started', { trade });
     setIsLoadingQuestions(true);
     try {
+      const uc = userContextRef.current?.intelligence_profile || null;
       const { data, error } = await supabase.functions.invoke('generate-clarifying-questions', {
         body: {
           trade,
@@ -271,6 +335,7 @@ export default function NewProposal() {
             trade_type: profile?.trade_type || trade,
             owner_name: profile?.owner_name || '',
           },
+          user_context: uc,
         },
       });
       if (error) throw error;
@@ -336,8 +401,15 @@ export default function NewProposal() {
     if (aiPricing) {
       setIsSuggestingMaterials(true);
       try {
+        const uc = userContextRef.current?.intelligence_profile || null;
         const { data, error } = await supabase.functions.invoke('suggest-materials-pricing', {
-          body: { trade_type: trade, job_description: jobDescription, job_site_address: jobAddress || null },
+          body: {
+            trade_type: trade,
+            job_description: jobDescription,
+            job_site_address: jobAddress || null,
+            user_context: uc,
+            pricing_benchmarks: uc?.pricing_benchmarks || null,
+          },
         });
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
@@ -432,6 +504,7 @@ export default function NewProposal() {
         : 0;
       const finalBalance = finalGrandTotal - finalDepositAmount;
 
+      const uc = userContextRef.current?.intelligence_profile || null;
       const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-proposal', {
         body: {
           trade,
@@ -449,6 +522,9 @@ export default function NewProposal() {
             : null,
           balance_due: finalBalance,
           company: profile,
+          user_context: uc,
+          smart_defaults: uc?.smart_defaults || null,
+          signature_line_items: uc?.signature_line_items || null,
         },
       });
 
