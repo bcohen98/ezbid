@@ -323,6 +323,7 @@ export default function NewProposal() {
     trackEvent('proposal_started', { trade });
     setIsLoadingQuestions(true);
     try {
+      const uc = userContextRef.current?.intelligence_profile || null;
       const { data, error } = await supabase.functions.invoke('generate-clarifying-questions', {
         body: {
           trade,
@@ -332,6 +333,7 @@ export default function NewProposal() {
             trade_type: profile?.trade_type || trade,
             owner_name: profile?.owner_name || '',
           },
+          user_context: uc,
         },
       });
       if (error) throw error;
