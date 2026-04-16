@@ -103,21 +103,40 @@ serve(async (req) => {
       });
     }
 
-    const { trade, job_description, job_address } = await req.json();
+    const body = await req.json();
+    const { trade, job_description, job_address, target_user_id } = body;
 
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+
+    // Allow admin to build context for another user
+    let contextUserId = user.id;
+    if (target_user_id && target_user_id !== user.id) {
+      // Verify caller is admin
+      const { data: roleData } = await supabaseAdmin
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      if (!roleData) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      contextUserId = target_user_id;
+    }
 
     // ─── STEP A: Data Retrieval ───
 
     const [proposalsRes, profileRes] = await Promise.all([
       supabaseAdmin.from("proposals")
         .select("id, trade_type, title, job_description, job_site_street, job_site_city, job_site_state, total, subtotal, tax_rate, deposit_value, deposit_mode, payment_terms, warranty_terms, created_at, status, estimated_duration")
-        .eq("user_id", user.id)
+        .eq("user_id", contextUserId)
         .order("created_at", { ascending: false })
         .limit(100),
       supabaseAdmin.from("company_profiles")
         .select("trade_type, city, state, company_name, owner_name")
-        .eq("user_id", user.id)
+        .eq("user_id", contextUserId)
         .single(),
     ]);
 
