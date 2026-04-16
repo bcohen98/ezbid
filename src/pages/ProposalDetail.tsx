@@ -93,6 +93,9 @@ export default function ProposalDetail() {
             <div className="flex flex-wrap items-center gap-2 mb-1">
               <span className="text-xs text-muted-foreground font-mono">PRO-{String(proposal.proposal_number).padStart(4, '0')}</span>
               <Badge variant="outline">{proposal.status}</Badge>
+              {proposal.status === 'signed' && proposal.client_signature_url && !(proposal as any).contractor_signature_url && (
+                <Badge variant="outline" className="border-amber-400 text-amber-700 bg-amber-50">Countersign Required</Badge>
+              )}
               {(() => {
                 const ps = (proposal as any).payment_status;
                 if (ps === 'deposit_paid') return <Badge variant="outline" className="border-green-300 text-green-700 bg-green-50">Deposit Paid</Badge>;
