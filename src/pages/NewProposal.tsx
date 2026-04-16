@@ -737,7 +737,7 @@ export default function NewProposal() {
                 type="button"
                 variant={descSpeech.isRecording ? 'destructive' : 'outline'}
                 className="gap-2"
-                onMouseDown={() => {
+                onClick={() => {
                   if (descSpeech.isRecording) {
                     descSpeech.stop();
                   } else {
@@ -748,22 +748,11 @@ export default function NewProposal() {
                     });
                   }
                 }}
-                onTouchStart={() => {
-                  if (!descSpeech.isRecording) {
-                    const base = jobDescription;
-                    setDescBaseText(base);
-                    descSpeech.start((transcript) => {
-                      setJobDescription(base + (base ? ' ' : '') + transcript);
-                    });
-                  }
-                }}
-                onMouseUp={() => { if (descSpeech.isRecording) descSpeech.stop(); }}
-                onTouchEnd={() => { if (descSpeech.isRecording) descSpeech.stop(); }}
               >
                 {descSpeech.isRecording ? (
-                  <><Mic className="h-4 w-4 animate-pulse text-white" /> Recording… release to stop</>
+                  <><Mic className="h-4 w-4 animate-pulse text-white" /> 🎤 Tap to Stop</>
                 ) : (
-                  <><Mic className="h-4 w-4" /> 🎤 Hold to Speak</>
+                  <><Mic className="h-4 w-4" /> 🎤 Tap to Speak</>
                 )}
               </Button>
             </div>
