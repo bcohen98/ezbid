@@ -14,9 +14,11 @@ const testimonials = [
 ];
 
 const steps = [
-  { icon: Mic, title: "Describe the job", description: "Type or talk — describe what needs to be done. AI asks a few smart follow-up questions to fill in the details." },
-  { icon: Sparkles, title: "AI builds the proposal", description: "In under a minute, you get a polished proposal with scope of work, materials, pricing, and terms — ready to send." },
-  { icon: PenTool, title: "Client signs, you get paid", description: "Send it by email or text. Your client reviews, signs on their phone, and you start the job." },
+  { title: "Enter customer info", description: "Name, address, job site. Done in 30 seconds." },
+  { title: "Describe the job in plain English", description: "Tell it what you're doing, like you'd explain it to a helper." },
+  { title: "Review your instant proposal", description: "AI generates line items, pricing, and a professional write-up. Edit anything." },
+  { title: "Send it and get it signed", description: "Your customer signs from their phone in one tap." },
+  { title: "It gets smarter every time", description: "EZ-Bid learns how you price and work, so every proposal gets faster and more accurate." },
 ];
 
 export default function LandingPage() {
