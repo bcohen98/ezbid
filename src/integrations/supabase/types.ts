@@ -921,6 +921,7 @@ export type Database = {
       }
       user_subscriptions: {
         Row: {
+          bonus_proposals: number
           created_at: string
           current_period_end: string | null
           current_period_start: string | null
@@ -934,6 +935,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          bonus_proposals?: number
           created_at?: string
           current_period_end?: string | null
           current_period_start?: string | null
@@ -947,6 +949,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          bonus_proposals?: number
           created_at?: string
           current_period_end?: string | null
           current_period_start?: string | null
