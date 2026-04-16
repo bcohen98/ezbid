@@ -5,7 +5,8 @@ import AppLayout from '@/components/AppLayout';
 import ProposalDocument from '@/components/proposal/ProposalDocument';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Send, Mail, Sparkles, Loader2, Download, FileText, Undo2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { ArrowLeft, Send, Mail, Sparkles, Loader2, Download, FileText, Undo2, DollarSign } from 'lucide-react';
 import CountersignBanner from '@/components/proposal/CountersignBanner';
 import ExhibitsUpload from '@/components/proposal/ExhibitsUpload';
 import { useProposalExhibits } from '@/hooks/useProposalExhibits';
@@ -41,6 +42,7 @@ export default function ProposalPreview() {
   const [isSendingClient, setIsSendingClient] = useState(false);
   const [isUndoing, setIsUndoing] = useState(false);
   const [isSuggestingMaterials, setIsSuggestingMaterials] = useState(false);
+  const [isRequestingPayment, setIsRequestingPayment] = useState(false);
   const lastSnapshot = useRef<{ proposal: any; lineItems: any[] } | null>(null);
 
   // Template switching
