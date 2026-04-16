@@ -399,8 +399,15 @@ export default function NewProposal() {
     if (aiPricing) {
       setIsSuggestingMaterials(true);
       try {
+        const uc = userContextRef.current?.intelligence_profile || null;
         const { data, error } = await supabase.functions.invoke('suggest-materials-pricing', {
-          body: { trade_type: trade, job_description: jobDescription, job_site_address: jobAddress || null },
+          body: {
+            trade_type: trade,
+            job_description: jobDescription,
+            job_site_address: jobAddress || null,
+            user_context: uc,
+            pricing_benchmarks: uc?.pricing_benchmarks || null,
+          },
         });
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
