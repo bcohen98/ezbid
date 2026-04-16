@@ -57,6 +57,7 @@ export default function CompanyProfile() {
     default_warranty: '',
     default_disclosures: '',
     brand_color: '#000000',
+    brand_font: 'default',
     stripe_enabled: false,
   });
 
@@ -120,6 +121,7 @@ export default function CompanyProfile() {
         default_warranty: profile.default_warranty || '',
         default_disclosures: profile.default_disclosures || '',
         brand_color: profile.brand_color || '#000000',
+        brand_font: (profile as any).brand_font || 'default',
         stripe_enabled: (profile as any).stripe_enabled ?? false,
       });
       setLogoUrl(profile.logo_url);
@@ -185,6 +187,7 @@ export default function CompanyProfile() {
         default_warranty: form.default_warranty || null,
         default_disclosures: form.default_disclosures || null,
         brand_color: form.brand_color,
+        brand_font: form.brand_font,
         stripe_enabled: form.stripe_enabled,
       } as any);
       toast({ title: 'Profile saved' });
