@@ -14,6 +14,7 @@ export interface LineItem {
   unit: string;
   unit_price: number;
   aiSuggested?: boolean;
+  fromHistory?: boolean;
 }
 
 const tradeDefaults: Record<TradeType, { description: string; unit: string }[]> = {
