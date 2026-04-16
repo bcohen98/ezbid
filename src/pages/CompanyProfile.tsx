@@ -425,27 +425,47 @@ export default function CompanyProfile() {
           </CardContent>
         </Card>
 
-        {/* Payment */}
+        {/* Get Paid — Stripe Connect */}
         <Card>
-          <CardHeader><CardTitle className="text-base flex items-center gap-2"><CreditCard className="h-4 w-4" /> Payment Settings</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base flex items-center gap-2"><CreditCard className="h-4 w-4" /> Accept Payments from Clients</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium">Accept online payments</p>
-                <p className="text-xs text-muted-foreground">Allow clients to pay invoices via credit card or bank transfer (ACH) through Stripe.</p>
-              </div>
-              <Switch
-                checked={form.stripe_enabled}
-                onCheckedChange={(checked) => setForm(prev => ({ ...prev, stripe_enabled: checked }))}
-              />
-            </div>
-            {form.stripe_enabled && (
-              <div className="rounded-lg border border-success/30 bg-success/5 p-3">
-                <p className="text-sm font-medium text-success">Stripe connected ✓</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Clients will be able to pay via credit card and bank ACH when you send proposals.
+            {!connectStatus?.connected ? (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Connect your bank account to collect deposits and payments directly through EZ-Bid proposals. EZ-Bid charges 1% per transaction. Stripe fees apply (2.9% + 30¢).
                 </p>
-              </div>
+                <Button className="w-full gap-2" onClick={handleConnectOnboard} disabled={connectLoading}>
+                  {connectLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
+                  Connect Bank Account →
+                </Button>
+                <p className="text-xs text-muted-foreground">Powered by Stripe. Bank-level security. Funds typically deposited next business day.</p>
+              </>
+            ) : connectStatus.connected && !connectStatus.details_submitted ? (
+              <>
+                <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-3 flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-yellow-800">Stripe account created but setup incomplete.</p>
+                    <p className="text-xs text-yellow-700 mt-1">Complete your bank account verification to start accepting payments.</p>
+                  </div>
+                </div>
+                <Button className="w-full gap-2" onClick={handleConnectOnboard} disabled={connectLoading}>
+                  {connectLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  Complete Setup →
+                </Button>
+              </>
+            ) : (
+              <>
+                <div className="rounded-lg border border-green-300 bg-green-50 p-3 flex items-start gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-green-800">Payments Active ✓</p>
+                    <p className="text-xs text-green-700 mt-1">
+                      Payouts: {connectStatus.payouts_enabled ? 'Enabled ✓' : 'Pending'}
+                    </p>
+                  </div>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
