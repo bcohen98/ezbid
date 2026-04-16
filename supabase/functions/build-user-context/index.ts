@@ -104,7 +104,7 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { trade, job_description, job_address, target_user_id } = body;
+    const { trade, job_description, job_address, target_user_id, force_refresh } = body;
 
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
@@ -158,7 +158,7 @@ serve(async (req) => {
       .eq("user_id", contextUserId)
       .single();
 
-    if (cached && cached.proposal_count_at_computation === proposals.length) {
+    if (!force_refresh && cached && cached.proposal_count_at_computation === proposals.length) {
       return new Response(JSON.stringify({
         has_sufficient_history: true,
         proposal_count: proposals.length,

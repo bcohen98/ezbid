@@ -127,15 +127,10 @@ export default function AdminUsers() {
                       <Badge variant={u.plan === 'Paid' ? 'default' : 'secondary'}>{u.plan}</Badge>
                     </td>
                     <td className="px-4 py-2">
-                      {u.proposalsUsed}
-                      {u.bonusProposals > 0 && (
+                      {u.actualProposalCount}
+                      {u.plan !== 'Paid' && (
                         <span className="text-xs text-muted-foreground ml-1">
-                          (limit: {u.freeLimit})
-                        </span>
-                      )}
-                      {u.actualProposalCount > 0 && u.actualProposalCount !== u.proposalsUsed && (
-                        <span className="text-xs text-muted-foreground ml-1">
-                          · {u.actualProposalCount} total
+                          ({u.proposalsUsed}/{u.freeLimit} free used)
                         </span>
                       )}
                     </td>

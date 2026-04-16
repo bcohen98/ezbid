@@ -606,6 +606,16 @@ export default function NewProposal() {
       toast({ title: 'Proposal generated!' });
       trackEvent('proposal_generated', { trade });
       navigate(`/proposals/${proposal.id}/preview`);
+
+      // Fire and forget — refresh intelligence cache in background
+      supabase.functions.invoke('build-user-context', {
+        body: {
+          trade,
+          job_description: jobDescription,
+          job_address: jobAddress,
+          force_refresh: true
+        }
+      }).catch(() => {});
     } catch (err: any) {
       console.error('Generate proposal error:', err);
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
