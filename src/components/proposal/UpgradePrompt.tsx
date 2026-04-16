@@ -10,6 +10,7 @@ interface Props {
   proposalsUsed: number;
   onContinue: () => void;
   source?: string;
+  bonusProposals?: number;
 }
 
 export default function UpgradePrompt({ proposalsUsed, onContinue, source }: Props) {
