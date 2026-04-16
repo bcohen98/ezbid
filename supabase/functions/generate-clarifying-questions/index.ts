@@ -21,6 +21,10 @@ serve(async (req) => {
     const companyName = company_profile?.company_name || "contractor";
     const tradeType = company_profile?.trade_type || trade || "general";
 
+    const priorityClause = user_context?.clarifying_question_priorities?.length
+      ? ` PRIORITY TOPICS based on this contractor's history (ask about these first if relevant): ${user_context.clarifying_question_priorities.join(", ")}.`
+      : "";
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -32,8 +36,7 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content:
-              "You are a contractor proposal assistant. Based on the trade type, job description, and contractor context provided, generate exactly 2-3 short clarifying questions that would help produce a more accurate and complete proposal. Questions should be specific to THIS job — not generic. Do not ask what the contractor already told you. Do not ask for information already present in the job description. Return ONLY a JSON array of question strings, no other text. Example: [\"How many squares is the roof?\", \"Are you removing the existing shingles or overlaying?\"]",
+            content: `You are a contractor proposal assistant. Based on the trade type, job description, and contractor context provided, generate exactly 2-3 short clarifying questions that would help produce a more accurate and complete proposal. Questions should be specific to THIS job — not generic. Do not ask what the contractor already told you. Do not ask for information already present in the job description.${priorityClause} Return ONLY a JSON array of question strings, no other text. Example: ["How many squares is the roof?", "Are you removing the existing shingles or overlaying?"]`,
           },
           {
             role: "user",
@@ -66,7 +69,6 @@ serve(async (req) => {
     const content = aiData.choices?.[0]?.message?.content || "";
 
     try {
-      // Extract JSON array from response
       const match = content.match(/\[[\s\S]*\]/);
       if (match) {
         const questions = JSON.parse(match[0]);
