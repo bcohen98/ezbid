@@ -4,7 +4,7 @@ import { Navigate } from 'react-router-dom';
 import EZBidLogo from '@/components/EZBidLogo';
 import { Button } from '@/components/ui/button';
 import heroBg from '@/assets/hero-bg.jpg';
-import { FileText, Sparkles, Send, CheckCircle, ArrowRight, Menu, X } from 'lucide-react';
+import { FileText, Sparkles, Send, CheckCircle, ArrowRight, Menu, X, Mic, PenTool, Shield } from 'lucide-react';
 import { useState } from 'react';
 
 const testimonials = [
@@ -14,9 +14,9 @@ const testimonials = [
 ];
 
 const steps = [
-  { icon: FileText, title: "Fill in the details", description: "Enter your client info, job scope, and pricing. Choose from professional templates built for the trades." },
-  { icon: Sparkles, title: "AI polishes it up", description: "Our AI rewrites your job descriptions and scope of work so they sound sharp, professional, and thorough." },
-  { icon: Send, title: "Send & get signed", description: "Email the proposal directly to your client. They review, sign, and you're ready to start the job." },
+  { icon: Mic, title: "Describe the job", description: "Type or talk — describe what needs to be done. AI asks a few smart follow-up questions to fill in the details." },
+  { icon: Sparkles, title: "AI builds the proposal", description: "In under a minute, you get a polished proposal with scope of work, materials, pricing, and terms — ready to send." },
+  { icon: PenTool, title: "Client signs, you get paid", description: "Send it by email or text. Your client reviews, signs on their phone, and you start the job." },
 ];
 
 export default function LandingPage() {
@@ -33,7 +33,6 @@ export default function LandingPage() {
       <header className="border-b">
         <div className="container flex h-14 items-center justify-between px-4">
           <EZBidLogo size="md" />
-          {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-3">
             <Link to="/tutorial">
               <Button variant="ghost" size="sm">How It Works</Button>
@@ -48,7 +47,6 @@ export default function LandingPage() {
               <Button size="sm">Get started free</Button>
             </Link>
           </div>
-          {/* Mobile hamburger */}
           <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileNavOpen(!mobileNavOpen)}>
             {mobileNavOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
@@ -79,21 +77,21 @@ export default function LandingPage() {
         <div className="absolute inset-0 bg-background/90" />
         <div className="container text-center max-w-3xl mx-auto relative z-10 px-4">
           <h1 className="text-3xl md:text-5xl font-bold tracking-tight leading-tight">
-            Professional proposals in minutes
+            Professional proposals for contractors — built in 60 seconds
           </h1>
           <p className="mt-4 md:mt-5 text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
-            EZ-Bid helps contractors create polished, professional proposals in minutes — not hours. Fill in the details, let AI sharpen the language, and send it out. No design skills needed.
+            Describe the job by voice or text. AI writes the proposal. Client signs on their phone. Stop losing bids to sloppy paperwork.
           </p>
           <div className="mt-6 md:mt-8 flex justify-center px-2">
             <Link to="/guest/new-proposal" className="w-full sm:w-auto">
               <Button size="lg" className="gap-2 w-full sm:w-auto h-14 text-base sm:text-lg font-semibold px-4 sm:px-8 whitespace-normal">
-                <span className="hidden sm:inline">Create a Free Proposal — No Account Needed</span>
-                <span className="sm:hidden">Free Proposal — No Account Needed</span>
+                <span className="hidden sm:inline">Create My First Proposal — Free</span>
+                <span className="sm:hidden">Create My First Proposal — Free</span>
                 <ArrowRight className="h-4 w-4 shrink-0" />
               </Button>
             </Link>
           </div>
-          <p className="mt-3 text-xs text-muted-foreground">Try it free · No signup required · Takes 5 minutes</p>
+          <p className="mt-3 text-xs text-muted-foreground">3 free proposals · No credit card required · Takes under 5 minutes</p>
         </div>
       </section>
 
@@ -101,14 +99,15 @@ export default function LandingPage() {
       <section className="py-12 md:py-16 bg-secondary/50">
         <div className="container max-w-4xl mx-auto px-4">
           <h2 className="text-2xl md:text-3xl font-bold text-center">How it works</h2>
-          <p className="mt-2 text-center text-muted-foreground">Three steps to your first professional proposal</p>
+          <p className="mt-2 text-center text-muted-foreground">Three steps. One minute. Done.</p>
           <div className="mt-10 md:mt-12 grid grid-cols-1 md:grid-cols-3 gap-8">
             {steps.map((step, i) => (
               <div key={i} className="text-center">
                 <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-foreground text-background">
                   <step.icon className="h-5 w-5" />
                 </div>
-                <h3 className="mt-4 text-base font-semibold">{step.title}</h3>
+                <div className="mt-2 text-xs font-bold text-muted-foreground">STEP {i + 1}</div>
+                <h3 className="mt-2 text-base font-semibold">{step.title}</h3>
                 <p className="mt-2 text-sm text-muted-foreground">{step.description}</p>
               </div>
             ))}
@@ -116,10 +115,35 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Testimonials - show only 3 */}
-      <section id="testimonials" className="py-12 md:py-16">
+      {/* Features / Outcomes */}
+      <section className="py-12 md:py-16">
+        <div className="container max-w-4xl mx-auto px-4">
+          <h2 className="text-2xl md:text-3xl font-bold text-center">Built for the way contractors actually work</h2>
+          <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[
+              { icon: Sparkles, title: "Proposals that sound professional, every time", desc: "AI rewrites your rough notes into polished scope-of-work language. No more copy-pasting from old bids." },
+              { icon: Shield, title: "Win more jobs with less effort", desc: "Clients trust contractors who look organized. Send proposals that make you stand out — even against bigger companies." },
+              { icon: PenTool, title: "Get signed faster with e-signatures", desc: "Clients review and sign right from their phone. No printing, scanning, or chasing down paperwork." },
+              { icon: FileText, title: "Every detail covered, nothing missed", desc: "Materials, warranty, payment terms, disclosures — AI fills it all in based on your trade and job details." },
+            ].map((f, i) => (
+              <div key={i} className="flex gap-4 p-4 rounded-lg border bg-card">
+                <div className="shrink-0 mt-0.5">
+                  <f.icon className="h-5 w-5 text-foreground" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-sm">{f.title}</h3>
+                  <p className="text-sm text-muted-foreground mt-1">{f.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section id="testimonials" className="py-12 md:py-16 bg-secondary/50">
         <div className="container max-w-5xl mx-auto px-4">
-          <div className="rounded-lg bg-secondary px-5 py-8 md:px-12 md:py-12 text-center mb-10 md:mb-14">
+          <div className="rounded-lg bg-card border px-5 py-8 md:px-12 md:py-12 text-center mb-10 md:mb-14">
             <p className="text-lg md:text-2xl font-semibold leading-relaxed max-w-2xl mx-auto">
               "I closed four out of my last five proposals. That's never happened before."
             </p>
@@ -160,27 +184,27 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing */}
-      <section className="py-12 md:py-16 bg-secondary/50">
+      <section className="py-12 md:py-16">
         <div className="container max-w-4xl mx-auto px-4">
-          <h2 className="text-2xl md:text-3xl font-bold text-center">Simple pricing</h2>
-          <p className="mt-2 text-center text-muted-foreground">Start free, upgrade when you're ready</p>
+          <h2 className="text-2xl md:text-3xl font-bold text-center">Simple, honest pricing</h2>
+          <p className="mt-2 text-center text-muted-foreground">Start free. Upgrade when you're winning enough jobs to justify it.</p>
 
           <div className="mt-8 md:mt-10 grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6 max-w-4xl mx-auto">
             {/* Free */}
             <div className="rounded-lg border bg-card p-5 md:p-6">
-              <h3 className="text-lg font-semibold">Free Trial</h3>
+              <h3 className="text-lg font-semibold">Free</h3>
               <p className="mt-1 text-3xl font-bold">$0</p>
-              <p className="text-xs text-muted-foreground">3 proposals included</p>
+              <p className="text-xs text-muted-foreground">3 proposals, no credit card</p>
               <ul className="mt-5 space-y-2">
-                {["3 professional proposals", "All templates", "AI-enhanced descriptions", "PDF export"].map((f) => (
+                {["3 professional proposals", "All 10 templates", "AI-written scope & terms", "PDF export", "E-signatures"].map((f) => (
                   <li key={f} className="flex items-start gap-2 text-sm">
                     <CheckCircle className="h-4 w-4 text-foreground shrink-0 mt-0.5" />
                     {f}
                   </li>
                 ))}
               </ul>
-              <Link to="/auth" className="block mt-6">
-                <Button variant="outline" className="w-full">Get started</Button>
+              <Link to="/guest/new-proposal" className="block mt-6">
+                <Button variant="outline" className="w-full">Create My First Proposal — Free</Button>
               </Link>
             </div>
 
@@ -193,7 +217,7 @@ export default function LandingPage() {
               <p className="mt-1 text-3xl font-bold">$29<span className="text-sm font-normal text-muted-foreground">/mo</span></p>
               <p className="text-xs text-muted-foreground">Unlimited proposals</p>
               <ul className="mt-5 space-y-2">
-                {["Unlimited proposals", "All templates", "AI-enhanced descriptions", "PDF export", "Email delivery", "E-signatures", "Priority support"].map((f) => (
+                {["Unlimited proposals", "All 10 templates", "AI-written scope & terms", "PDF export", "E-signatures", "Email delivery to clients", "Priority support"].map((f) => (
                   <li key={f} className="flex items-start gap-2 text-sm">
                     <CheckCircle className="h-4 w-4 text-foreground shrink-0 mt-0.5" />
                     {f}
@@ -230,13 +254,13 @@ export default function LandingPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-12 md:py-16">
+      <section className="py-12 md:py-16 bg-secondary/50">
         <div className="container text-center max-w-2xl mx-auto px-4">
-          <h2 className="text-2xl md:text-3xl font-bold">Ready to look like the pro you are?</h2>
-          <p className="mt-2 text-muted-foreground">Create your first proposal in minutes. No credit card, no commitment.</p>
+          <h2 className="text-2xl md:text-3xl font-bold">Your next bid shouldn't take two hours</h2>
+          <p className="mt-2 text-muted-foreground">Create a professional proposal in under a minute. 3 free proposals. No credit card required.</p>
           <Link to="/guest/new-proposal" className="inline-block mt-6 w-full sm:w-auto">
             <Button size="lg" className="gap-2 text-base px-8 w-full sm:w-auto">
-              Create a Free Proposal
+              Create My First Proposal — Free
               <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>

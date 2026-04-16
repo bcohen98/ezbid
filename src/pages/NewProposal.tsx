@@ -70,26 +70,13 @@ interface AiSuggestion {
   accepted: boolean;
 }
 
-interface SavedClient {
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
-}
-
-const CLIENTS_KEY = 'ezbid_clients';
-
-function getSavedClients(): SavedClient[] {
-  try {
-    return JSON.parse(localStorage.getItem(CLIENTS_KEY) || '[]');
-  } catch { return []; }
-}
-
-function saveClient(c: SavedClient) {
-  const existing = getSavedClients();
-  const deduped = existing.filter(e => !(e.name === c.name && e.email === c.email));
-  deduped.unshift(c);
-  localStorage.setItem(CLIENTS_KEY, JSON.stringify(deduped.slice(0, 50)));
+// Phone formatting
+function formatPhoneDisplay(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 10);
+  if (digits.length === 0) return '';
+  if (digits.length <= 3) return `(${digits}`;
+  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
 }
 
 // Speech recognition hook
@@ -153,10 +140,42 @@ export default function NewProposal() {
   const [clientPhone, setClientPhone] = useState('');
   const [jobAddress, setJobAddress] = useState('');
   const [showClientDropdown, setShowClientDropdown] = useState(false);
-  const savedClients = getSavedClients();
-  const filteredClients = clientName.length > 0
-    ? savedClients.filter(c => c.name.toLowerCase().includes(clientName.toLowerCase()))
-    : [];
+  const [clientMatches, setClientMatches] = useState<any[]>([]);
+  const [clientCount, setClientCount] = useState(0);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Fetch client count on mount
+  useEffect(() => {
+    if (!user) return;
+    supabase.from('clients').select('id', { count: 'exact', head: true }).eq('user_id', user.id)
+      .then(({ count }) => { if (count !== null) setClientCount(count); });
+  }, [user]);
+
+  // Search clients as user types
+  useEffect(() => {
+    if (!user || clientName.length < 1) { setClientMatches([]); return; }
+    const timer = setTimeout(async () => {
+      const { data } = await supabase
+        .from('clients')
+        .select('name, email, phone, address')
+        .eq('user_id', user.id)
+        .ilike('name', `%${clientName}%`)
+        .limit(5);
+      setClientMatches(data || []);
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [clientName, user]);
+
+  // Close dropdown on outside click or Escape
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowClientDropdown(false); };
+    const handleClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setShowClientDropdown(false);
+    };
+    document.addEventListener('keydown', handleKey);
+    document.addEventListener('mousedown', handleClick);
+    return () => { document.removeEventListener('keydown', handleKey); document.removeEventListener('mousedown', handleClick); };
+  }, []);
 
   // Job Description
   const [jobDescription, setJobDescription] = useState('');
@@ -171,7 +190,7 @@ export default function NewProposal() {
   const [answers, setAnswers] = useState<string[]>([]);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
   const [activeQMic, setActiveQMic] = useState<number | null>(null);
-  const qSpeechRef = useRef<any>(null);
+  const activeRecognition = useRef<any>(null);
 
   // Pricing toggle
   const [aiPricing, setAiPricing] = useState(true);
@@ -269,35 +288,39 @@ export default function NewProposal() {
     }
   };
 
-  // Question mic
+  // Question mic — single activeRecognition ref
   const startQMic = (idx: number) => {
-    stopQMic();
+    // Stop any existing
+    if (activeRecognition.current) {
+      try { activeRecognition.current.stop(); } catch {}
+      activeRecognition.current = null;
+    }
+    setActiveQMic(null);
+
     const SR = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
     if (!SR) return;
     const recognition = new SR();
-    recognition.continuous = true;
+    recognition.continuous = false;
     recognition.interimResults = true;
     recognition.lang = 'en-US';
-    let finalT = '';
     recognition.onresult = (e: any) => {
-      let interim = '';
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        if (e.results[i].isFinal) finalT += e.results[i][0].transcript + ' ';
-        else interim += e.results[i][0].transcript;
+      let transcript = '';
+      for (let i = 0; i < e.results.length; i++) {
+        transcript += e.results[i][0].transcript;
       }
-      setAnswers(prev => { const n = [...prev]; n[idx] = finalT + interim; return n; });
+      setAnswers(prev => { const n = [...prev]; n[idx] = transcript; return n; });
     };
-    recognition.onend = () => setActiveQMic(null);
-    recognition.onerror = () => setActiveQMic(null);
-    qSpeechRef.current = recognition;
+    recognition.onend = () => { activeRecognition.current = null; setActiveQMic(null); };
+    recognition.onerror = () => { activeRecognition.current = null; setActiveQMic(null); };
+    activeRecognition.current = recognition;
     recognition.start();
     setActiveQMic(idx);
   };
 
   const stopQMic = () => {
-    if (qSpeechRef.current) {
-      try { qSpeechRef.current.stop(); } catch {}
-      qSpeechRef.current = null;
+    if (activeRecognition.current) {
+      try { activeRecognition.current.stop(); } catch {}
+      activeRecognition.current = null;
     }
     setActiveQMic(null);
   };
@@ -350,6 +373,38 @@ export default function NewProposal() {
     });
     if (qaLines.length > 0) desc += '\n\n' + qaLines.join(' ');
     return desc;
+  };
+
+  // Upsert client to Supabase
+  const upsertClient = async () => {
+    if (!user || !clientName.trim()) return;
+    try {
+      // Check for existing match
+      const { data: existing } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('name', clientName.trim())
+        .eq('email', clientEmail.trim() || '')
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        // Update
+        await supabase.from('clients').update({
+          phone: clientPhone || null,
+          address: jobAddress || null,
+        }).eq('id', existing[0].id);
+      } else {
+        // Insert
+        await supabase.from('clients').insert({
+          user_id: user.id,
+          name: clientName.trim(),
+          email: clientEmail.trim() || null,
+          phone: clientPhone || null,
+          address: jobAddress || null,
+        });
+      }
+    } catch {} // Non-blocking
   };
 
   // Build proposal
@@ -453,8 +508,8 @@ export default function NewProposal() {
 
       await incrementProposalCount();
 
-      // Save client to localStorage
-      saveClient({ name: clientName, email: clientEmail, phone: clientPhone, address: jobAddress });
+      // Upsert client to Supabase (non-blocking)
+      upsertClient();
 
       // EMAIL 3: If this was their 3rd (last free) proposal, send free_limit email
       if (subscription && subscription.status !== 'active' && subscription.proposals_used === 2) {
@@ -502,24 +557,23 @@ export default function NewProposal() {
             <div className="space-y-4">
               <h2 className="text-lg font-semibold text-foreground">Client Information</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="relative">
+                <div className="relative" ref={dropdownRef}>
                   <div className="flex items-center gap-2 mb-1">
                     <label className="text-sm font-medium text-foreground">Client Name</label>
-                    {savedClients.length > 0 && (
-                      <Badge variant="secondary" className="text-xs">{savedClients.length} saved</Badge>
+                    {clientCount > 0 && (
+                      <Badge variant="secondary" className="text-xs">{clientCount} saved</Badge>
                     )}
                   </div>
                   <Input
                     value={clientName}
                     onChange={e => { setClientName(e.target.value); setShowClientDropdown(true); }}
                     onFocus={() => setShowClientDropdown(true)}
-                    onBlur={() => setTimeout(() => setShowClientDropdown(false), 200)}
                     placeholder="John Smith"
                     className="h-11"
                   />
-                  {showClientDropdown && filteredClients.length > 0 && (
-                    <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg max-h-40 overflow-auto">
-                      {filteredClients.map((c, i) => (
+                  {showClientDropdown && clientMatches.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg max-h-[200px] overflow-auto">
+                      {clientMatches.map((c: any, i: number) => (
                         <button
                           key={i}
                           type="button"
@@ -527,9 +581,9 @@ export default function NewProposal() {
                           onMouseDown={e => {
                             e.preventDefault();
                             setClientName(c.name);
-                            setClientEmail(c.email);
-                            setClientPhone(c.phone);
-                            setJobAddress(c.address);
+                            setClientEmail(c.email || '');
+                            setClientPhone(c.phone ? formatPhoneDisplay(c.phone) : '');
+                            setJobAddress(c.address || '');
                             setShowClientDropdown(false);
                           }}
                         >
@@ -564,7 +618,7 @@ export default function NewProposal() {
                   <Input
                     type="tel"
                     value={clientPhone}
-                    onChange={e => setClientPhone(e.target.value)}
+                    onChange={e => setClientPhone(formatPhoneDisplay(e.target.value))}
                     placeholder="(555) 123-4567"
                     className="h-11"
                   />
@@ -608,9 +662,20 @@ export default function NewProposal() {
                     });
                   }
                 }}
+                onTouchStart={() => {
+                  if (!descSpeech.isRecording) {
+                    const base = jobDescription;
+                    setDescBaseText(base);
+                    descSpeech.start((transcript) => {
+                      setJobDescription(base + (base ? ' ' : '') + transcript);
+                    });
+                  }
+                }}
+                onMouseUp={() => { if (descSpeech.isRecording) descSpeech.stop(); }}
+                onTouchEnd={() => { if (descSpeech.isRecording) descSpeech.stop(); }}
               >
                 {descSpeech.isRecording ? (
-                  <><Mic className="h-4 w-4 animate-pulse text-white" /> Recording… tap to stop</>
+                  <><Mic className="h-4 w-4 animate-pulse text-white" /> Recording… release to stop</>
                 ) : (
                   <><Mic className="h-4 w-4" /> 🎤 Hold to Speak</>
                 )}
