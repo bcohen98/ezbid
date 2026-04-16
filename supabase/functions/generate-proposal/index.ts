@@ -42,7 +42,7 @@ serve(async (req) => {
       user = authUser;
     }
 
-    const { trade, client_name, job_address, job_description, line_items, subtotal, tax_amount, discount_amount, grand_total, deposit_amount, deposit_label, balance_due, company } = await req.json();
+    const { trade, client_name, job_address, job_description, line_items, subtotal, tax_amount, discount_amount, grand_total, deposit_amount, deposit_label, balance_due, company, user_context, smart_defaults, signature_line_items } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
@@ -104,7 +104,7 @@ RULES:
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: "You are an expert proposal writer for trade contractors. Return structured proposal data using the provided tool." },
+          { role: "system", content: `You are an expert proposal writer for trade contractors. Return structured proposal data using the provided tool.${user_context?.contractor_insights?.length ? ` Contractor profile insights: ${user_context.contractor_insights.join(". ")}` : ""}${user_context?.pricing_personality ? ` This contractor's pricing personality is "${user_context.pricing_personality}" with ${user_context.pricing_confidence || "medium"} consistency.` : ""}` },
           { role: "user", content: prompt },
         ],
         tools: [
