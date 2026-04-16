@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Brain, Loader2 } from 'lucide-react';
 
 export default function AdminUsers() {
   const { data, isLoading, refetch } = useAdminUsers();
@@ -19,6 +20,11 @@ export default function AdminUsers() {
   const [grantUser, setGrantUser] = useState<any>(null);
   const [grantCount, setGrantCount] = useState(3);
   const [granting, setGranting] = useState(false);
+
+  // Intelligence dialog state
+  const [intelUser, setIntelUser] = useState<any>(null);
+  const [intelData, setIntelData] = useState<any>(null);
+  const [intelLoading, setIntelLoading] = useState(false);
 
   const filtered = useMemo(() => {
     if (!data?.users) return [];
@@ -43,6 +49,26 @@ export default function AdminUsers() {
       toast({ title: 'Error', description: err.message || 'Failed to grant proposals', variant: 'destructive' });
     } finally {
       setGranting(false);
+    }
+  };
+
+  const handleViewIntelligence = async (u: any) => {
+    setIntelUser(u);
+    setIntelData(null);
+    setIntelLoading(true);
+    try {
+      // Fetch from cache table via admin-data edge function or direct query
+      const { data: cacheRows } = await supabase
+        .from('user_intelligence_cache' as any)
+        .select('*')
+        .eq('user_id', u.userId)
+        .limit(1);
+      const row = (cacheRows as any)?.[0] || null;
+      setIntelData(row);
+    } catch {
+      setIntelData(null);
+    } finally {
+      setIntelLoading(false);
     }
   };
 
@@ -103,15 +129,25 @@ export default function AdminUsers() {
                       </Badge>
                     </td>
                     <td className="px-4 py-2">
-                      {u.status !== 'Subscriber' && (
+                      <div className="flex gap-1">
+                        {u.status !== 'Subscriber' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => { setGrantUser(u); setGrantCount(3); }}
+                          >
+                            Grant Proposals
+                          </Button>
+                        )}
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
-                          onClick={() => { setGrantUser(u); setGrantCount(3); }}
+                          onClick={() => handleViewIntelligence(u)}
+                          title="View Intelligence"
                         >
-                          Grant Proposals
+                          <Brain className="h-4 w-4" />
                         </Button>
-                      )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -152,6 +188,102 @@ export default function AdminUsers() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Intelligence Dialog */}
+      <Dialog open={!!intelUser} onOpenChange={(open) => !open && setIntelUser(null)}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Brain className="h-5 w-5" />
+              Intelligence Profile — {intelUser?.email}
+            </DialogTitle>
+          </DialogHeader>
+          {intelLoading ? (
+            <div className="flex items-center gap-2 py-8 justify-center text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+            </div>
+          ) : !intelData ? (
+            <p className="text-sm text-muted-foreground py-4">No intelligence data available for this user. They may have fewer than 3 proposals.</p>
+          ) : (
+            <div className="space-y-4 text-sm">
+              {/* Meta */}
+              <div className="flex gap-4 flex-wrap text-xs text-muted-foreground">
+                <span>Proposals at computation: <strong className="text-foreground">{intelData.proposal_count_at_computation}</strong></span>
+                <span>Updated: {new Date(intelData.updated_at).toLocaleString()}</span>
+              </div>
+
+              {intelData.intelligence_profile ? (
+                <>
+                  {/* Pricing personality */}
+                  <div className="flex gap-2 flex-wrap">
+                    <Badge variant="outline">
+                      Pricing: {intelData.intelligence_profile.pricing_personality?.replace(/_/g, ' ')}
+                    </Badge>
+                    <Badge variant="outline">
+                      Confidence: {intelData.intelligence_profile.pricing_confidence}
+                    </Badge>
+                  </div>
+
+                  {/* Contractor Insights */}
+                  {intelData.intelligence_profile.contractor_insights?.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold text-foreground mb-1">Contractor Insights</h4>
+                      <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
+                        {intelData.intelligence_profile.contractor_insights.map((insight: string, i: number) => (
+                          <li key={i}>{insight}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Pricing Benchmarks */}
+                  {intelData.intelligence_profile.pricing_benchmarks?.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold text-foreground mb-1">Pricing Benchmarks</h4>
+                      <div className="border rounded overflow-auto">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="border-b bg-muted/50">
+                              <th className="text-left px-3 py-1.5">Line Item</th>
+                              <th className="text-left px-3 py-1.5">Learned Price</th>
+                              <th className="text-left px-3 py-1.5">Unit</th>
+                              <th className="text-left px-3 py-1.5">Based On</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y">
+                            {intelData.intelligence_profile.pricing_benchmarks.map((b: any, i: number) => (
+                              <tr key={i}>
+                                <td className="px-3 py-1.5">{b.line_item_type}</td>
+                                <td className="px-3 py-1.5">${b.learned_unit_price?.toFixed(2)}</td>
+                                <td className="px-3 py-1.5">{b.learned_unit}</td>
+                                <td className="px-3 py-1.5">{b.based_on_n_proposals} proposals</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Anomaly Flags */}
+                  {intelData.intelligence_profile.anomaly_flags?.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold text-foreground mb-1">Anomaly Flags</h4>
+                      <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
+                        {intelData.intelligence_profile.anomaly_flags.map((flag: string, i: number) => (
+                          <li key={i}>{flag}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-muted-foreground">AI synthesis not available. Raw stats only.</p>
+              )}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </AdminLayout>
