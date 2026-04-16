@@ -3,9 +3,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Sparkles, Loader2, Info } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { ProposalTemplate } from '@/pages/NewProposal';
 
 interface Props {
@@ -23,6 +24,8 @@ const templates: { id: ProposalTemplate; name: string; description: string }[] =
   { id: 'contractor', name: 'Contractor', description: 'Work-order style with numbered sections, job-site ready' },
   { id: 'premium', name: 'Premium', description: 'Luxury feel with gold accents for high-end residential' },
   { id: 'clean', name: 'Clean', description: 'Simple two-column header, modern business layout' },
+  { id: 'compact' as ProposalTemplate, name: 'Compact', description: 'Dense single-column layout, minimal whitespace, good for simple jobs' },
+  { id: 'branded' as ProposalTemplate, name: 'Branded', description: 'Full bleed header in brand color, logo prominent, company info large' },
 ];
 
 export default function TemplateSelector({ selected, brandColor, onSelect }: Props) {
@@ -59,12 +62,28 @@ export default function TemplateSelector({ selected, brandColor, onSelect }: Pro
 
   // If we have a recommendation, reorder templates to match ranking
   const displayTemplates = recommendation
-    ? recommendation.ranked.map((id) => templates.find((t) => t.id === id)!).filter(Boolean)
+    ? [...recommendation.ranked.map((id) => templates.find((t) => t.id === id)!).filter(Boolean),
+       ...templates.filter(t => !recommendation.ranked.includes(t.id))]
     : templates;
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold mb-2">Choose a template</h1>
+      <div className="flex items-center gap-2 mb-2">
+        <h1 className="text-2xl font-semibold">Choose a template</h1>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button type="button" className="text-muted-foreground hover:text-foreground">
+                <Info className="h-4 w-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="max-w-xs text-sm">
+              Custom template upload (upload your own Word or PDF layout) is coming soon.{' '}
+              <a href="mailto:feedback@ez-bid.com" className="underline text-primary">Vote for it →</a>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
       <p className="text-sm text-muted-foreground mb-6">Select a style for your proposal. You can always change it later.</p>
 
       {/* AI Vibe Input */}
@@ -302,7 +321,56 @@ function TemplateThumbnail({ template, brandColor }: { template: ProposalTemplat
     );
   }
 
-  // Minimal
+  // Compact
+  if (template === ('compact' as any)) {
+    return (
+      <div className="p-3 h-full flex flex-col text-[6px]">
+        <div className="flex justify-between items-center mb-2 pb-1 border-b">
+          <div className="font-bold text-[7px]">COMPANY NAME</div>
+          <div className="text-[5px] text-muted-foreground">PRO-0001</div>
+        </div>
+        <div className="text-[6px] font-medium mb-0.5">Client: John Smith</div>
+        <div className="text-[6px] font-medium mb-1" style={{ color: brandColor }}>Scope</div>
+        <div className="space-y-0.5 flex-1">
+          <div className="h-0.5 bg-muted rounded w-full"></div>
+          <div className="h-0.5 bg-muted rounded w-5/6"></div>
+          <div className="h-0.5 bg-muted rounded w-3/4"></div>
+          <div className="h-0.5 bg-muted rounded w-full"></div>
+          <div className="h-0.5 bg-muted rounded w-2/3"></div>
+        </div>
+        <div className="border-t mt-1 pt-0.5 flex justify-between">
+          <div className="text-[5px] text-muted-foreground">Subtotal / Tax / Total</div>
+          <div className="font-bold text-[6px]">$0.00</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Branded
+  if (template === ('branded' as any)) {
+    return (
+      <div className="h-full flex flex-col text-[6px]">
+        <div className="p-3 text-white" style={{ backgroundColor: brandColor }}>
+          <div className="font-bold text-[10px] tracking-wide">COMPANY NAME</div>
+          <div className="opacity-80 text-[5px] mt-0.5">123 Main St · (555) 123-4567 · company.com</div>
+        </div>
+        <div className="p-3 flex-1 flex flex-col">
+          <div className="font-bold text-[8px] mb-1">PROPOSAL</div>
+          <div className="text-muted-foreground mb-2 text-[6px]">Prepared for: Client Name</div>
+          <div className="font-bold text-[7px] mb-0.5" style={{ color: brandColor }}>Scope of Work</div>
+          <div className="flex-1 space-y-1">
+            <div className="h-1 bg-muted rounded w-full"></div>
+            <div className="h-1 bg-muted rounded w-4/5"></div>
+          </div>
+          <div className="border-t mt-2 pt-1" style={{ borderColor: brandColor }}>
+            <div className="font-bold text-right">Total: $0.00</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Minimal (default)
   return (
     <div className="p-4 h-full flex flex-col text-[6px]">
       <div className="font-bold text-[9px] tracking-tight mb-0.5">Company Name</div>

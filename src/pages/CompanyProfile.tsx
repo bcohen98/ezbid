@@ -57,6 +57,7 @@ export default function CompanyProfile() {
     default_warranty: '',
     default_disclosures: '',
     brand_color: '#000000',
+    brand_font: 'default',
     stripe_enabled: false,
   });
 
@@ -120,6 +121,7 @@ export default function CompanyProfile() {
         default_warranty: profile.default_warranty || '',
         default_disclosures: profile.default_disclosures || '',
         brand_color: profile.brand_color || '#000000',
+        brand_font: (profile as any).brand_font || 'default',
         stripe_enabled: (profile as any).stripe_enabled ?? false,
       });
       setLogoUrl(profile.logo_url);
@@ -185,6 +187,7 @@ export default function CompanyProfile() {
         default_warranty: form.default_warranty || null,
         default_disclosures: form.default_disclosures || null,
         brand_color: form.brand_color,
+        brand_font: form.brand_font,
         stripe_enabled: form.stripe_enabled,
       } as any);
       toast({ title: 'Profile saved' });
@@ -256,13 +259,6 @@ export default function CompanyProfile() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label>Brand color</Label>
-                <div className="flex gap-2">
-                  <input type="color" value={form.brand_color} onChange={(e) => handleChange('brand_color', e.target.value)} className="h-9 w-9 rounded border cursor-pointer" />
-                  <Input value={form.brand_color} onChange={(e) => handleChange('brand_color', e.target.value)} className="flex-1" />
-                </div>
-              </div>
             </div>
             
             {/* License numbers */}
@@ -277,6 +273,60 @@ export default function CompanyProfile() {
                 </div>
               ))}
               <Button variant="outline" size="sm" onClick={addLicense}>Add license</Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Brand Settings */}
+        <Card>
+          <CardHeader><CardTitle className="text-base">Brand Settings</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Brand color</Label>
+                <div className="flex gap-2">
+                  <input type="color" value={form.brand_color} onChange={(e) => handleChange('brand_color', e.target.value)} className="h-9 w-9 rounded border cursor-pointer" />
+                  <Input value={form.brand_color} onChange={(e) => handleChange('brand_color', e.target.value)} className="flex-1" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Proposal font</Label>
+                <Select value={form.brand_font} onValueChange={(v) => handleChange('brand_font', v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">Default (Inter)</SelectItem>
+                    <SelectItem value="serif">Serif (Georgia)</SelectItem>
+                    <SelectItem value="modern">Modern (DM Sans)</SelectItem>
+                    <SelectItem value="bold">Bold (Montserrat)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {/* Live mini-preview */}
+            <div className="rounded-lg border p-4 bg-background">
+              <p className="text-xs text-muted-foreground mb-2">Preview</p>
+              <div
+                className="rounded border p-3 space-y-2"
+                style={{
+                  fontFamily: form.brand_font === 'serif' ? 'Georgia, serif'
+                    : form.brand_font === 'modern' ? '"DM Sans", sans-serif'
+                    : form.brand_font === 'bold' ? 'Montserrat, sans-serif'
+                    : 'Inter, sans-serif',
+                }}
+              >
+                <div className="font-bold text-sm" style={{ color: form.brand_color }}>
+                  {form.company_name || 'Your Company Name'}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  <span className="font-medium">Roof replacement — 22 squares</span>
+                  <span className="mx-2">·</span>
+                  <span>$8,500.00</span>
+                </div>
+                <div className="flex justify-between items-center border-t pt-2">
+                  <span className="text-xs text-muted-foreground">Total</span>
+                  <span className="font-bold text-sm" style={{ color: form.brand_color }}>$8,500.00</span>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
