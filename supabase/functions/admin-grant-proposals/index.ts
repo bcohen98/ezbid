@@ -87,6 +87,40 @@ serve(async (req) => {
       });
     }
 
+    // Send email notification to the user
+    try {
+      const { data: targetProfile } = await adminClient
+        .from("company_profiles")
+        .select("email, owner_name")
+        .eq("user_id", target_user_id)
+        .single();
+
+      if (targetProfile?.email) {
+        const resendKey = Deno.env.get("RESEND_API_KEY");
+        if (resendKey) {
+          const firstName = targetProfile.owner_name?.trim().split(/\s+/)[0] || "there";
+          await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${resendKey}`,
+            },
+            body: JSON.stringify({
+              from: "EZ-Bid <brett@ezbid.pro>",
+              to: [targetProfile.email],
+              subject: `you got ${grant_count} free proposals on EZ-Bid`,
+              text: `Hey ${firstName} —\n\nGood news — I just added ${grant_count} extra free proposals to your EZ-Bid account. You now have ${newTotal} bonus proposals on top of the standard 3.\n\nGo ahead and put them to use whenever you're ready.\n\n— Brett\n\nCreate a Proposal → https://ezbid.pro/new-proposal`,
+              reply_to: "brett@ezbid.pro",
+            }),
+          });
+          console.log(`[admin-grant] Sent notification email to ${targetProfile.email}`);
+        }
+      }
+    } catch (emailErr) {
+      console.error("[admin-grant] Email notification failed:", emailErr);
+      // Don't fail the grant if email fails
+    }
+
     return new Response(JSON.stringify({ success: true, new_total: newTotal }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

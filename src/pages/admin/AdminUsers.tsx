@@ -57,13 +57,24 @@ export default function AdminUsers() {
     setIntelData(null);
     setIntelLoading(true);
     try {
-      // Fetch from cache table via admin-data edge function or direct query
+      // Fetch from cache table
       const { data: cacheRows } = await supabase
         .from('user_intelligence_cache' as any)
         .select('*')
         .eq('user_id', u.userId)
         .limit(1);
-      const row = (cacheRows as any)?.[0] || null;
+      let row = (cacheRows as any)?.[0] || null;
+
+      // If no cache exists and user has proposals, trigger a build
+      if (!row && u.actualProposalCount >= 3) {
+        toast({ title: 'Building intelligence profile…', description: 'This may take a moment.' });
+        const { data: built } = await supabase.functions.invoke('build-user-context', {
+          body: { trade: '', job_description: '', job_address: '', target_user_id: u.userId },
+        });
+        if (built?.intelligence_profile) {
+          row = { intelligence_profile: built.intelligence_profile, computed_stats: built.computed_stats, proposal_count_at_computation: built.proposal_count, updated_at: new Date().toISOString() };
+        }
+      }
       setIntelData(row);
     } catch {
       setIntelData(null);
@@ -115,7 +126,19 @@ export default function AdminUsers() {
                     <td className="px-4 py-2">
                       <Badge variant={u.plan === 'Paid' ? 'default' : 'secondary'}>{u.plan}</Badge>
                     </td>
-                    <td className="px-4 py-2">{u.proposalsUsed}</td>
+                    <td className="px-4 py-2">
+                      {u.proposalsUsed}
+                      {u.bonusProposals > 0 && (
+                        <span className="text-xs text-muted-foreground ml-1">
+                          (limit: {u.freeLimit})
+                        </span>
+                      )}
+                      {u.actualProposalCount > 0 && u.actualProposalCount !== u.proposalsUsed && (
+                        <span className="text-xs text-muted-foreground ml-1">
+                          · {u.actualProposalCount} total
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-2">{new Date(u.lastActive).toLocaleDateString()}</td>
                     <td className="px-4 py-2">
                       <Badge
