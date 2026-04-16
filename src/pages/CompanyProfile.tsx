@@ -259,13 +259,6 @@ export default function CompanyProfile() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label>Brand color</Label>
-                <div className="flex gap-2">
-                  <input type="color" value={form.brand_color} onChange={(e) => handleChange('brand_color', e.target.value)} className="h-9 w-9 rounded border cursor-pointer" />
-                  <Input value={form.brand_color} onChange={(e) => handleChange('brand_color', e.target.value)} className="flex-1" />
-                </div>
-              </div>
             </div>
             
             {/* License numbers */}
