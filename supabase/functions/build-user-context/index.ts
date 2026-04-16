@@ -155,7 +155,7 @@ serve(async (req) => {
     const { data: cached } = await supabaseAdmin
       .from("user_intelligence_cache")
       .select("*")
-      .eq("user_id", user.id)
+      .eq("user_id", contextUserId)
       .single();
 
     if (cached && cached.proposal_count_at_computation === proposals.length) {
@@ -497,10 +497,10 @@ serve(async (req) => {
           intelligence_profile: intelligenceProfile,
           proposal_count_at_computation: proposals.length,
           updated_at: new Date().toISOString(),
-        }).eq("user_id", user.id);
+        }).eq("user_id", contextUserId);
       } else {
         await supabaseAdmin.from("user_intelligence_cache").insert({
-          user_id: user.id,
+          user_id: contextUserId,
           trade_type: trade,
           computed_stats: computedStats,
           intelligence_profile: intelligenceProfile,
