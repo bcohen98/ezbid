@@ -191,6 +191,7 @@ export default function NewProposal() {
     }).then(({ data }) => {
       if (data?.has_sufficient_history && data?.intelligence_profile) {
         userContextRef.current = data;
+        setUserContextReady(true);
       }
     }).catch(() => {}); // Silent failure
   }, [user, trade]);
@@ -279,7 +280,7 @@ export default function NewProposal() {
         return hasContent ? [...newItems, ...prev] : newItems;
       });
     }
-  }, [userContextRef.current, smartDefaultsApplied]);
+  }, [userContextReady, smartDefaultsApplied]);
 
   const subtotal = useMemo(() => items.reduce((s, i) => s + i.quantity * i.unit_price, 0), [items]);
   const taxAmount = taxEnabled ? subtotal * (taxRate / 100) : 0;
