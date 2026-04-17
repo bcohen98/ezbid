@@ -793,6 +793,36 @@ export default function ProposalPreview() {
           </div>
         </div>
       </div>
+
+      {/* Send to client modal */}
+      <Dialog open={showSendModal} onOpenChange={setShowSendModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send proposal to client</DialogTitle>
+            <DialogDescription>
+              Sending to <span className="font-medium text-foreground">{proposal.client_email}</span>. Add an optional personal message.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="personal-message" className="text-sm">Personal message (optional)</Label>
+            <Textarea
+              id="personal-message"
+              value={personalMessage}
+              onChange={(e) => setPersonalMessage(e.target.value)}
+              placeholder="Hi Jane — thanks for the call yesterday. Here's the proposal we discussed. Let me know if you have any questions."
+              rows={5}
+            />
+            <p className="text-xs text-muted-foreground">This will appear at the top of the email, above the proposal link.</p>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => setShowSendModal(false)} disabled={isSendingClient}>Cancel</Button>
+            <Button onClick={handleSendClient} disabled={isSendingClient} className="gap-2">
+              {isSendingClient ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              {isSendingClient ? 'Sending...' : 'Send proposal'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }
