@@ -28,6 +28,8 @@ interface Props {
   customAccentColor?: string;
   fontStyle?: FontStyle;
   customHeaderStyle?: HeaderStyle;
+  /** When true, render the client-facing view: respects `hide_pricing_from_client` on the proposal. */
+  clientView?: boolean;
   onFieldEdit?: (field: string, value: string) => void;
   onLineItemEdit?: (id: string, updates: { description: string; quantity: number; unit: string; unit_price: number; subtotal: number }) => void;
   onDeleteLineItem?: (id: string) => void;
@@ -35,11 +37,12 @@ interface Props {
   onTotalsEdit?: (updates: { tax_rate: number; deposit_mode: string; deposit_value: number }) => void;
 }
 
-export default function ProposalDocument({ proposal, lineItems, profile, exhibits, template = 'edge', customAccentColor, fontStyle = 'modern', customHeaderStyle = 'dark', onFieldEdit, onLineItemEdit, onDeleteLineItem, onAddLineItem, onTotalsEdit }: Props) {
+export default function ProposalDocument({ proposal, lineItems, profile, exhibits, template = 'edge', customAccentColor, fontStyle = 'modern', customHeaderStyle = 'dark', clientView = false, onFieldEdit, onLineItemEdit, onDeleteLineItem, onAddLineItem, onTotalsEdit }: Props) {
   const rawTrade = getTradeStyle((proposal as any).trade_type || profile?.trade_type);
   const trade = customAccentColor ? { ...rawTrade, accentColor: customAccentColor } : rawTrade;
   const fontFamily = FONT_FAMILIES[fontStyle];
   const address = [profile?.street_address, profile?.city, profile?.state, profile?.zip].filter(Boolean).join(', ');
+  const hidePricing = clientView && !!(proposal as any).hide_pricing_from_client;
 
   const editable = (field: string, value: string | null, children: React.ReactNode) => {
     if (!onFieldEdit || !value) return children;
