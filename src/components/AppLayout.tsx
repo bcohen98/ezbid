@@ -31,9 +31,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!loading && !user) {
-      navigate('/auth');
+      const dest = location.pathname + location.search;
+      const redirectParam = dest && dest !== '/' ? `?redirect=${encodeURIComponent(dest)}` : '';
+      navigate(`/auth${redirectParam}`, { replace: true });
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, location]);
 
   // Close mobile menu on route change
   useEffect(() => {

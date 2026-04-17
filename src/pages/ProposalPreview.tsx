@@ -6,7 +6,10 @@ import ProposalDocument from '@/components/proposal/ProposalDocument';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Send, Mail, Sparkles, Loader2, Download, FileText, Undo2, DollarSign } from 'lucide-react';
+import { ArrowLeft, Send, Mail, Sparkles, Loader2, Download, FileText, Undo2, DollarSign, EyeOff } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import CountersignBanner from '@/components/proposal/CountersignBanner';
 import ExhibitsUpload from '@/components/proposal/ExhibitsUpload';
 import { formatCurrency } from '@/lib/formatCurrency';
@@ -45,6 +48,9 @@ export default function ProposalPreview() {
   const [isSuggestingMaterials, setIsSuggestingMaterials] = useState(false);
   const [isRequestingPayment, setIsRequestingPayment] = useState(false);
   const lastSnapshot = useRef<{ proposal: any; lineItems: any[] } | null>(null);
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [personalMessage, setPersonalMessage] = useState('');
+  const [hidePricing, setHidePricing] = useState(false);
 
   // Template switching
   const getDefaultTemplate = (): TemplateId => {
@@ -76,8 +82,15 @@ export default function ProposalPreview() {
       if ((proposal as any).custom_accent_color) setAccentColor((proposal as any).custom_accent_color);
       if ((proposal as any).font_style) setFontStyle((proposal as any).font_style as FontStyle);
       if ((proposal as any).header_style) setHeaderStyle((proposal as any).header_style as HeaderStyle);
+      setHidePricing(!!(proposal as any).hide_pricing_from_client);
+      setPersonalMessage((proposal as any).personal_message || '');
     }
   }, [proposal?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleHidePricingToggle = async (checked: boolean) => {
+    setHidePricing(checked);
+    if (proposal) await updateProposal({ id: proposal.id, hide_pricing_from_client: checked } as any);
+  };
 
   const handleAccentChange = async (color: string) => {
     setAccentColor(color);
@@ -101,8 +114,6 @@ export default function ProposalPreview() {
   }
 
   const isSigned = ['signed', 'accepted', 'work_pending', 'payment_pending', 'closed'].includes(proposal.status) || !!proposal.client_signature_url;
-
-  console.log('[ProposalPreview] render — client_email:', JSON.stringify(proposal.client_email), 'type:', typeof proposal.client_email, 'falsy:', !proposal.client_email);
 
   const revisionHistory: RevisionEntry[] = Array.isArray((proposal as any).revision_history) ? (proposal as any).revision_history : [];
 
@@ -406,7 +417,6 @@ export default function ProposalPreview() {
   };
 
   const handleSendSelf = async () => {
-    console.log('[handleSendSelf] triggered, proposal_id:', proposal.id);
     setIsSendingSelf(true);
     try {
       const { data, error } = await supabase.functions.invoke('send-proposal-email', {
@@ -422,24 +432,28 @@ export default function ProposalPreview() {
   };
 
   const handleSendClient = async () => {
-    console.log('[handleSendClient] triggered, proposal_id:', proposal.id, 'client_email:', proposal.client_email);
     if (!proposal.client_email) {
-      console.log('[handleSendClient] BLOCKED: no client_email');
       toast({ title: 'Missing client email', description: 'Please add a client email address in the proposal form.', variant: 'destructive' });
       return;
     }
     setIsSendingClient(true);
     try {
+      // Persist personal message on the proposal record before sending
+      if (personalMessage !== ((proposal as any).personal_message || '')) {
+        await updateProposal({ id: proposal.id, personal_message: personalMessage || null } as any);
+      }
       const { data, error } = await supabase.functions.invoke('send-proposal-email', {
         body: {
           proposal_id: proposal.id,
           recipient_email: proposal.client_email,
           recipient_name: proposal.client_name,
           send_to_self: false,
+          personal_message: personalMessage || null,
         },
       });
       if (error) throw error;
       refetch();
+      setShowSendModal(false);
       trackEvent('proposal_sent', { proposal_id: proposal.id, method: 'email_client' });
       toast({ title: 'Proposal sent!', description: `Sent to ${proposal.client_email}. Let them know to check spam or junk if they don't see it.` });
     } catch (err: any) {
@@ -713,11 +727,27 @@ export default function ProposalPreview() {
               </div>
             )}
 
+            {/* Client view privacy */}
+            {!isSigned && (
+              <div className="border rounded-lg p-4 space-y-3">
+                <h3 className="text-sm font-medium flex items-center gap-2">
+                  <EyeOff className="h-4 w-4" /> Client View
+                </h3>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="hide-pricing-toggle" className="text-sm">Hide itemized pricing from client</Label>
+                    <p className="text-xs text-muted-foreground">Client sees the grand total only — line items, quantities, and unit prices are hidden.</p>
+                  </div>
+                  <Switch id="hide-pricing-toggle" checked={hidePricing} onCheckedChange={handleHidePricingToggle} />
+                </div>
+              </div>
+            )}
+
             <div className="border rounded-lg p-4 space-y-3">
               <h3 className="text-sm font-medium flex items-center gap-2">
                 <FileText className="h-4 w-4" /> Download & Send
               </h3>
-              
+
               <Button
                 type="button"
                 variant="outline"
@@ -743,7 +773,13 @@ export default function ProposalPreview() {
               <Button
                 type="button"
                 className="w-full gap-2"
-                onClick={handleSendClient}
+                onClick={() => {
+                  if (!proposal.client_email) {
+                    toast({ title: 'Missing client email', description: 'Please add a client email address in the proposal form.', variant: 'destructive' });
+                    return;
+                  }
+                  setShowSendModal(true);
+                }}
                 disabled={isSendingClient}
               >
                 {isSendingClient ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
@@ -757,6 +793,36 @@ export default function ProposalPreview() {
           </div>
         </div>
       </div>
+
+      {/* Send to client modal */}
+      <Dialog open={showSendModal} onOpenChange={setShowSendModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send proposal to client</DialogTitle>
+            <DialogDescription>
+              Sending to <span className="font-medium text-foreground">{proposal.client_email}</span>. Add an optional personal message.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="personal-message" className="text-sm">Personal message (optional)</Label>
+            <Textarea
+              id="personal-message"
+              value={personalMessage}
+              onChange={(e) => setPersonalMessage(e.target.value)}
+              placeholder="Hi Jane — thanks for the call yesterday. Here's the proposal we discussed. Let me know if you have any questions."
+              rows={5}
+            />
+            <p className="text-xs text-muted-foreground">This will appear at the top of the email, above the proposal link.</p>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => setShowSendModal(false)} disabled={isSendingClient}>Cancel</Button>
+            <Button onClick={handleSendClient} disabled={isSendingClient} className="gap-2">
+              {isSendingClient ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              {isSendingClient ? 'Sending...' : 'Send proposal'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }

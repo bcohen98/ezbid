@@ -679,6 +679,7 @@ export type Database = {
           estimated_start_date: string | null
           font_style: string | null
           header_style: string | null
+          hide_pricing_from_client: boolean
           id: string
           job_description: string | null
           job_id: string | null
@@ -696,6 +697,7 @@ export type Database = {
           payment_status: string
           payment_terms: string | null
           pdf_url: string | null
+          personal_message: string | null
           proposal_date: string | null
           proposal_number: number
           revision_history: Json | null
@@ -744,6 +746,7 @@ export type Database = {
           estimated_start_date?: string | null
           font_style?: string | null
           header_style?: string | null
+          hide_pricing_from_client?: boolean
           id?: string
           job_description?: string | null
           job_id?: string | null
@@ -761,6 +764,7 @@ export type Database = {
           payment_status?: string
           payment_terms?: string | null
           pdf_url?: string | null
+          personal_message?: string | null
           proposal_date?: string | null
           proposal_number: number
           revision_history?: Json | null
@@ -809,6 +813,7 @@ export type Database = {
           estimated_start_date?: string | null
           font_style?: string | null
           header_style?: string | null
+          hide_pricing_from_client?: boolean
           id?: string
           job_description?: string | null
           job_id?: string | null
@@ -826,6 +831,7 @@ export type Database = {
           payment_status?: string
           payment_terms?: string | null
           pdf_url?: string | null
+          personal_message?: string | null
           proposal_date?: string | null
           proposal_number?: number
           revision_history?: Json | null

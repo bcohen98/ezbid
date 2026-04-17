@@ -243,6 +243,7 @@ export default function ProposalSign() {
               profile={profile}
               exhibits={exhibits}
               template={templateId}
+              clientView
             />
           </div>
 
@@ -283,6 +284,7 @@ export default function ProposalSign() {
             profile={profile}
             exhibits={exhibits}
             template={templateId}
+            clientView
           />
         </div>
 

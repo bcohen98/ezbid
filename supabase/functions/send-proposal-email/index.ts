@@ -90,10 +90,19 @@ function clientEmailHtml(
   jobTitle: string,
   total: string,
   signUrl: string,
+  personalMessage?: string | null,
 ) {
   const logoBlock = logoUrl
     ? `<img src="${logoUrl}" alt="${companyName}" style="max-height:40px;max-width:180px;"/>`
     : `<span style="font-size:18px;font-weight:700;color:#1a1a1a;">${companyName}</span>`;
+
+  const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
+  const personalBlock = personalMessage && personalMessage.trim()
+    ? `<div style="margin:0 0 24px;padding:16px 18px;background:#fafafa;border-left:3px solid #1a1a1a;border-radius:4px;">
+         <div style="font-size:11px;font-weight:600;color:#71717a;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Message from ${escapeHtml(ownerName || companyName)}</div>
+         <div style="font-size:14px;color:#1a1a1a;line-height:1.6;white-space:pre-wrap;">${escapeHtml(personalMessage.trim())}</div>
+       </div>`
+    : '';
 
   return `
 <!DOCTYPE html>
@@ -109,6 +118,7 @@ function clientEmailHtml(
       <p style="color:#52525b;font-size:14px;line-height:1.6;margin:0 0 24px;">
         <strong>${ownerName || companyName}</strong> has sent you a proposal for <strong>${jobTitle}</strong>.
       </p>
+      ${personalBlock}
       <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
         <tr><td style="padding:8px 0;color:#71717a;font-size:13px;">Proposal #</td><td style="padding:8px 0;text-align:right;font-size:13px;font-weight:600;color:#1a1a1a;">${proposalNumber}</td></tr>
         <tr><td style="padding:8px 0;color:#71717a;font-size:13px;border-top:1px solid #f4f4f5;">Total</td><td style="padding:8px 0;text-align:right;font-size:13px;font-weight:600;color:#1a1a1a;border-top:1px solid #f4f4f5;">${total}</td></tr>
@@ -223,6 +233,7 @@ serve(async (req) => {
       recipient_email,
       recipient_name,
       send_countersigned,
+      personal_message,
     } = await req.json();
     if (!proposal_id) throw new Error("Missing proposal_id");
 
