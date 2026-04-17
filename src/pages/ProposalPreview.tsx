@@ -727,11 +727,27 @@ export default function ProposalPreview() {
               </div>
             )}
 
+            {/* Client view privacy */}
+            {!isSigned && (
+              <div className="border rounded-lg p-4 space-y-3">
+                <h3 className="text-sm font-medium flex items-center gap-2">
+                  <EyeOff className="h-4 w-4" /> Client View
+                </h3>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="hide-pricing-toggle" className="text-sm">Hide itemized pricing from client</Label>
+                    <p className="text-xs text-muted-foreground">Client sees the grand total only — line items, quantities, and unit prices are hidden.</p>
+                  </div>
+                  <Switch id="hide-pricing-toggle" checked={hidePricing} onCheckedChange={handleHidePricingToggle} />
+                </div>
+              </div>
+            )}
+
             <div className="border rounded-lg p-4 space-y-3">
               <h3 className="text-sm font-medium flex items-center gap-2">
                 <FileText className="h-4 w-4" /> Download & Send
               </h3>
-              
+
               <Button
                 type="button"
                 variant="outline"
@@ -757,7 +773,13 @@ export default function ProposalPreview() {
               <Button
                 type="button"
                 className="w-full gap-2"
-                onClick={handleSendClient}
+                onClick={() => {
+                  if (!proposal.client_email) {
+                    toast({ title: 'Missing client email', description: 'Please add a client email address in the proposal form.', variant: 'destructive' });
+                    return;
+                  }
+                  setShowSendModal(true);
+                }}
                 disabled={isSendingClient}
               >
                 {isSendingClient ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
