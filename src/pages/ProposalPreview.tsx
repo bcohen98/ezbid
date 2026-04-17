@@ -6,7 +6,10 @@ import ProposalDocument from '@/components/proposal/ProposalDocument';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Send, Mail, Sparkles, Loader2, Download, FileText, Undo2, DollarSign } from 'lucide-react';
+import { ArrowLeft, Send, Mail, Sparkles, Loader2, Download, FileText, Undo2, DollarSign, EyeOff } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import CountersignBanner from '@/components/proposal/CountersignBanner';
 import ExhibitsUpload from '@/components/proposal/ExhibitsUpload';
 import { formatCurrency } from '@/lib/formatCurrency';
@@ -45,6 +48,9 @@ export default function ProposalPreview() {
   const [isSuggestingMaterials, setIsSuggestingMaterials] = useState(false);
   const [isRequestingPayment, setIsRequestingPayment] = useState(false);
   const lastSnapshot = useRef<{ proposal: any; lineItems: any[] } | null>(null);
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [personalMessage, setPersonalMessage] = useState('');
+  const [hidePricing, setHidePricing] = useState(false);
 
   // Template switching
   const getDefaultTemplate = (): TemplateId => {
