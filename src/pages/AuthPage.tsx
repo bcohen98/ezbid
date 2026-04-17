@@ -15,10 +15,18 @@ export default function AuthPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get('redirect') || '';
+
+  // If already signed in, honor redirect param immediately (no re-login required)
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate(redirectTo || '/dashboard', { replace: true });
+    }
+  }, [authLoading, user, redirectTo, navigate]);
 
   // Capture referral code from URL and handle guest params
   useEffect(() => {
@@ -83,7 +91,9 @@ export default function AuthPage() {
         trackEvent('login', { method: 'email' });
         // Check if there's a guest proposal to transfer
         const hasGuestProposal = localStorage.getItem('ezbid_guest_proposal');
-        if (hasGuestProposal || searchParams.get('from') === 'guest') {
+        if (redirectTo) {
+          navigate(redirectTo, { replace: true });
+        } else if (hasGuestProposal || searchParams.get('from') === 'guest') {
           navigate('/dashboard?transfer_guest=1');
         } else {
           navigate('/dashboard');
