@@ -141,6 +141,37 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
   const lineItemsTable = () => {
     if (lineItems.length === 0) return null;
 
+    // Client-facing view with pricing hidden — show grand total only.
+    if (hidePricing) {
+      return (
+        <div className="mb-8" style={{ pageBreakInside: 'avoid' }}>
+          <div className="rounded-md border p-4 mb-4 text-sm" style={{ borderColor: '#e5e7eb', color: '#6b7280', backgroundColor: '#fafafa' }}>
+            Itemized pricing has been hidden by your contractor. The total below covers all materials and labor for the scope of work.
+          </div>
+          <div className="flex justify-end">
+            <div className="w-72">
+              <div className="flex justify-between items-center font-bold text-base px-4 py-3" style={{ backgroundColor: trade.accentColor, color: '#fff', borderRadius: '4px' }}>
+                <span>GRAND TOTAL</span>
+                <span>${formatCurrency(proposal.total)}</span>
+              </div>
+              {Number(proposal.deposit_amount) > 0 && (
+                <>
+                  <div className="flex justify-between text-sm py-2 px-4 mt-2">
+                    <span style={{ color: '#6b7280' }}>Deposit Due Upon Signing</span>
+                    <span className="font-semibold" style={{ color: '#374151' }}>${formatCurrency(proposal.deposit_amount)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm py-1 px-4">
+                    <span style={{ color: '#6b7280' }}>Balance Due Upon Completion</span>
+                    <span className="font-semibold" style={{ color: '#374151' }}>${formatCurrency(proposal.balance_due)}</span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="mb-8" style={{ pageBreakInside: 'avoid' }}>
         <table className="w-full text-sm" style={{ borderCollapse: 'separate', borderSpacing: 0, borderRadius: '6px', overflow: 'hidden', border: '1px solid #e5e7eb' }}>
