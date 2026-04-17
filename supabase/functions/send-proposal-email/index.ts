@@ -329,7 +329,7 @@ serve(async (req) => {
       from: FROM_ADDRESS,
       to: [clientEmail],
       subject: `${companyName} — Proposal #${proposalNumber} for ${jobTitle}`,
-      html: clientEmailHtml(companyName, ownerName, logoUrl, proposalNumber, jobTitle, total, signUrl),
+      html: clientEmailHtml(companyName, ownerName, logoUrl, proposalNumber, jobTitle, total, signUrl, personal_message ?? proposal.personal_message),
       reply_to: REPLY_TO,
     });
 
