@@ -82,8 +82,15 @@ export default function ProposalPreview() {
       if ((proposal as any).custom_accent_color) setAccentColor((proposal as any).custom_accent_color);
       if ((proposal as any).font_style) setFontStyle((proposal as any).font_style as FontStyle);
       if ((proposal as any).header_style) setHeaderStyle((proposal as any).header_style as HeaderStyle);
+      setHidePricing(!!(proposal as any).hide_pricing_from_client);
+      setPersonalMessage((proposal as any).personal_message || '');
     }
   }, [proposal?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleHidePricingToggle = async (checked: boolean) => {
+    setHidePricing(checked);
+    if (proposal) await updateProposal({ id: proposal.id, hide_pricing_from_client: checked } as any);
+  };
 
   const handleAccentChange = async (color: string) => {
     setAccentColor(color);
