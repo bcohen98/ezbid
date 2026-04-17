@@ -420,22 +420,27 @@ export default function ProposalPreview() {
 
   const handleSendClient = async () => {
     if (!proposal.client_email) {
-      console.log('[handleSendClient] BLOCKED: no client_email');
       toast({ title: 'Missing client email', description: 'Please add a client email address in the proposal form.', variant: 'destructive' });
       return;
     }
     setIsSendingClient(true);
     try {
+      // Persist personal message on the proposal record before sending
+      if (personalMessage !== ((proposal as any).personal_message || '')) {
+        await updateProposal({ id: proposal.id, personal_message: personalMessage || null } as any);
+      }
       const { data, error } = await supabase.functions.invoke('send-proposal-email', {
         body: {
           proposal_id: proposal.id,
           recipient_email: proposal.client_email,
           recipient_name: proposal.client_name,
           send_to_self: false,
+          personal_message: personalMessage || null,
         },
       });
       if (error) throw error;
       refetch();
+      setShowSendModal(false);
       trackEvent('proposal_sent', { proposal_id: proposal.id, method: 'email_client' });
       toast({ title: 'Proposal sent!', description: `Sent to ${proposal.client_email}. Let them know to check spam or junk if they don't see it.` });
     } catch (err: any) {
