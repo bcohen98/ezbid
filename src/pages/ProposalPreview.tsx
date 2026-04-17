@@ -102,8 +102,6 @@ export default function ProposalPreview() {
 
   const isSigned = ['signed', 'accepted', 'work_pending', 'payment_pending', 'closed'].includes(proposal.status) || !!proposal.client_signature_url;
 
-  console.log('[ProposalPreview] render — client_email:', JSON.stringify(proposal.client_email), 'type:', typeof proposal.client_email, 'falsy:', !proposal.client_email);
-
   const revisionHistory: RevisionEntry[] = Array.isArray((proposal as any).revision_history) ? (proposal as any).revision_history : [];
 
   const saveSnapshot = () => {
@@ -406,7 +404,6 @@ export default function ProposalPreview() {
   };
 
   const handleSendSelf = async () => {
-    console.log('[handleSendSelf] triggered, proposal_id:', proposal.id);
     setIsSendingSelf(true);
     try {
       const { data, error } = await supabase.functions.invoke('send-proposal-email', {
@@ -422,7 +419,6 @@ export default function ProposalPreview() {
   };
 
   const handleSendClient = async () => {
-    console.log('[handleSendClient] triggered, proposal_id:', proposal.id, 'client_email:', proposal.client_email);
     if (!proposal.client_email) {
       console.log('[handleSendClient] BLOCKED: no client_email');
       toast({ title: 'Missing client email', description: 'Please add a client email address in the proposal form.', variant: 'destructive' });
