@@ -96,6 +96,36 @@ export default function ProposalPreview() {
     }
   }, [proposal?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Auto-generate suggested personal message when send modal opens (only if empty).
+  useEffect(() => {
+    if (!showSendModal || !proposal) return;
+    if (personalMessage.trim().length > 0) return;
+    let cancelled = false;
+    (async () => {
+      setIsGeneratingMessage(true);
+      try {
+        const scopeSummary = (proposal.scope_of_work || proposal.job_description || '').slice(0, 500);
+        const { data, error } = await supabase.functions.invoke('suggest-personal-message', {
+          body: {
+            contractor_name: (profile as any)?.owner_name || (profile as any)?.company_name || '',
+            client_name: proposal.client_name || '',
+            trade: (proposal as any).trade_type || (profile as any)?.trade_type || 'general_contractor',
+            scope_summary: scopeSummary,
+          },
+        });
+        if (cancelled) return;
+        if (error) throw error;
+        const msg = (data?.message || '').trim();
+        if (msg) setPersonalMessage(msg);
+      } catch (e) {
+        console.error('suggest-personal-message failed', e);
+      } finally {
+        if (!cancelled) setIsGeneratingMessage(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [showSendModal, proposal?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Optimistic toggle handlers — update local state immediately, sync in background.
   const makeToggleHandler = (
     field: 'show_materials' | 'show_quantities' | 'show_pricing',
@@ -839,10 +869,11 @@ export default function ProposalPreview() {
             <Label htmlFor="personal-message" className="text-sm">Personal message (optional)</Label>
             <Textarea
               id="personal-message"
-              value={personalMessage}
+              value={isGeneratingMessage ? '' : personalMessage}
               onChange={(e) => setPersonalMessage(e.target.value)}
-              placeholder="Hi Jane — thanks for the call yesterday. Here's the proposal we discussed. Let me know if you have any questions."
+              placeholder={isGeneratingMessage ? 'Generating suggested message...' : "Hi Jane — thanks for the call yesterday. Here's the proposal we discussed. Let me know if you have any questions."}
               rows={5}
+              disabled={isGeneratingMessage}
             />
             <p className="text-xs text-muted-foreground">This will appear at the top of the email, above the proposal link.</p>
           </div>
