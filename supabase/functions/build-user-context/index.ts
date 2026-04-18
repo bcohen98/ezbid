@@ -185,7 +185,8 @@ serve(async (req) => {
     // ─── STEP B: Statistical Analysis ───
 
     const currentTradeProposals = proposals.filter((p: any) => p.trade_type === trade);
-    const tradeProposals = currentTradeProposals.length >= 3 ? currentTradeProposals : proposals;
+    // Cap to most recent 30 to keep CPU bounded under edge runtime limits
+    const tradeProposals = (currentTradeProposals.length >= 3 ? currentTradeProposals : proposals).slice(0, 30);
 
     // Per-trade metrics
     const totals = tradeProposals.map((p: any) => Number(p.total) || 0).filter((t: number) => t > 0);
@@ -198,27 +199,31 @@ serve(async (req) => {
     const liCounts = tradeProposals.map((p: any) => (lineItemsByProposal.get(p.id) || []).length);
     const avgLiCount = liCounts.length ? liCounts.reduce((a: number, b: number) => a + b, 0) / liCounts.length : 0;
 
-    // Common line items (fuzzy dedup)
-    const allTradeItems = tradeProposals.flatMap((p: any) => lineItemsByProposal.get(p.id) || []);
-    const descList = allTradeItems.map((li: any) => li.description);
-    const groups = fuzzyGroup(descList);
-    const totalItems = descList.length || 1;
+    // Common line items — use cheap normalized key grouping (avoid O(n²) Levenshtein)
+    const allTradeItems = tradeProposals.flatMap((p: any) => lineItemsByProposal.get(p.id) || []).slice(0, 500);
+    const totalItems = allTradeItems.length || 1;
+    const itemGroups = new Map<string, any[]>();
+    for (const li of allTradeItems) {
+      const key = String(li.description || "").toLowerCase().trim().replace(/\s+/g, " ").slice(0, 60);
+      if (!key) continue;
+      const arr = itemGroups.get(key) || [];
+      arr.push(li);
+      itemGroups.set(key, arr);
+    }
 
-    const commonLineItems = [...groups.entries()]
-      .map(([canonical, members]) => {
-        const matchingItems = allTradeItems.filter((li: any) => {
-          const d = li.description.toLowerCase().trim();
-          return members.includes(d) || levenshtein(d, canonical) <= 2;
-        });
+    const commonLineItems = [...itemGroups.entries()]
+      .map(([_key, matchingItems]) => {
         const prices = matchingItems.map((li: any) => Number(li.unit_price) || 0);
         const quantities = matchingItems.map((li: any) => Number(li.quantity) || 0);
-        const units = matchingItems.map((li: any) => li.unit || "ea");
-        const modeUnit = units.sort((a: string, b: string) =>
-          units.filter((v: string) => v === a).length - units.filter((v: string) => v === b).length
-        ).pop() || "ea";
+        const unitCounts = new Map<string, number>();
+        for (const li of matchingItems) {
+          const u = li.unit || "ea";
+          unitCounts.set(u, (unitCounts.get(u) || 0) + 1);
+        }
+        const modeUnit = [...unitCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || "ea";
         return {
-          description: matchingItems[0]?.description || canonical,
-          frequency_pct: Math.round((members.length / totalItems) * 100),
+          description: matchingItems[0]?.description || _key,
+          frequency_pct: Math.round((matchingItems.length / totalItems) * 100),
           avg_quantity: quantities.length ? quantities.reduce((a: number, b: number) => a + b, 0) / quantities.length : 0,
           avg_unit: modeUnit,
           avg_unit_price: prices.length ? prices.reduce((a: number, b: number) => a + b, 0) / prices.length : 0,
@@ -357,7 +362,7 @@ serve(async (req) => {
     };
 
     // Check timeout
-    if (Date.now() - startTime > 8000) {
+    if (Date.now() - startTime > 1200) {
       return new Response(JSON.stringify({
         has_sufficient_history: true,
         proposal_count: proposals.length,
