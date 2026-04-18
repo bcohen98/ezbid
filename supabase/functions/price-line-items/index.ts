@@ -110,10 +110,10 @@ async function fetchCatalog(trade: string, state: string | null): Promise<Catalo
   }
 }
 
-async function callAnthropic(systemPrompt: string, userPrompt: string, maxTokens = 2000): Promise<string> {
+async function callAnthropicWithModel(model: string, systemPrompt: string, userPrompt: string, maxTokens: number): Promise<Response> {
   const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY not configured");
-  const res = await fetch(ANTHROPIC_URL, {
+  return fetch(ANTHROPIC_URL, {
     method: "POST",
     headers: {
       "x-api-key": apiKey,
@@ -121,19 +121,27 @@ async function callAnthropic(systemPrompt: string, userPrompt: string, maxTokens
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: MODEL,
+      model,
       max_tokens: maxTokens,
       system: systemPrompt,
       messages: [{ role: "user", content: userPrompt }],
     }),
   });
+}
+
+async function callAnthropic(systemPrompt: string, userPrompt: string, maxTokens = 2000): Promise<string> {
+  let res = await callAnthropicWithModel(PRIMARY_MODEL, systemPrompt, userPrompt, maxTokens);
+  if (res.status === 404 || res.status === 400) {
+    const errTxt = await res.text();
+    console.warn(`[anthropic] primary model "${PRIMARY_MODEL}" failed (${res.status}): ${errTxt.slice(0, 200)} — retrying with fallback "${FALLBACK_MODEL}"`);
+    res = await callAnthropicWithModel(FALLBACK_MODEL, systemPrompt, userPrompt, maxTokens);
+  }
   if (!res.ok) {
     const txt = await res.text();
     throw new Error(`Anthropic API ${res.status}: ${txt.slice(0, 300)}`);
   }
   const data = await res.json();
-  const text = data?.content?.[0]?.text || "";
-  return text;
+  return data?.content?.[0]?.text || "";
 }
 
 function extractJson<T = any>(text: string): T | null {
