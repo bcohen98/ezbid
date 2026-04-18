@@ -9,7 +9,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { trade_type, job_description, job_site_address, user_context, pricing_benchmarks } = await req.json();
+    const { trade_type, job_description, job_site_address, user_context, pricing_benchmarks, job_state, materials_context } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
@@ -46,7 +46,7 @@ Be specific and realistic. Use actual market pricing for the region. Quantities 
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: `You are a trade contractor pricing expert. Provide accurate regional estimates.${pricing_benchmarks?.length ? ` This contractor has learned pricing benchmarks from their history. Use these learned_unit_price values as defaults where the line item type matches. Only deviate if the job description clearly indicates a different scope or scale. Benchmarks: ${JSON.stringify(pricing_benchmarks)}` : ""}${user_context?.contractor_insights?.length ? ` Contractor insights: ${user_context.contractor_insights.join(". ")}` : ""}` },
+          { role: "system", content: `You are a trade contractor pricing expert. Provide accurate regional estimates.${pricing_benchmarks?.length ? ` This contractor has learned pricing benchmarks from their history. Use these learned_unit_price values as defaults where the line item type matches. Only deviate if the job description clearly indicates a different scope or scale. Benchmarks: ${JSON.stringify(pricing_benchmarks)}` : ""}${user_context?.contractor_insights?.length ? ` Contractor insights: ${user_context.contractor_insights.join(". ")}` : ""}${(Array.isArray(materials_context) && materials_context.length > 0 && job_state) ? `\n\nYou have access to current market pricing data for ${tradeLabel} contractors in ${job_state}. This data is sourced from real supplier and market pricing updated regularly.\n\nCURRENT MATERIALS PRICING DATA:\n${JSON.stringify(materials_context)}\n\nPRICING INSTRUCTIONS:\n- When a material in your line item suggestions matches or closely matches something in the pricing data above, use its suggested_price field as your unit_price — this is a single pre-calculated value, use it directly\n- Never return a price range — always return one specific dollar amount per line item\n- For materials not in the pricing data, estimate a realistic single price based on current market rates for ${job_state}\n- For labor line items, estimate based on current regional labor rates for ${job_state}\n- Never return zero or blank for any price\n- Do not apply any markup — return raw material and labor market rates only` : ""}` },
           { role: "user", content: prompt },
         ],
         tools: [

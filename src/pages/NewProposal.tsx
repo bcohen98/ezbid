@@ -222,6 +222,7 @@ export default function NewProposal() {
   const [materialsIncluded, setMaterialsIncluded] = useState('');
   const [materialsExcluded, setMaterialsExcluded] = useState('');
   const [isSuggestingMaterials, setIsSuggestingMaterials] = useState(false);
+  const [materialsContextCount, setMaterialsContextCount] = useState(0);
 
   // Line items
   const [items, setItems] = useState<LineItem[]>(() => makeDefaults(defaultTrade));
@@ -426,6 +427,25 @@ export default function NewProposal() {
       setIsSuggestingMaterials(true);
       try {
         const uc = userContextRef.current?.intelligence_profile || null;
+
+        // Derive state from zip if needed, then fetch materials pricing context
+        const stateCode = jobState || (jobZip ? zipToState(jobZip) : null);
+        let materialsContext: any[] = [];
+        if (stateCode) {
+          try {
+            const { data: mc, error: mcErr } = await supabase.functions.invoke('get_materials_context', {
+              body: { trade, state_code: stateCode },
+            });
+            console.log('[get_materials_context]', { stateCode, trade, error: mcErr, count: mc?.materials?.length, sample: mc?.materials?.slice(0, 3) });
+            if (Array.isArray(mc?.materials)) materialsContext = mc.materials;
+          } catch (mcErr) {
+            console.warn('[get_materials_context] failed (non-blocking):', mcErr);
+          }
+        } else {
+          console.log('[get_materials_context] skipped — no state code derivable from jobZip');
+        }
+        setMaterialsContextCount(materialsContext.length);
+
         const { data, error } = await supabase.functions.invoke('suggest-materials-pricing', {
           body: {
             trade_type: trade,
@@ -433,6 +453,8 @@ export default function NewProposal() {
             job_site_address: jobAddress || null,
             user_context: uc,
             pricing_benchmarks: uc?.pricing_benchmarks || null,
+            job_state: stateCode,
+            materials_context: materialsContext,
           },
         });
         if (error) throw error;
@@ -942,6 +964,11 @@ export default function NewProposal() {
                 <>Continue →</>
               )}
             </Button>
+            {materialsContextCount > 0 && (
+              <p className="text-xs text-muted-foreground text-center mt-2">
+                Pricing sourced from {materialsContextCount} materials
+              </p>
+            )}
           </div>
         )}
 
