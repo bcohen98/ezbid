@@ -146,6 +146,9 @@ export default function NewProposal() {
   const [clientEmail, setClientEmail] = useState('');
   const [clientPhone, setClientPhone] = useState('');
   const [jobAddress, setJobAddress] = useState('');
+  const [jobZip, setJobZip] = useState('');
+  const [jobZipError, setJobZipError] = useState('');
+  const [jobState, setJobState] = useState<string | null>(null);
   const [showClientDropdown, setShowClientDropdown] = useState(false);
   const [clientMatches, setClientMatches] = useState<any[]>([]);
   const [clientCount, setClientCount] = useState(0);
