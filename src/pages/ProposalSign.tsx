@@ -206,6 +206,11 @@ export default function ProposalSign() {
 
   if (signed) {
     const isFullyExecuted = !!proposal?.contractor_signature_url;
+    const ps = proposal?.payment_status || 'unpaid';
+    const paymentLinkUrl = proposal?.payment_link_url as string | undefined;
+    const paymentPending = (ps === 'deposit_requested' || ps === 'payment_requested') && !!paymentLinkUrl;
+    const fullyPaid = ps === 'paid';
+    const depositPaid = ps === 'deposit_paid';
 
     return (
       <div className="min-h-screen bg-muted/30">
@@ -227,10 +232,29 @@ export default function ProposalSign() {
                 </p>
               </div>
             </div>
-            <Button onClick={handleDownloadPdf} variant="outline" size="sm" className="gap-2 mt-2">
-              <Download className="h-4 w-4" />
-              Download as PDF
-            </Button>
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              <Button onClick={handleDownloadPdf} variant="outline" size="sm" className="gap-2">
+                <Download className="h-4 w-4" />
+                Download as PDF
+              </Button>
+              {paymentPending && (
+                <Button asChild size="sm" className="gap-2">
+                  <a href={paymentLinkUrl} target="_blank" rel="noopener noreferrer">
+                    Pay Now — ${formatCurrency(Number(ps === 'deposit_requested' ? proposal?.deposit_amount : (proposal?.total - (proposal?.deposit_paid_amount || 0))))}
+                  </a>
+                </Button>
+              )}
+              {depositPaid && (
+                <span className="inline-flex items-center gap-1 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-full px-3 py-1">
+                  <CheckCircle className="h-3.5 w-3.5" /> Deposit Paid
+                </span>
+              )}
+              {fullyPaid && (
+                <span className="inline-flex items-center gap-1 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-full px-3 py-1">
+                  <CheckCircle className="h-3.5 w-3.5" /> Payment Complete
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
