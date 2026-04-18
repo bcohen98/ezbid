@@ -15,6 +15,8 @@ import ExhibitsUpload from '@/components/proposal/ExhibitsUpload';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { useProposalExhibits } from '@/hooks/useProposalExhibits';
 import TemplateSwitcher, { type TemplateId } from '@/components/proposal/TemplateSwitcher';
+import RequestPaymentModal from '@/components/proposal/RequestPaymentModal';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import ProposalCustomizer, { type FontStyle, type HeaderStyle } from '@/components/proposal/ProposalCustomizer';
 import { getTradeStyle } from '@/components/proposal/tradeStyles';
 import { useState, useRef, useEffect } from 'react';
@@ -47,6 +49,7 @@ export default function ProposalPreview() {
   const [isUndoing, setIsUndoing] = useState(false);
   const [isSuggestingMaterials, setIsSuggestingMaterials] = useState(false);
   const [isRequestingPayment, setIsRequestingPayment] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const lastSnapshot = useRef<{ proposal: any; lineItems: any[] } | null>(null);
   const [showSendModal, setShowSendModal] = useState(false);
   const [personalMessage, setPersonalMessage] = useState('');
@@ -696,86 +699,112 @@ export default function ProposalPreview() {
             )}
 
             {/* Payments Section */}
-            {isSigned && (profile as any)?.stripe_connect_charges_enabled && (
-              <div className="border rounded-lg p-4 space-y-3">
-                <h3 className="text-sm font-medium flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" /> Payments
-                </h3>
-                {(() => {
-                  const ps = (proposal as any).payment_status || 'unpaid';
-                  const depositAmt = Number(proposal.deposit_amount) || 0;
-                  const depositPaid = Number((proposal as any).deposit_paid_amount) || 0;
-                  const total = Number(proposal.total) || 0;
-                  const balanceDue = total - depositPaid;
+            {isSigned && (() => {
+              const connectReady = !!(profile as any)?.stripe_connect_charges_enabled;
+              const ps = (proposal as any).payment_status || 'unpaid';
+              const depositPaid = Number((proposal as any).deposit_paid_amount) || 0;
+              const total = Number(proposal.total) || 0;
+              const balanceDue = total - depositPaid;
+              const paymentLinkUrl = (proposal as any).payment_link_url as string | undefined;
+              const requestPending = ps === 'deposit_requested' || ps === 'payment_requested';
+              const fullyPaid = ps === 'paid';
 
-                  return (
-                    <div className="space-y-3">
-                      {ps === 'unpaid' && <Badge variant="outline" className="text-muted-foreground">No Payment Collected</Badge>}
-                      {ps === 'deposit_requested' && <Badge variant="outline" className="border-blue-300 text-blue-700 bg-blue-50">Deposit Requested — Awaiting Payment</Badge>}
-                      {ps === 'deposit_paid' && <Badge variant="outline" className="border-green-300 text-green-700 bg-green-50">Deposit Paid ✓ — ${formatCurrency(depositPaid)}</Badge>}
-                      {ps === 'payment_requested' && <Badge variant="outline" className="border-blue-300 text-blue-700 bg-blue-50">Payment Requested — Awaiting Payment</Badge>}
-                      {ps === 'paid' && <Badge variant="outline" className="border-green-300 text-green-700 bg-green-50">Paid in Full ✓ — ${formatCurrency((proposal as any).payment_paid_amount)}</Badge>}
+              return (
+                <div className="border rounded-lg p-4 space-y-3">
+                  <h3 className="text-sm font-medium flex items-center gap-2">
+                    <DollarSign className="h-4 w-4" /> Payments
+                  </h3>
 
-                      {(ps === 'unpaid' || ps === 'deposit_paid') && (
-                        <>
-                          {ps === 'unpaid' && depositAmt > 0 && (
-                            <Button
-                              variant="outline"
-                              className="w-full gap-2"
-                              disabled={isRequestingPayment}
-                              onClick={async () => {
-                                setIsRequestingPayment(true);
-                                try {
-                                  const { data, error } = await supabase.functions.invoke('create-payment-link', {
-                                    body: { proposal_id: proposal.id, payment_type: 'deposit' },
-                                  });
-                                  if (error) throw error;
-                                  refetch();
-                                  toast({ title: 'Deposit requested!', description: `Payment link sent to ${proposal.client_email}` });
-                                } catch (err: any) {
-                                  toast({ title: 'Failed', description: err.message, variant: 'destructive' });
-                                } finally {
-                                  setIsRequestingPayment(false);
-                                }
-                              }}
-                            >
-                              {isRequestingPayment ? <Loader2 className="h-4 w-4 animate-spin" /> : <DollarSign className="h-4 w-4" />}
-                              Request Deposit (${formatCurrency(depositAmt)})
+                  <div className="space-y-3">
+                    {ps === 'unpaid' && <Badge variant="outline" className="text-muted-foreground">No Payment Collected</Badge>}
+                    {ps === 'deposit_requested' && <Badge variant="outline" className="border-blue-300 text-blue-700 bg-blue-50">Payment Pending — Deposit (${formatCurrency(Number(proposal.deposit_amount))})</Badge>}
+                    {ps === 'deposit_paid' && <Badge variant="outline" className="border-green-300 text-green-700 bg-green-50">Deposit Paid ✓ — ${formatCurrency(depositPaid)}</Badge>}
+                    {ps === 'payment_requested' && <Badge variant="outline" className="border-blue-300 text-blue-700 bg-blue-50">Payment Pending — ${formatCurrency(balanceDue)}</Badge>}
+                    {fullyPaid && (
+                      <Badge variant="outline" className="border-green-300 text-green-700 bg-green-50">
+                        Paid ✓ — ${formatCurrency((proposal as any).payment_paid_amount)}
+                        {(proposal as any).payment_paid_at && ` · ${new Date((proposal as any).payment_paid_at).toLocaleDateString()}`}
+                      </Badge>
+                    )}
+
+                    {!connectReady && !fullyPaid && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="block">
+                            <Button className="w-full gap-2" disabled>
+                              <DollarSign className="h-4 w-4" /> Request Payment
                             </Button>
-                          )}
-                          <Button
-                            className="w-full gap-2"
-                            disabled={isRequestingPayment}
-                            onClick={async () => {
-                              setIsRequestingPayment(true);
-                              try {
-                                const { data, error } = await supabase.functions.invoke('create-payment-link', {
-                                  body: { proposal_id: proposal.id, payment_type: 'full_payment' },
-                                });
-                                if (error) throw error;
-                                refetch();
-                                toast({ title: 'Payment requested!', description: `Payment link sent to ${proposal.client_email}` });
-                              } catch (err: any) {
-                                toast({ title: 'Failed', description: err.message, variant: 'destructive' });
-                              } finally {
-                                setIsRequestingPayment(false);
-                              }
-                            }}
-                          >
-                            {isRequestingPayment ? <Loader2 className="h-4 w-4 animate-spin" /> : <DollarSign className="h-4 w-4" />}
-                            Request Full Payment (${formatCurrency(balanceDue)})
-                          </Button>
-                        </>
-                      )}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>Connect your bank account in Profile to accept payments.</TooltipContent>
+                      </Tooltip>
+                    )}
 
-                      <p className="text-xs text-muted-foreground">
-                        Client will receive a secure Stripe payment link via email. EZ-Bid charges 1% + Stripe fees (2.9% + 30¢).
-                      </p>
-                    </div>
-                  );
-                })()}
-              </div>
-            )}
+                    {connectReady && !fullyPaid && !requestPending && (
+                      <Button className="w-full gap-2" onClick={() => setShowPaymentModal(true)}>
+                        <DollarSign className="h-4 w-4" /> Request Payment
+                      </Button>
+                    )}
+
+                    {connectReady && requestPending && paymentLinkUrl && (
+                      <div className="space-y-2">
+                        <Button
+                          variant="outline"
+                          className="w-full gap-2"
+                          onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(paymentLinkUrl);
+                              toast({ title: 'Payment link copied', description: 'Paste it into a text or email to your client.' });
+                            } catch {
+                              window.open(paymentLinkUrl, '_blank');
+                            }
+                          }}
+                        >
+                          Copy payment link
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          className="w-full gap-2"
+                          disabled={isRequestingPayment}
+                          onClick={async () => {
+                            setIsRequestingPayment(true);
+                            try {
+                              const { error } = await supabase.functions.invoke('create-payment-link', {
+                                body: {
+                                  proposal_id: proposal.id,
+                                  payment_type: ps === 'deposit_requested' ? 'deposit' : 'full_payment',
+                                  client_email: proposal.client_email,
+                                },
+                              });
+                              if (error) throw error;
+                              await refetch();
+                              toast({ title: 'Payment link resent', description: `Email re-sent to ${proposal.client_email}.` });
+                            } catch (err: any) {
+                              toast({ title: 'Failed to resend', description: err.message, variant: 'destructive' });
+                            } finally {
+                              setIsRequestingPayment(false);
+                            }
+                          }}
+                        >
+                          {isRequestingPayment ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                          Resend payment link
+                        </Button>
+                      </div>
+                    )}
+
+                    {connectReady && ps === 'deposit_paid' && (
+                      <Button className="w-full gap-2" onClick={() => setShowPaymentModal(true)}>
+                        <DollarSign className="h-4 w-4" /> Request Remaining Balance
+                      </Button>
+                    )}
+
+                    <p className="text-xs text-muted-foreground">
+                      Client receives a secure Stripe payment link via email. EZ-Bid charges 1% + Stripe fees (2.9% + 30¢).
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Client view privacy */}
             {!isSigned && (
@@ -886,6 +915,13 @@ export default function ProposalPreview() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <RequestPaymentModal
+        open={showPaymentModal}
+        onOpenChange={setShowPaymentModal}
+        proposal={proposal}
+        onRequested={() => refetch()}
+      />
     </AppLayout>
   );
 }
