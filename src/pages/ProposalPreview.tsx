@@ -96,6 +96,36 @@ export default function ProposalPreview() {
     }
   }, [proposal?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Auto-generate suggested personal message when send modal opens (only if empty).
+  useEffect(() => {
+    if (!showSendModal || !proposal) return;
+    if (personalMessage.trim().length > 0) return;
+    let cancelled = false;
+    (async () => {
+      setIsGeneratingMessage(true);
+      try {
+        const scopeSummary = (proposal.scope_of_work || proposal.job_description || '').slice(0, 500);
+        const { data, error } = await supabase.functions.invoke('suggest-personal-message', {
+          body: {
+            contractor_name: (profile as any)?.owner_name || (profile as any)?.company_name || '',
+            client_name: proposal.client_name || '',
+            trade: (proposal as any).trade_type || (profile as any)?.trade_type || 'general_contractor',
+            scope_summary: scopeSummary,
+          },
+        });
+        if (cancelled) return;
+        if (error) throw error;
+        const msg = (data?.message || '').trim();
+        if (msg) setPersonalMessage(msg);
+      } catch (e) {
+        console.error('suggest-personal-message failed', e);
+      } finally {
+        if (!cancelled) setIsGeneratingMessage(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [showSendModal, proposal?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Optimistic toggle handlers — update local state immediately, sync in background.
   const makeToggleHandler = (
     field: 'show_materials' | 'show_quantities' | 'show_pricing',
