@@ -839,10 +839,11 @@ export default function ProposalPreview() {
             <Label htmlFor="personal-message" className="text-sm">Personal message (optional)</Label>
             <Textarea
               id="personal-message"
-              value={personalMessage}
+              value={isGeneratingMessage ? '' : personalMessage}
               onChange={(e) => setPersonalMessage(e.target.value)}
-              placeholder="Hi Jane — thanks for the call yesterday. Here's the proposal we discussed. Let me know if you have any questions."
+              placeholder={isGeneratingMessage ? 'Generating suggested message...' : "Hi Jane — thanks for the call yesterday. Here's the proposal we discussed. Let me know if you have any questions."}
               rows={5}
+              disabled={isGeneratingMessage}
             />
             <p className="text-xs text-muted-foreground">This will appear at the top of the email, above the proposal link.</p>
           </div>
