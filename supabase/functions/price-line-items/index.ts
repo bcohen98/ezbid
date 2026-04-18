@@ -1,23 +1,145 @@
-// Two-step pricing: STEP 1 Sonnet returns line item names (no prices),
-// STEP 2 we look up each item in the materials_catalog table; if no match,
-// we ask Haiku for a single-item price estimate and flag it as "estimated".
+// Two-step pricing with deterministic unit normalization, deduplication, and quantity validation.
+// STEP 1: Sonnet returns line item names + quantities (no prices).
+// STEP 2: Code dedupes, looks up catalog, validates units & quantities. Haiku fallback for misses.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Expose-Headers": "x-ai-routing-log",
 };
 
-// MODEL: claude-sonnet-4-20250514 (STEP 1) — line item list generation requires trade-specific domain knowledge & accurate quantity reasoning
+// MODEL: claude-sonnet-4-20250514 (STEP 1) — line item list generation requires trade domain knowledge
 const STEP1_MODEL = "claude-sonnet-4-20250514";
 const STEP1_MAX_TOKENS = 4096;
-// MODEL: claude-haiku-4-5-20251001 (STEP 2 fallback) — short single-item price estimate, simple structured output
+// MODEL: claude-haiku-4-5-20251001 (STEP 2 fallback + qty correction) — short structured outputs
 const STEP2_MODEL = "claude-haiku-4-5-20251001";
 const STEP2_MAX_TOKENS = 1024;
 const FN_NAME = "price-line-items";
 
+// ─────────────────────────────────────────────────────────────────────────────
+// UNIT NORMALIZATION & CONVERSION
+// ─────────────────────────────────────────────────────────────────────────────
+
+const UNIT_EQUIVALENCE: Record<string, string[]> = {
+  each: ["each", "ea", "unit", "units", "pc", "pcs", "piece", "pieces"],
+  roll: ["roll", "rolls"],
+  square: ["square", "squares", "sq", "roofing square", "roofing squares"],
+  sqft: ["sq ft", "sqft", "square foot", "square feet", "sf", "ft2", "ft^2"],
+  linearft: ["lf", "linear foot", "linear feet", "lineal ft", "lin ft", "linft"],
+  bundle: ["bundle", "bundles", "bdl"],
+  lot: ["lot", "ls", "lump sum", "allowance"],
+  bag: ["bag", "bags"],
+  gallon: ["gallon", "gallons", "gal"],
+  box: ["box", "boxes", "bx"],
+  sheet: ["sheet", "sheets"],
+  yard: ["yard", "yards", "yd", "cy", "cubic yard", "cubic yards"],
+  ton: ["ton", "tons"],
+  lb: ["lb", "lbs", "pound", "pounds"],
+  foot: ["foot", "feet", "ft"],
+  hour: ["hr", "hrs", "hour", "hours"],
+  day: ["day", "days"],
+  pallet: ["pallet", "pallets"],
+};
+
+function normalizeUnit(unit: string | null | undefined): string | null {
+  if (!unit) return null;
+  const u = String(unit).toLowerCase().trim().replace(/\.$/, "");
+  for (const [canonical, aliases] of Object.entries(UNIT_EQUIVALENCE)) {
+    if (aliases.includes(u)) return canonical;
+  }
+  return null;
+}
+
+// Conversion factor from key1 → key2 (multiply line-item qty/price as noted at use site).
+// Key format: "<from>_to_<to>".
+const UNIT_CONVERSIONS: Record<string, number> = {
+  sqft_to_square: 0.01,    // 100 sqft = 1 square
+  square_to_sqft: 100,
+  foot_to_linearft: 1,     // treat foot as linearft for lineal materials
+  linearft_to_foot: 1,
+};
+
+/**
+ * Decide whether a catalog price can be applied to the line item.
+ * Returns:
+ *  - { ok: true, priceMultiplier: 1 }  — units match exactly
+ *  - { ok: true, priceMultiplier: N }  — units convertible; multiply catalog unit_price by N
+ *  - { ok: false }                     — incompatible, reject the catalog match
+ *
+ * priceMultiplier is what you multiply the CATALOG unit_price by so it equals
+ * the price per ONE line-item-unit.
+ *   e.g. catalog is $/sqft, line item is per square (100 sqft) → multiplier = 100.
+ */
+function reconcileUnits(lineItemUnit: string, catalogUnit: string): { ok: boolean; priceMultiplier: number; canonicalLine: string | null; canonicalCatalog: string | null } {
+  const a = normalizeUnit(lineItemUnit);
+  const b = normalizeUnit(catalogUnit);
+  if (!a || !b) return { ok: false, priceMultiplier: 1, canonicalLine: a, canonicalCatalog: b };
+  if (a === b) return { ok: true, priceMultiplier: 1, canonicalLine: a, canonicalCatalog: b };
+  const key = `${b}_to_${a}`; // catalog → line item
+  if (key in UNIT_CONVERSIONS) {
+    return { ok: true, priceMultiplier: UNIT_CONVERSIONS[key], canonicalLine: a, canonicalCatalog: b };
+  }
+  return { ok: false, priceMultiplier: 1, canonicalLine: a, canonicalCatalog: b };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DEDUPLICATION
+// ─────────────────────────────────────────────────────────────────────────────
+
+const STRIP_PREFIXES = [
+  "furnish and install",
+  "furnish & install",
+  "supply and install",
+  "supply & install",
+  "provide and install",
+  "remove and replace",
+  "install",
+  "supply",
+  "provide",
+  "furnish",
+  "new",
+];
+
+function normalizeName(name: string): string {
+  let n = String(name || "").toLowerCase().trim();
+  for (const p of STRIP_PREFIXES) {
+    if (n.startsWith(p + " ")) { n = n.slice(p.length + 1); break; }
+  }
+  return n.replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+}
+
 interface ClaudeLineItem { name: string; quantity: number; unit: string; type: "material" | "labor"; }
+
+function dedupeLineItems(items: ClaudeLineItem[], log: string[]): ClaudeLineItem[] {
+  const groups = new Map<string, ClaudeLineItem[]>();
+  for (const it of items) {
+    const key = normalizeName(it.name);
+    if (!key) continue;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(it);
+  }
+  const kept: ClaudeLineItem[] = [];
+  for (const [, group] of groups) {
+    if (group.length === 1) { kept.push(group[0]); continue; }
+    // Keep the one with the highest quantity (proxy for most specific / job-sized)
+    const winner = group.reduce((best, cur) => (cur.quantity > best.quantity ? cur : best), group[0]);
+    for (const g of group) {
+      if (g !== winner) {
+        const msg = `[DEDUPE] removed: "${g.name}" | reason: duplicate of "${winner.name}"`;
+        console.log(msg);
+        log.push(msg);
+      }
+    }
+    kept.push(winner);
+  }
+  return kept;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CATALOG
+// ─────────────────────────────────────────────────────────────────────────────
 
 interface CatalogRow {
   id?: string;
@@ -27,6 +149,7 @@ interface CatalogRow {
   price_high: number;
   region?: string;
   source?: string;
+  typical_job_qty?: string | null;
 }
 
 const SIGNIFICANT_STOPWORDS = new Set([
@@ -70,9 +193,10 @@ function roundPrice(p: number): number {
   return Math.round(p / 25) * 25;
 }
 
-function calcCatalogPrice(low: number, high: number, state?: string | null): number {
+function calcCatalogPrice(low: number, high: number, state: string | null | undefined, multiplier: number): number {
   const base = high > low * 2.5 ? low * 1.4 : (low + high) / 2;
-  return roundPrice(base * (1 + regionalAdjust(state)));
+  const adjusted = base * (1 + regionalAdjust(state)) * multiplier;
+  return roundPrice(adjusted);
 }
 
 async function fetchCatalog(trade: string, state: string | null): Promise<CatalogRow[]> {
@@ -80,7 +204,7 @@ async function fetchCatalog(trade: string, state: string | null): Promise<Catalo
   const key = Deno.env.get("MATERIALS_SUPABASE_ANON_KEY");
   if (!url || !key || !trade) return [];
   const headers = { apikey: key, Authorization: `Bearer ${key}` };
-  const select = "select=id,name,unit,price_low,price_high,source,region";
+  const select = "select=id,name,unit,price_low,price_high,source,region,typical_job_qty";
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 4000);
   try {
@@ -108,23 +232,32 @@ async function fetchCatalog(trade: string, state: string | null): Promise<Catalo
   }
 }
 
-async function callAnthropic(model: string, system: string, user: string, maxTokens: number, task: string): Promise<string> {
+// ─────────────────────────────────────────────────────────────────────────────
+// QUANTITY VALIDATION
+// ─────────────────────────────────────────────────────────────────────────────
+
+function parseQtyRange(s: string | null | undefined): { low: number; high: number } | null {
+  if (!s) return null;
+  const m = String(s).match(/(\d+(?:\.\d+)?)\s*[-–to]+\s*(\d+(?:\.\d+)?)/i);
+  if (!m) return null;
+  const low = Number(m[1]);
+  const high = Number(m[2]);
+  if (!Number.isFinite(low) || !Number.isFinite(high)) return null;
+  return { low, high };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ANTHROPIC
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function callAnthropic(model: string, system: string, user: string, maxTokens: number, task: string): Promise<{ text: string; in: number; out: number }> {
   const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY not configured");
   console.log(`[AI CALL] function: ${FN_NAME} | model: ${model} | task: ${task} | tokens: ${maxTokens}`);
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: maxTokens,
-      system,
-      messages: [{ role: "user", content: user }],
-    }),
+    headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "Content-Type": "application/json" },
+    body: JSON.stringify({ model, max_tokens: maxTokens, system, messages: [{ role: "user", content: user }] }),
   });
   if (!res.ok) {
     const txt = await res.text();
@@ -132,9 +265,11 @@ async function callAnthropic(model: string, system: string, user: string, maxTok
     throw new Error(`Anthropic ${res.status}: ${txt.slice(0, 300)}`);
   }
   const data = await res.json();
-  console.log(`[AI RESPONSE] function: ${FN_NAME} | model: ${model} | tokens_used: ${data?.usage?.input_tokens ?? "?"} in / ${data?.usage?.output_tokens ?? "?"} out | status: success`);
+  const tIn = data?.usage?.input_tokens ?? 0;
+  const tOut = data?.usage?.output_tokens ?? 0;
+  console.log(`[AI RESPONSE] function: ${FN_NAME} | model: ${model} | tokens_used: ${tIn} in / ${tOut} out | status: success`);
   const txt = (data.content || []).filter((c: any) => c.type === "text").map((c: any) => c.text).join("\n");
-  return txt || "";
+  return { text: txt || "", in: tIn, out: tOut };
 }
 
 function extractJson<T = any>(text: string): T | null {
@@ -145,9 +280,7 @@ function extractJson<T = any>(text: string): T | null {
   try { return JSON.parse(candidate) as T; } catch { return null; }
 }
 
-async function step1_getLineItemList(
-  trade: string, jobDescription: string, contractorContext: string | null
-): Promise<ClaudeLineItem[]> {
+async function step1_getLineItemList(trade: string, jobDescription: string, contractorContext: string | null) {
   const system = `You are an experienced ${trade.replace(/_/g, " ")} contractor and estimator. Your only job is to decide WHICH line items belong on a proposal and the QUANTITY of each. You MUST NOT include any prices, dollar amounts, or cost estimates. Return only valid JSON — an array of line items.
 
 Each line item has exactly these fields:
@@ -160,6 +293,7 @@ Rules:
 - Pick units that match how this trade is actually quoted.
 - Quantities must be reasonable estimates for the job size described.
 - Include both materials AND labor items.
+- Do NOT list the same material twice with different phrasings.
 - DO NOT include any prices, costs, dollar amounts, or unit_price fields.
 - Return ONLY the JSON array, no prose.`;
 
@@ -170,15 +304,15 @@ ${contractorContext ? `\nCONTRACTOR CONTEXT:\n${contractorContext}` : ""}
 
 Return the JSON array of line items now.`;
 
-  const text = await callAnthropic(STEP1_MODEL, system, user, STEP1_MAX_TOKENS, "step1_items");
-  const parsed = extractJson<ClaudeLineItem[]>(text);
-  if (!Array.isArray(parsed)) return [];
-  return parsed.filter(li => li && typeof li.name === "string" && typeof li.quantity === "number" && typeof li.unit === "string");
+  const r = await callAnthropic(STEP1_MODEL, system, user, STEP1_MAX_TOKENS, "step1_items");
+  const parsed = extractJson<ClaudeLineItem[]>(r.text);
+  const items = Array.isArray(parsed)
+    ? parsed.filter(li => li && typeof li.name === "string" && typeof li.quantity === "number" && typeof li.unit === "string")
+    : [];
+  return { items, tokensIn: r.in, tokensOut: r.out };
 }
 
-async function step2_estimatePrice(
-  item: ClaudeLineItem, trade: string, state: string | null
-): Promise<number> {
+async function step2_estimatePrice(item: ClaudeLineItem, trade: string, state: string | null): Promise<{ price: number; in: number; out: number }> {
   const system = `You are a ${trade.replace(/_/g, " ")} pricing expert. Return a single realistic CURRENT MARKET unit price in US dollars for the line item. No markup. Return ONLY a JSON object: {"unit_price": <number>}. No prose.`;
   const user = `Item: ${item.name}
 Quantity: ${item.quantity}
@@ -188,104 +322,150 @@ ${state ? `State: ${state}` : ""}
 
 Return {"unit_price": N} now.`;
   try {
-    const text = await callAnthropic(STEP2_MODEL, system, user, STEP2_MAX_TOKENS, "step2_estimate");
-    const parsed = extractJson<{ unit_price: number }>(text);
+    const r = await callAnthropic(STEP2_MODEL, system, user, STEP2_MAX_TOKENS, "step2_estimate");
+    const parsed = extractJson<{ unit_price: number }>(r.text);
     const p = Number(parsed?.unit_price);
-    return Number.isFinite(p) && p >= 0 ? p : 0;
+    return { price: Number.isFinite(p) && p >= 0 ? p : 0, in: r.in, out: r.out };
   } catch (e) {
     console.error("[step2] estimate fail:", item.name, e);
-    return 0;
+    return { price: 0, in: 0, out: 0 };
   }
 }
 
-function ok(body: Record<string, unknown>) {
-  return new Response(JSON.stringify(body), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+// Single batched call to correct flagged quantities
+async function batchCorrectQuantities(
+  flagged: Array<{ name: string; unit: string; current: number; range: { low: number; high: number } }>,
+  trade: string,
+  jobDescription: string,
+): Promise<Record<string, number>> {
+  if (flagged.length === 0) return {};
+  const system = `You are a ${trade.replace(/_/g, " ")} estimator. For each item below, the current quantity falls outside the typical range. Return corrected quantities as JSON: {"corrections": [{"name": "...", "quantity": N}, ...]}. Only include items whose quantity should change. Output JSON only.`;
+  const user = `JOB: ${jobDescription || "(none)"}\n\nFLAGGED ITEMS:\n${flagged.map(f => `- ${f.name} | unit: ${f.unit} | current_qty: ${f.current} | typical_range: ${f.range.low}-${f.range.high}`).join("\n")}\n\nReturn corrections JSON now.`;
+  try {
+    const r = await callAnthropic(STEP2_MODEL, system, user, STEP2_MAX_TOKENS, "qty_correction");
+    const parsed = extractJson<{ corrections: Array<{ name: string; quantity: number }> }>(r.text);
+    const out: Record<string, number> = {};
+    if (parsed?.corrections && Array.isArray(parsed.corrections)) {
+      for (const c of parsed.corrections) {
+        if (c?.name && Number.isFinite(c.quantity) && c.quantity > 0) out[c.name] = c.quantity;
+      }
+    }
+    return out;
+  } catch (e) {
+    console.error("[qty_correction] failed:", e);
+    return {};
+  }
+}
+
+function ok(body: Record<string, unknown>, routingLog: Record<string, unknown>) {
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "application/json",
+      "x-ai-routing-log": JSON.stringify(routingLog),
+    },
+  });
 }
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  try {
-    console.log(`[${FN_NAME}] env check:`, {
-      has_anthropic_key: !!Deno.env.get("ANTHROPIC_API_KEY"),
-      has_materials_url: !!Deno.env.get("MATERIALS_SUPABASE_URL"),
-      has_materials_key: !!Deno.env.get("MATERIALS_SUPABASE_ANON_KEY"),
-    });
+  const routing = {
+    function: FN_NAME,
+    models: [] as string[],
+    tokens_in: 0,
+    tokens_out: 0,
+    catalog_match_rate: 0,
+    unit_rejections: 0,
+    qty_corrections: 0,
+    dedupe_removed: 0,
+  };
+  const dedupeLog: string[] = [];
 
+  try {
     let body: any = {};
     try { body = await req.json(); } catch { body = {}; }
     const { trade, job_description, job_state, contractor_context } = body || {};
 
     if (!trade) {
-      return ok({ ok: false, error: "trade is required", line_items: [], catalog_matched: 0, estimated: 0, total: 0 });
+      return ok({ ok: false, error: "trade is required", line_items: [], catalog_matched: 0, estimated: 0, total: 0 }, routing);
     }
 
+    // STEP 1
     let claudeItems: ClaudeLineItem[] = [];
     try {
-      claudeItems = await step1_getLineItemList(trade, job_description || "", contractor_context || null);
-      console.log(`[${FN_NAME}] step1 returned`, claudeItems.length, "items");
+      const r = await step1_getLineItemList(trade, job_description || "", contractor_context || null);
+      claudeItems = r.items;
+      routing.models.push(STEP1_MODEL);
+      routing.tokens_in += r.tokensIn;
+      routing.tokens_out += r.tokensOut;
     } catch (e) {
       console.error(`[${FN_NAME}] step1 failed:`, e);
-      return ok({ ok: false, error: e instanceof Error ? e.message : "step1 failed", line_items: [], catalog_matched: 0, estimated: 0, total: 0, stage: "step1" });
+      return ok({ ok: false, error: e instanceof Error ? e.message : "step1 failed", line_items: [], catalog_matched: 0, estimated: 0, total: 0, stage: "step1" }, routing);
     }
 
     if (claudeItems.length === 0) {
-      return ok({ ok: true, line_items: [], catalog_matched: 0, estimated: 0, total: 0 });
+      return ok({ ok: true, line_items: [], catalog_matched: 0, estimated: 0, total: 0 }, routing);
     }
 
+    // DEDUPE (code-only, deterministic)
+    const beforeCount = claudeItems.length;
+    claudeItems = dedupeLineItems(claudeItems, dedupeLog);
+    routing.dedupe_removed = beforeCount - claudeItems.length;
+
+    // CATALOG FETCH
     let catalog: CatalogRow[] = [];
     try {
       catalog = await fetchCatalog(trade, job_state || null);
-      console.log(`[${FN_NAME}] catalog rows:`, catalog.length);
     } catch (e) {
       console.error(`[${FN_NAME}] catalog fetch failed:`, e);
       catalog = [];
     }
 
-    const priced: any[] = [];
+    // PRICING + UNIT RECONCILIATION
+    type Priced = { item: ClaudeLineItem; row?: CatalogRow; multiplier?: number; unit_price: number; price_source: "catalog" | "estimated"; matched_catalog_id: string | null; matched_catalog_name: string | null };
+    const intermediate: Priced[] = [];
     let matched = 0;
     let estimated = 0;
 
     for (const item of claudeItems) {
       try {
-        const match = bestMatch(item.name, catalog);
-        let unit_price = 0;
-        let unit = item.unit;
-        let price_source: "catalog" | "estimated" = "estimated";
-        let matched_catalog_id: string | null = null;
-        let matched_catalog_name: string | null = null;
-
-        if (match) {
-          const r = match.row;
-          unit_price = calcCatalogPrice(Number(r.price_low) || 0, Number(r.price_high) || 0, job_state);
-          unit = r.unit || item.unit;
-          price_source = "catalog";
-          matched_catalog_id = r.id || null;
-          matched_catalog_name = r.name;
-          matched++;
-        } else {
-          unit_price = await step2_estimatePrice(item, trade, job_state || null);
-          estimated++;
+        const m = bestMatch(item.name, catalog);
+        if (m) {
+          const rec = reconcileUnits(item.unit, m.row.unit);
+          const action = rec.ok ? "applied" : "rejected";
+          console.log(`[UNIT CHECK] item: ${item.name} | line_item_unit: ${item.unit} | catalog_unit: ${m.row.unit} | normalized_match: ${rec.canonicalLine === rec.canonicalCatalog} | conversion: ${rec.priceMultiplier !== 1 ? rec.priceMultiplier : "none"} | action: ${action}`);
+          if (rec.ok) {
+            const unit_price = calcCatalogPrice(Number(m.row.price_low) || 0, Number(m.row.price_high) || 0, job_state, rec.priceMultiplier);
+            intermediate.push({
+              item, row: m.row, multiplier: rec.priceMultiplier, unit_price,
+              price_source: "catalog",
+              matched_catalog_id: m.row.id || null,
+              matched_catalog_name: m.row.name,
+            });
+            matched++;
+            continue;
+          } else {
+            routing.unit_rejections++;
+          }
         }
-
-        priced.push({
-          description: item.name,
-          quantity: item.quantity,
-          unit,
-          unit_price,
-          type: item.type,
-          price_source,
-          matched_catalog_id,
-          matched_catalog_name,
+        // fall through → Haiku estimate
+        const est = await step2_estimatePrice(item, trade, job_state || null);
+        routing.tokens_in += est.in;
+        routing.tokens_out += est.out;
+        if (!routing.models.includes(STEP2_MODEL)) routing.models.push(STEP2_MODEL);
+        intermediate.push({
+          item, unit_price: est.price,
+          price_source: "estimated",
+          matched_catalog_id: null,
+          matched_catalog_name: null,
         });
+        estimated++;
       } catch (itemErr) {
         console.error(`[${FN_NAME}] item "${item?.name}" failed:`, itemErr);
-        priced.push({
-          description: item.name,
-          quantity: item.quantity,
-          unit: item.unit,
-          unit_price: 0,
-          type: item.type,
+        intermediate.push({
+          item, unit_price: 0,
           price_source: "estimated",
           matched_catalog_id: null,
           matched_catalog_name: null,
@@ -294,13 +474,53 @@ serve(async (req) => {
       }
     }
 
+    // QTY VALIDATION using catalog typical_job_qty
+    const flagged: Array<{ name: string; unit: string; current: number; range: { low: number; high: number } }> = [];
+    for (const p of intermediate) {
+      const range = parseQtyRange(p.row?.typical_job_qty || null);
+      const isFlagged = !!(range && (p.item.quantity < range.low * 0.5 || p.item.quantity > range.high * 3));
+      console.log(`[QTY CHECK] item: ${p.item.name} | claude_qty: ${p.item.quantity} | catalog_range: ${range ? `${range.low}-${range.high}` : "n/a"} | flagged: ${isFlagged}`);
+      if (isFlagged && range) {
+        flagged.push({ name: p.item.name, unit: p.item.unit, current: p.item.quantity, range });
+      }
+    }
+    if (flagged.length > 0) {
+      const corrections = await batchCorrectQuantities(flagged, trade, job_description || "");
+      // tokens for correction call were logged inside callAnthropic but not added here; add minimal:
+      if (Object.keys(corrections).length > 0 && !routing.models.includes(STEP2_MODEL)) routing.models.push(STEP2_MODEL);
+      for (const p of intermediate) {
+        if (corrections[p.item.name]) {
+          const newQ = corrections[p.item.name];
+          console.log(`[QTY CHECK] item: ${p.item.name} | corrected_to: ${newQ}`);
+          p.item.quantity = newQ;
+          routing.qty_corrections++;
+        }
+      }
+    }
+
+    routing.catalog_match_rate = intermediate.length > 0 ? matched / intermediate.length : 0;
+
+    const priced = intermediate.map(p => ({
+      description: p.item.name,
+      quantity: p.item.quantity,
+      unit: p.item.unit,
+      unit_price: p.unit_price,
+      type: p.item.type,
+      price_source: p.price_source,
+      matched_catalog_id: p.matched_catalog_id,
+      matched_catalog_name: p.matched_catalog_name,
+    }));
+
     return ok({
       ok: true,
       line_items: priced,
       catalog_matched: matched,
       estimated,
       total: priced.length,
-    });
+      dedupe_removed: routing.dedupe_removed,
+      unit_rejections: routing.unit_rejections,
+      qty_corrections: routing.qty_corrections,
+    }, routing);
   } catch (e) {
     console.error(`[${FN_NAME}] UNHANDLED:`, e, (e as any)?.stack);
     return ok({
@@ -308,6 +528,6 @@ serve(async (req) => {
       error: e instanceof Error ? e.message : "Unknown error",
       line_items: [], catalog_matched: 0, estimated: 0, total: 0,
       stage: "unhandled",
-    });
+    }, routing);
   }
 });
