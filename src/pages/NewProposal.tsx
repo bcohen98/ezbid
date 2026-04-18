@@ -749,6 +749,29 @@ export default function NewProposal() {
                     className="h-11"
                   />
                 </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-1 block">
+                    Job Site Zip Code <span className="text-destructive">*</span>
+                  </label>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={5}
+                    value={jobZip}
+                    onChange={e => {
+                      const v = e.target.value.replace(/\D/g, '').slice(0, 5);
+                      setJobZip(v);
+                      if (jobZipError) setJobZipError('');
+                    }}
+                    onBlur={handleZipBlur}
+                    placeholder="33301"
+                    className={`h-11 ${jobZipError ? 'border-destructive' : ''}`}
+                  />
+                  {jobZipError && <p className="text-xs text-destructive mt-1">{jobZipError}</p>}
+                  {jobState && !jobZipError && (
+                    <p className="text-xs text-muted-foreground mt-1">State: {jobState} · Tax auto-set</p>
+                  )}
+                </div>
               </div>
             </div>
 
