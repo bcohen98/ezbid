@@ -191,30 +191,33 @@ serve(async (req) => {
 
           if (resendKey && lovableKey && proposal) {
             const amountStr = amountDollars.toLocaleString("en-US", { minimumFractionDigits: 2 });
+            const PAYMENTS_FROM = "EZ-Bid Payments <payments@ezbid.pro>";
             // Email to contractor
             if (profile?.email) {
               await fetch("https://connector-gateway.lovable.dev/resend/emails", {
                 method: "POST",
                 headers: { "Content-Type": "application/json", Authorization: `Bearer ${lovableKey}`, "X-Connection-Api-Key": resendKey },
                 body: JSON.stringify({
-                  from: "EZ-Bid <onboarding@resend.dev>",
+                  from: PAYMENTS_FROM,
                   to: [profile.email],
-                  subject: `Payment received: $${amountStr} from ${proposal.client_name}`,
-                  html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:30px 20px;"><h1 style="font-size:22px;color:#1a1a1a;">Payment Received! 💰</h1><p style="font-size:15px;color:#555;line-height:1.6;"><strong>$${amountStr}</strong> has been received from <strong>${proposal.client_name}</strong> for <strong>${proposal.title}</strong>.</p><p style="font-size:13px;color:#888;">Funds will be deposited to your bank account, typically next business day.</p></div>`,
+                  subject: `Payment Received — ${proposal.title || "Proposal"}`,
+                  html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:30px 20px;"><h1 style="font-size:22px;color:#1a1a1a;">Payment Received! 💰</h1><p style="font-size:15px;color:#555;line-height:1.6;"><strong>${proposal.client_name || "Your client"}</strong> has paid <strong>$${amountStr}</strong> for <strong>${proposal.title || "your proposal"}</strong>. The funds are being transferred to your bank account.</p><p style="font-size:13px;color:#888;">Funds typically arrive next business day.</p></div>`,
                 }),
               });
             }
             // Email to client
             if (proposal.client_email) {
+              const clientEmailPayload: Record<string, any> = {
+                from: PAYMENTS_FROM,
+                to: [proposal.client_email],
+                subject: `Payment Confirmed — ${proposal.title || "Proposal"}`,
+                html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:30px 20px;"><h1 style="font-size:22px;color:#1a1a1a;">Payment Confirmed ✓</h1><p style="font-size:15px;color:#555;line-height:1.6;">Your payment of <strong>$${amountStr}</strong> to <strong>${profile?.company_name || "your contractor"}</strong> has been received. Thank you!</p><p style="font-size:12px;color:#999;margin-top:20px;">— ${profile?.company_name || "Your contractor"}</p></div>`,
+              };
+              if (profile?.email) clientEmailPayload.reply_to = profile.email;
               await fetch("https://connector-gateway.lovable.dev/resend/emails", {
                 method: "POST",
                 headers: { "Content-Type": "application/json", Authorization: `Bearer ${lovableKey}`, "X-Connection-Api-Key": resendKey },
-                body: JSON.stringify({
-                  from: `${profile?.company_name || "EZ-Bid"} <onboarding@resend.dev>`,
-                  to: [proposal.client_email],
-                  subject: `Payment Confirmation — $${amountStr}`,
-                  html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:30px 20px;"><h1 style="font-size:22px;color:#1a1a1a;">Payment Confirmed ✓</h1><p style="font-size:15px;color:#555;line-height:1.6;">Your payment of <strong>$${amountStr}</strong> for <strong>${proposal.title}</strong> has been received. Thank you!</p><p style="font-size:12px;color:#999;margin-top:20px;">— ${profile?.company_name || "Your contractor"}</p></div>`,
-                }),
+                body: JSON.stringify(clientEmailPayload),
               });
             }
           }
