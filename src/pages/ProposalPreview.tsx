@@ -50,7 +50,11 @@ export default function ProposalPreview() {
   const lastSnapshot = useRef<{ proposal: any; lineItems: any[] } | null>(null);
   const [showSendModal, setShowSendModal] = useState(false);
   const [personalMessage, setPersonalMessage] = useState('');
-  const [hidePricing, setHidePricing] = useState(false);
+  const [isGeneratingMessage, setIsGeneratingMessage] = useState(false);
+  // Granular client-view toggles — default true; optimistic local state with background sync.
+  const [showMaterials, setShowMaterials] = useState(true);
+  const [showQuantities, setShowQuantities] = useState(true);
+  const [showPricing, setShowPricing] = useState(true);
 
   // Template switching
   const getDefaultTemplate = (): TemplateId => {
@@ -82,20 +86,31 @@ export default function ProposalPreview() {
       if ((proposal as any).custom_accent_color) setAccentColor((proposal as any).custom_accent_color);
       if ((proposal as any).font_style) setFontStyle((proposal as any).font_style as FontStyle);
       if ((proposal as any).header_style) setHeaderStyle((proposal as any).header_style as HeaderStyle);
-      setHidePricing(!!(proposal as any).hide_pricing_from_client);
+      const sm = (proposal as any).show_materials;
+      const sq = (proposal as any).show_quantities;
+      const sp = (proposal as any).show_pricing;
+      setShowMaterials(sm === undefined || sm === null ? true : !!sm);
+      setShowQuantities(sq === undefined || sq === null ? true : !!sq);
+      setShowPricing(sp === undefined || sp === null ? true : !!sp);
       setPersonalMessage((proposal as any).personal_message || '');
     }
   }, [proposal?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleHidePricingToggle = (checked: boolean) => {
-    // Optimistic — flip local state instantly, sync to DB in background
-    setHidePricing(checked);
+  // Optimistic toggle handlers — update local state immediately, sync in background.
+  const makeToggleHandler = (
+    field: 'show_materials' | 'show_quantities' | 'show_pricing',
+    setter: (v: boolean) => void,
+  ) => (checked: boolean) => {
+    setter(checked);
     if (proposal) {
-      updateProposal({ id: proposal.id, hide_pricing_from_client: checked } as any).catch((err) => {
-        console.error('[hide_pricing sync failed]', err);
+      updateProposal({ id: proposal.id, [field]: checked } as any).catch((err) => {
+        console.error(`[${field} sync failed]`, err);
       });
     }
   };
+  const handleShowMaterialsToggle = makeToggleHandler('show_materials', setShowMaterials);
+  const handleShowQuantitiesToggle = makeToggleHandler('show_quantities', setShowQuantities);
+  const handleShowPricingToggle = makeToggleHandler('show_pricing', setShowPricing);
 
   const handleAccentChange = async (color: string) => {
     setAccentColor(color);

@@ -222,7 +222,7 @@ export default function NewProposal() {
   const [materialsIncluded, setMaterialsIncluded] = useState('');
   const [materialsExcluded, setMaterialsExcluded] = useState('');
   const [isSuggestingMaterials, setIsSuggestingMaterials] = useState(false);
-  const [materialsContextCount, setMaterialsContextCount] = useState(0);
+  const [pricingAudit, setPricingAudit] = useState<{ matched: number; estimated: number; total: number }>({ matched: 0, estimated: 0, total: 0 });
 
   // Line items
   const [items, setItems] = useState<LineItem[]>(() => makeDefaults(defaultTrade));
@@ -421,45 +421,34 @@ export default function NewProposal() {
     setStep('pricing');
   };
 
-  // After pricing → build
+  // After pricing → build (TWO-STEP architecture: Claude picks items, code looks up prices)
   const handleAfterPricing = async () => {
     if (aiPricing) {
       setIsSuggestingMaterials(true);
       try {
         const uc = userContextRef.current?.intelligence_profile || null;
-
-        // Derive state from zip if needed, then fetch materials pricing context
         const stateCode = jobState || (jobZip ? zipToState(jobZip) : null);
-        let materialsContext: any[] = [];
-        if (stateCode) {
-          try {
-            const { data: mc, error: mcErr } = await supabase.functions.invoke('get_materials_context', {
-              body: { trade, state_code: stateCode },
-            });
-            const returnedLen = Array.isArray(mc?.materials) ? mc.materials.length : 0;
-            console.log('[get_materials_context] returned array length:', returnedLen, { stateCode, trade, error: mcErr, sample: mc?.materials?.slice(0, 3) });
-            if (Array.isArray(mc?.materials)) materialsContext = mc.materials;
-          } catch (mcErr) {
-            console.warn('[get_materials_context] failed (non-blocking):', mcErr);
-          }
-        } else {
-          console.log('[get_materials_context] skipped — no state code derivable from jobZip');
-        }
-        setMaterialsContextCount(materialsContext.length);
 
-        const { data, error } = await supabase.functions.invoke('suggest-materials-pricing', {
+        const contractorContext = uc?.contractor_insights?.length
+          ? `Contractor pricing personality: ${uc.pricing_personality || 'unknown'}. Insights: ${uc.contractor_insights.join('. ')}`
+          : null;
+
+        const { data, error } = await supabase.functions.invoke('price-line-items', {
           body: {
-            trade_type: trade,
-            job_description: jobDescription,
-            job_site_address: jobAddress || null,
-            user_context: uc,
-            pricing_benchmarks: uc?.pricing_benchmarks || null,
+            trade,
+            job_description: getEnrichedDescription(),
             job_state: stateCode,
-            materials_context: materialsContext,
+            contractor_context: contractorContext,
           },
         });
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
+
+        console.log('[price-line-items] response:', {
+          total: data?.total,
+          catalog_matched: data?.catalog_matched,
+          estimated: data?.estimated,
+        });
 
         const aiItems: LineItem[] = (data.line_items || []).map((li: any, i: number) => ({
           id: `ai_mat_${Date.now()}_${i}`,
@@ -468,11 +457,19 @@ export default function NewProposal() {
           unit: li.unit,
           unit_price: li.unit_price,
           aiSuggested: true,
-        }));
+          // Internal-only metadata (never shown to client)
+          _price_source: li.price_source,
+          _matched_catalog_id: li.matched_catalog_id,
+          _matched_catalog_name: li.matched_catalog_name,
+        } as any));
         if (aiItems.length > 0) setItems(aiItems);
-        if (data.materials_included) setMaterialsIncluded(data.materials_included);
-        if (data.materials_excluded) setMaterialsExcluded(data.materials_excluded);
+        setPricingAudit({
+          matched: data?.catalog_matched || 0,
+          estimated: data?.estimated || 0,
+          total: data?.total || aiItems.length,
+        });
       } catch (err: any) {
+        console.error('[price-line-items] failed:', err);
         toast({ title: 'AI pricing failed', description: err.message || 'Could not get suggestions', variant: 'destructive' });
       } finally {
         setIsSuggestingMaterials(false);
@@ -592,6 +589,15 @@ export default function NewProposal() {
       if (aiError) throw new Error(aiError.message || 'AI generation failed');
       if (aiData?.error) throw new Error(aiData.error);
 
+      // Build pricing_audit array from current items (internal metadata, never shown to client)
+      const pricingAuditEntries = finalItems.map((it: any) => ({
+        description: it.description,
+        price_source: it._price_source || 'manual',
+        matched_catalog_id: it._matched_catalog_id || null,
+        matched_catalog_name: it._matched_catalog_name || null,
+        unit_price: it.unit_price,
+      }));
+
       const proposal = await createProposal({
         template: 'clean' as any,
         trade_type: trade as any,
@@ -602,7 +608,12 @@ export default function NewProposal() {
         job_site_city: null,
         job_site_state: jobState,
         job_site_zip: jobZip || null,
-        ...({ job_zip: jobZip || null, job_state: jobState, materials_context_count: materialsContext.length } as any),
+        ...({
+          job_zip: jobZip || null,
+          job_state: jobState,
+          materials_context_count: pricingAudit.matched,
+          pricing_audit: pricingAuditEntries,
+        } as any),
         title: aiData.title || `${trade.replace(/_/g, ' ')} Proposal`,
         job_description: aiData.cover_letter || enrichedDesc,
         scope_of_work: aiData.scope_of_work || '',
@@ -965,9 +976,11 @@ export default function NewProposal() {
                 <>Continue →</>
               )}
             </Button>
-            {materialsContextCount > 0 && (
+            {pricingAudit.total > 0 && (
               <p className="text-xs text-muted-foreground text-center mt-2">
-                Pricing sourced from {materialsContextCount} materials
+                {pricingAudit.estimated === 0
+                  ? 'All line items priced from current market data'
+                  : `${pricingAudit.matched} of ${pricingAudit.total} line items priced from catalog · ${pricingAudit.estimated} estimated`}
               </p>
             )}
           </div>

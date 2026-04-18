@@ -28,7 +28,7 @@ interface Props {
   customAccentColor?: string;
   fontStyle?: FontStyle;
   customHeaderStyle?: HeaderStyle;
-  /** When true, render the client-facing view: respects `hide_pricing_from_client` on the proposal. */
+  /** When true, render the client-facing view: respects show_materials, show_quantities, show_pricing on the proposal. */
   clientView?: boolean;
   onFieldEdit?: (field: string, value: string) => void;
   onLineItemEdit?: (id: string, updates: { description: string; quantity: number; unit: string; unit_price: number; subtotal: number }) => void;
@@ -42,7 +42,11 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
   const trade = customAccentColor ? { ...rawTrade, accentColor: customAccentColor } : rawTrade;
   const fontFamily = FONT_FAMILIES[fontStyle];
   const address = [profile?.street_address, profile?.city, profile?.state, profile?.zip].filter(Boolean).join(', ');
-  const hidePricing = clientView && !!(proposal as any).hide_pricing_from_client;
+
+  // Granular client-view visibility — defaults true so legacy proposals show everything.
+  const showMaterials = !clientView || (proposal as any).show_materials !== false;
+  const showQuantities = !clientView || (proposal as any).show_quantities !== false;
+  const showPricing = !clientView || (proposal as any).show_pricing !== false;
 
   const editable = (field: string, value: string | null, children: React.ReactNode) => {
     if (!onFieldEdit || !value) return children;
@@ -135,36 +139,11 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
   const lineItemsTable = () => {
     if (lineItems.length === 0) return null;
 
-    // Client-facing view with pricing hidden — show grand total only.
-    if (hidePricing) {
-      return (
-        <div className="mb-8" style={{ pageBreakInside: 'avoid' }}>
-          <div className="rounded-md border p-4 mb-4 text-sm" style={{ borderColor: '#e5e7eb', color: '#6b7280', backgroundColor: '#fafafa' }}>
-            Itemized pricing has been hidden by your contractor. The total below covers all materials and labor for the scope of work.
-          </div>
-          <div className="flex justify-end">
-            <div className="w-72">
-              <div className="flex justify-between items-center font-bold text-base px-4 py-3" style={{ backgroundColor: trade.accentColor, color: '#fff', borderRadius: '4px' }}>
-                <span>GRAND TOTAL</span>
-                <span>${formatCurrency(proposal.total)}</span>
-              </div>
-              {Number(proposal.deposit_amount) > 0 && (
-                <>
-                  <div className="flex justify-between text-sm py-2 px-4 mt-2">
-                    <span style={{ color: '#6b7280' }}>Deposit Due Upon Signing</span>
-                    <span className="font-semibold" style={{ color: '#374151' }}>${formatCurrency(proposal.deposit_amount)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm py-1 px-4">
-                    <span style={{ color: '#6b7280' }}>Balance Due Upon Completion</span>
-                    <span className="font-semibold" style={{ color: '#374151' }}>${formatCurrency(proposal.balance_due)}</span>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      );
-    }
+    // Editing only allowed on contractor view (not client view).
+    const allowEdit = !clientView && !!onLineItemEdit;
+    const allowAdd = !clientView && !!onAddLineItem;
+    const allowDelete = !clientView && !!onDeleteLineItem;
+    const allowTotalsEdit = !clientView && !!onTotalsEdit;
 
     return (
       <div className="mb-8" style={{ pageBreakInside: 'avoid' }}>
@@ -172,26 +151,36 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
           <thead>
             <tr style={{ backgroundColor: trade.accentColor }}>
               <th className="py-3 px-4 text-center text-xs font-bold uppercase tracking-wider" style={{ color: '#fff', width: '40px' }}>#</th>
-              <th className="py-3 px-4 text-left text-xs font-bold uppercase tracking-wider" style={{ color: '#fff' }}>Description</th>
-              <th className="py-3 px-4 text-center text-xs font-bold uppercase tracking-wider" style={{ color: '#fff', width: '60px' }}>Qty</th>
-              <th className="py-3 px-4 text-right text-xs font-bold uppercase tracking-wider" style={{ color: '#fff', width: '70px' }}>Unit</th>
-              <th className="py-3 px-4 text-right text-xs font-bold uppercase tracking-wider" style={{ color: '#fff', width: '90px' }}>Price</th>
-              <th className="py-3 px-4 text-right text-xs font-bold uppercase tracking-wider" style={{ color: '#fff', width: '100px' }}>Total</th>
-              {onDeleteLineItem && <th style={{ width: '32px' }} />}
+              {showMaterials && (
+                <th className="py-3 px-4 text-left text-xs font-bold uppercase tracking-wider" style={{ color: '#fff' }}>Description</th>
+              )}
+              {showQuantities && (
+                <th className="py-3 px-4 text-center text-xs font-bold uppercase tracking-wider" style={{ color: '#fff', width: '60px' }}>Qty</th>
+              )}
+              {showQuantities && (
+                <th className="py-3 px-4 text-right text-xs font-bold uppercase tracking-wider" style={{ color: '#fff', width: '70px' }}>Unit</th>
+              )}
+              {showPricing && (
+                <th className="py-3 px-4 text-right text-xs font-bold uppercase tracking-wider" style={{ color: '#fff', width: '90px' }}>Price</th>
+              )}
+              {showPricing && (
+                <th className="py-3 px-4 text-right text-xs font-bold uppercase tracking-wider" style={{ color: '#fff', width: '100px' }}>Total</th>
+              )}
+              {allowDelete && <th style={{ width: '32px' }} />}
             </tr>
           </thead>
           <tbody>
             {lineItems.map((item, idx) => (
-              onLineItemEdit ? (
-                <EditableLineItemRow key={item.id} item={item} index={idx + 1} onSave={onLineItemEdit} onDelete={onDeleteLineItem} />
+              allowEdit ? (
+                <EditableLineItemRow key={item.id} item={item} index={idx + 1} onSave={onLineItemEdit!} onDelete={allowDelete ? onDeleteLineItem : undefined} />
               ) : (
                 <tr key={item.id} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f9fafb', borderBottom: '1px solid #f0f0f0' }}>
                   <td className="py-3.5 px-4 text-center" style={{ color: '#6b7280' }}>{idx + 1}</td>
-                  <td className="py-3.5 px-4" style={{ color: '#1f2937' }}>{item.description}</td>
-                  <td className="py-3.5 px-4 text-center" style={{ color: '#374151' }}>{item.quantity}</td>
-                  <td className="py-3.5 px-4 text-right" style={{ color: '#6b7280' }}>{item.unit}</td>
-                  <td className="py-3.5 px-4 text-right" style={{ color: '#374151' }}>${formatCurrency(item.unit_price)}</td>
-                  <td className="py-3.5 px-4 text-right font-semibold" style={{ color: '#111827' }}>${formatCurrency(item.subtotal)}</td>
+                  {showMaterials && <td className="py-3.5 px-4" style={{ color: '#1f2937' }}>{item.description}</td>}
+                  {showQuantities && <td className="py-3.5 px-4 text-center" style={{ color: '#374151' }}>{item.quantity}</td>}
+                  {showQuantities && <td className="py-3.5 px-4 text-right" style={{ color: '#6b7280' }}>{item.unit}</td>}
+                  {showPricing && <td className="py-3.5 px-4 text-right" style={{ color: '#374151' }}>${formatCurrency(item.unit_price)}</td>}
+                  {showPricing && <td className="py-3.5 px-4 text-right font-semibold" style={{ color: '#111827' }}>${formatCurrency(item.subtotal)}</td>}
                 </tr>
               )
             ))}
@@ -199,7 +188,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
         </table>
 
         {/* Add line item button */}
-        {onAddLineItem && (
+        {allowAdd && (
           <button
             type="button"
             onClick={onAddLineItem}
@@ -210,24 +199,26 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
           </button>
         )}
 
-        {/* Totals */}
-        {onTotalsEdit ? (
+        {/* Totals — grand total ALWAYS visible to client regardless of toggles. */}
+        {allowTotalsEdit ? (
           <EditableTotals
             subtotal={Number(proposal.subtotal) || 0}
             taxRate={Number(proposal.tax_rate) || 0}
             depositMode={proposal.deposit_mode || 'percentage'}
             depositValue={Number(proposal.deposit_value) || 0}
-            onSave={onTotalsEdit}
+            onSave={onTotalsEdit!}
           />
         ) : (
           <div className="mt-3">
             <div className="flex justify-end">
               <div className="w-72" style={{ borderTop: '2px solid #e5e7eb' }}>
-                <div className="flex justify-between text-sm py-2 px-4">
-                  <span className="font-semibold" style={{ color: '#374151' }}>Subtotal</span>
-                  <span className="font-semibold" style={{ color: '#111827' }}>${formatCurrency(proposal.subtotal)}</span>
-                </div>
-                {Number(proposal.tax_rate) > 0 && (
+                {showPricing && (
+                  <div className="flex justify-between text-sm py-2 px-4">
+                    <span className="font-semibold" style={{ color: '#374151' }}>Subtotal</span>
+                    <span className="font-semibold" style={{ color: '#111827' }}>${formatCurrency(proposal.subtotal)}</span>
+                  </div>
+                )}
+                {showPricing && Number(proposal.tax_rate) > 0 && (
                   <div className="flex justify-between text-sm py-2 px-4" style={{ borderTop: '1px solid #f0f0f0' }}>
                     <span style={{ color: '#6b7280' }}>Tax ({proposal.tax_rate}%)</span>
                     <span style={{ color: '#374151' }}>${formatCurrency(proposal.tax_amount)}</span>
