@@ -217,7 +217,7 @@ serve(async (req) => {
   try {
     // Diagnostic: log env-var presence (never values)
     console.log("[price-line-items] env check:", {
-      has_anthropic: !!Deno.env.get("ANTHROPIC_API_KEY"),
+      has_lovable_key: !!Deno.env.get("LOVABLE_API_KEY"),
       has_materials_url: !!Deno.env.get("MATERIALS_SUPABASE_URL"),
       has_materials_key: !!Deno.env.get("MATERIALS_SUPABASE_ANON_KEY"),
       model: PRIMARY_MODEL,
