@@ -13,10 +13,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-// Use current generally-available models. Older dated snapshots (e.g. -20241022) return 404.
-const PRIMARY_MODEL = Deno.env.get("ANTHROPIC_MODEL") || "claude-3-5-haiku-latest";
-const FALLBACK_MODEL = "claude-3-haiku-20240307";
+// Uses Lovable AI Gateway (consistent with rest of project) — no Anthropic key needed.
+const LOVABLE_AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const PRIMARY_MODEL = Deno.env.get("PRICING_MODEL") || "google/gemini-2.5-flash";
+const FALLBACK_MODEL = "google/gemini-2.5-flash-lite";
 
 interface ClaudeLineItem { name: string; quantity: number; unit: string; type: "material" | "labor"; }
 
