@@ -185,7 +185,8 @@ serve(async (req) => {
     // ─── STEP B: Statistical Analysis ───
 
     const currentTradeProposals = proposals.filter((p: any) => p.trade_type === trade);
-    const tradeProposals = currentTradeProposals.length >= 3 ? currentTradeProposals : proposals;
+    // Cap to most recent 30 to keep CPU bounded under edge runtime limits
+    const tradeProposals = (currentTradeProposals.length >= 3 ? currentTradeProposals : proposals).slice(0, 30);
 
     // Per-trade metrics
     const totals = tradeProposals.map((p: any) => Number(p.total) || 0).filter((t: number) => t > 0);
