@@ -496,7 +496,7 @@ export default function ProposalPreview() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
           {/* Preview */}
           <div className="border rounded-lg overflow-x-auto bg-background shadow-sm">
-            <ProposalDocument proposal={{ ...proposal, hide_pricing_from_client: hidePricing } as any} lineItems={lineItems} profile={profile} exhibits={exhibits} template={activeTemplate} customAccentColor={accentColor || undefined} fontStyle={fontStyle} customHeaderStyle={headerStyle} clientView={hidePricing} onFieldEdit={isSigned || hidePricing ? undefined : handleFieldEdit} onLineItemEdit={isSigned || hidePricing ? undefined : handleLineItemEdit} onDeleteLineItem={isSigned || hidePricing ? undefined : handleDeleteLineItem} onAddLineItem={isSigned || hidePricing ? undefined : handleAddLineItem} onTotalsEdit={isSigned || hidePricing ? undefined : handleTotalsEdit} />
+            <ProposalDocument proposal={{ ...proposal, show_materials: showMaterials, show_quantities: showQuantities, show_pricing: showPricing } as any} lineItems={lineItems} profile={profile} exhibits={exhibits} template={activeTemplate} customAccentColor={accentColor || undefined} fontStyle={fontStyle} customHeaderStyle={headerStyle} onFieldEdit={isSigned ? undefined : handleFieldEdit} onLineItemEdit={isSigned ? undefined : handleLineItemEdit} onDeleteLineItem={isSigned ? undefined : handleDeleteLineItem} onAddLineItem={isSigned ? undefined : handleAddLineItem} onTotalsEdit={isSigned ? undefined : handleTotalsEdit} />
           </div>
 
           {/* Side panel */}
