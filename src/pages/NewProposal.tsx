@@ -529,6 +529,18 @@ export default function NewProposal() {
       const finalBalance = finalGrandTotal - finalDepositAmount;
 
       const uc = userContextRef.current?.intelligence_profile || null;
+
+      // Fetch materials context (never blocks)
+      let materialsContext: any[] = [];
+      if (jobState) {
+        try {
+          const { data: mc } = await supabase.functions.invoke('get_materials_context', {
+            body: { trade, state_code: jobState },
+          });
+          if (Array.isArray(mc?.materials)) materialsContext = mc.materials;
+        } catch {}
+      }
+
       const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-proposal', {
         body: {
           trade,
@@ -549,6 +561,8 @@ export default function NewProposal() {
           user_context: uc,
           smart_defaults: uc?.smart_defaults || null,
           signature_line_items: uc?.signature_line_items || null,
+          job_state: jobState,
+          materials_context: materialsContext,
         },
       });
 
