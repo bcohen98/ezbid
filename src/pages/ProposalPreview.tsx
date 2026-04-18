@@ -496,7 +496,7 @@ export default function ProposalPreview() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
           {/* Preview */}
           <div className="border rounded-lg overflow-x-auto bg-background shadow-sm">
-            <ProposalDocument proposal={{ ...proposal, hide_pricing_from_client: hidePricing } as any} lineItems={lineItems} profile={profile} exhibits={exhibits} template={activeTemplate} customAccentColor={accentColor || undefined} fontStyle={fontStyle} customHeaderStyle={headerStyle} clientView={hidePricing} onFieldEdit={isSigned || hidePricing ? undefined : handleFieldEdit} onLineItemEdit={isSigned || hidePricing ? undefined : handleLineItemEdit} onDeleteLineItem={isSigned || hidePricing ? undefined : handleDeleteLineItem} onAddLineItem={isSigned || hidePricing ? undefined : handleAddLineItem} onTotalsEdit={isSigned || hidePricing ? undefined : handleTotalsEdit} />
+            <ProposalDocument proposal={{ ...proposal, show_materials: showMaterials, show_quantities: showQuantities, show_pricing: showPricing } as any} lineItems={lineItems} profile={profile} exhibits={exhibits} template={activeTemplate} customAccentColor={accentColor || undefined} fontStyle={fontStyle} customHeaderStyle={headerStyle} onFieldEdit={isSigned ? undefined : handleFieldEdit} onLineItemEdit={isSigned ? undefined : handleLineItemEdit} onDeleteLineItem={isSigned ? undefined : handleDeleteLineItem} onAddLineItem={isSigned ? undefined : handleAddLineItem} onTotalsEdit={isSigned ? undefined : handleTotalsEdit} />
           </div>
 
           {/* Side panel */}
@@ -755,10 +755,22 @@ export default function ProposalPreview() {
                 </h3>
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-0.5">
-                    <Label htmlFor="hide-pricing-toggle" className="text-sm">Hide itemized pricing from client</Label>
-                    <p className="text-xs text-muted-foreground">Client sees the grand total only — line items, quantities, and unit prices are hidden.</p>
+                    <Label htmlFor="show-materials-toggle" className="text-sm">Show materials</Label>
                   </div>
-                  <Switch id="hide-pricing-toggle" checked={hidePricing} onCheckedChange={handleHidePricingToggle} />
+                  <Switch id="show-materials-toggle" checked={showMaterials} onCheckedChange={handleShowMaterialsToggle} />
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="show-quantities-toggle" className="text-sm">Show quantities</Label>
+                  </div>
+                  <Switch id="show-quantities-toggle" checked={showQuantities} onCheckedChange={handleShowQuantitiesToggle} />
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="show-pricing-toggle" className="text-sm">Show pricing</Label>
+                    <p className="text-xs text-muted-foreground">Grand total always remains visible.</p>
+                  </div>
+                  <Switch id="show-pricing-toggle" checked={showPricing} onCheckedChange={handleShowPricingToggle} />
                 </div>
               </div>
             )}
