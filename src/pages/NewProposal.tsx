@@ -60,6 +60,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { zipToState, stateToTaxRate } from '@/lib/zipToState';
 
 interface AiSuggestion {
   description: string;
@@ -145,6 +146,9 @@ export default function NewProposal() {
   const [clientEmail, setClientEmail] = useState('');
   const [clientPhone, setClientPhone] = useState('');
   const [jobAddress, setJobAddress] = useState('');
+  const [jobZip, setJobZip] = useState('');
+  const [jobZipError, setJobZipError] = useState('');
+  const [jobState, setJobState] = useState<string | null>(null);
   const [showClientDropdown, setShowClientDropdown] = useState(false);
   const [clientMatches, setClientMatches] = useState<any[]>([]);
   const [clientCount, setClientCount] = useState(0);
@@ -312,11 +316,31 @@ export default function NewProposal() {
     if (!clientName.trim()) missing.push('Client Name');
     if (!jobAddress.trim()) missing.push('Job Address');
     if (!jobDescription.trim()) missing.push('Job Description');
+    if (!/^\d{5}$/.test(jobZip)) missing.push('Job Site Zip Code (5 digits)');
     if (missing.length > 0) {
       toast({ title: 'Missing required fields', description: `Please fill in: ${missing.join(', ')}`, variant: 'destructive' });
       return false;
     }
     return true;
+  };
+
+  const handleZipBlur = () => {
+    if (!jobZip) { setJobZipError(''); return; }
+    if (!/^\d{5}$/.test(jobZip)) {
+      setJobZipError('Must be exactly 5 digits');
+      return;
+    }
+    setJobZipError('');
+    const st = zipToState(jobZip);
+    setJobState(st);
+    if (st) {
+      const rate = stateToTaxRate(st);
+      // Only auto-populate if user hasn't customized yet
+      if (rate !== null && (!taxEnabled || taxRate === 0)) {
+        setTaxRate(rate);
+        setTaxEnabled(true);
+      }
+    }
   };
 
   // STEP 3: Continue → get clarifying questions
@@ -505,6 +529,18 @@ export default function NewProposal() {
       const finalBalance = finalGrandTotal - finalDepositAmount;
 
       const uc = userContextRef.current?.intelligence_profile || null;
+
+      // Fetch materials context (never blocks)
+      let materialsContext: any[] = [];
+      if (jobState) {
+        try {
+          const { data: mc } = await supabase.functions.invoke('get_materials_context', {
+            body: { trade, state_code: jobState },
+          });
+          if (Array.isArray(mc?.materials)) materialsContext = mc.materials;
+        } catch {}
+      }
+
       const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-proposal', {
         body: {
           trade,
@@ -525,6 +561,8 @@ export default function NewProposal() {
           user_context: uc,
           smart_defaults: uc?.smart_defaults || null,
           signature_line_items: uc?.signature_line_items || null,
+          job_state: jobState,
+          materials_context: materialsContext,
         },
       });
 
@@ -539,8 +577,9 @@ export default function NewProposal() {
         client_phone: clientPhone || null,
         job_site_street: jobAddress,
         job_site_city: null,
-        job_site_state: null,
-        job_site_zip: null,
+        job_site_state: jobState,
+        job_site_zip: jobZip || null,
+        ...({ job_zip: jobZip || null, job_state: jobState, materials_context_count: materialsContext.length } as any),
         title: aiData.title || `${trade.replace(/_/g, ' ')} Proposal`,
         job_description: aiData.cover_letter || enrichedDesc,
         scope_of_work: aiData.scope_of_work || '',
@@ -709,6 +748,29 @@ export default function NewProposal() {
                     placeholder="(555) 123-4567"
                     className="h-11"
                   />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-1 block">
+                    Job Site Zip Code <span className="text-destructive">*</span>
+                  </label>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={5}
+                    value={jobZip}
+                    onChange={e => {
+                      const v = e.target.value.replace(/\D/g, '').slice(0, 5);
+                      setJobZip(v);
+                      if (jobZipError) setJobZipError('');
+                    }}
+                    onBlur={handleZipBlur}
+                    placeholder="33301"
+                    className={`h-11 ${jobZipError ? 'border-destructive' : ''}`}
+                  />
+                  {jobZipError && <p className="text-xs text-destructive mt-1">{jobZipError}</p>}
+                  {jobState && !jobZipError && (
+                    <p className="text-xs text-muted-foreground mt-1">State: {jobState} · Tax auto-set</p>
+                  )}
                 </div>
               </div>
             </div>

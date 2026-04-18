@@ -42,7 +42,7 @@ serve(async (req) => {
       user = authUser;
     }
 
-    const { trade, client_name, job_address, job_description, line_items, subtotal, tax_amount, discount_amount, grand_total, deposit_amount, deposit_label, balance_due, company, user_context, smart_defaults, signature_line_items } = await req.json();
+    const { trade, client_name, job_address, job_description, line_items, subtotal, tax_amount, discount_amount, grand_total, deposit_amount, deposit_label, balance_due, company, user_context, smart_defaults, signature_line_items, job_state, materials_context } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
@@ -104,7 +104,7 @@ RULES:
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: `You are an expert proposal writer for trade contractors. Return structured proposal data using the provided tool.${user_context?.contractor_insights?.length ? ` Contractor profile insights: ${user_context.contractor_insights.join(". ")}` : ""}${user_context?.pricing_personality ? ` This contractor's pricing personality is "${user_context.pricing_personality}" with ${user_context.pricing_confidence || "medium"} consistency.` : ""}` },
+          { role: "system", content: `You are an expert proposal writer for trade contractors. Return structured proposal data using the provided tool.${user_context?.contractor_insights?.length ? ` Contractor profile insights: ${user_context.contractor_insights.join(". ")}` : ""}${user_context?.pricing_personality ? ` This contractor's pricing personality is "${user_context.pricing_personality}" with ${user_context.pricing_confidence || "medium"} consistency.` : ""}${(materials_context && Array.isArray(materials_context) && materials_context.length > 0 && job_state) ? `\n\nYou have access to current market pricing data for ${tradeLabel} contractors in ${job_state}. This data is sourced from real supplier and market pricing updated regularly.\n\nCURRENT MATERIALS PRICING DATA:\n${JSON.stringify(materials_context)}\n\nPRICING INSTRUCTIONS:\n- When a material in your line item suggestions matches or closely matches something in the pricing data above, use its suggested_price field as your price — this is a single pre-calculated value, use it directly\n- Never return a price range in line item suggestions — always return one specific dollar amount per line item\n- For materials not found in the pricing data, estimate a realistic single price based on current market rates for ${job_state} using your training knowledge\n- For labor line items, estimate based on current regional labor rates for ${job_state}\n- Never return zero or blank for any price — every line item must have a specific dollar value\n- Do not apply any markup — return raw material and labor market rates only` : ""}` },
           { role: "user", content: prompt },
         ],
         tools: [

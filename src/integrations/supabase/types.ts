@@ -395,6 +395,60 @@ export type Database = {
         }
         Relationships: []
       }
+      materials_catalog: {
+        Row: {
+          brand_examples: string | null
+          created_at: string | null
+          hd_search_term: string | null
+          id: string
+          labor_companion: string | null
+          last_refreshed: string | null
+          name: string
+          notes: string | null
+          price_high: number
+          price_low: number
+          region: string | null
+          source: string | null
+          trade: string
+          typical_job_qty: string | null
+          unit: string
+        }
+        Insert: {
+          brand_examples?: string | null
+          created_at?: string | null
+          hd_search_term?: string | null
+          id?: string
+          labor_companion?: string | null
+          last_refreshed?: string | null
+          name: string
+          notes?: string | null
+          price_high: number
+          price_low: number
+          region?: string | null
+          source?: string | null
+          trade: string
+          typical_job_qty?: string | null
+          unit: string
+        }
+        Update: {
+          brand_examples?: string | null
+          created_at?: string | null
+          hd_search_term?: string | null
+          id?: string
+          labor_companion?: string | null
+          last_refreshed?: string | null
+          name?: string
+          notes?: string | null
+          price_high?: number
+          price_low?: number
+          region?: string | null
+          source?: string | null
+          trade?: string
+          typical_job_qty?: string | null
+          unit?: string
+        }
+        Relationships: []
+      }
       page_views: {
         Row: {
           created_at: string
@@ -687,8 +741,11 @@ export type Database = {
           job_site_state: string | null
           job_site_street: string | null
           job_site_zip: string | null
+          job_state: string | null
+          job_zip: string | null
           logo_position: string | null
           logo_size: string | null
+          materials_context_count: number | null
           materials_excluded: string | null
           materials_included: string | null
           payment_paid_amount: number | null
@@ -754,8 +811,11 @@ export type Database = {
           job_site_state?: string | null
           job_site_street?: string | null
           job_site_zip?: string | null
+          job_state?: string | null
+          job_zip?: string | null
           logo_position?: string | null
           logo_size?: string | null
+          materials_context_count?: number | null
           materials_excluded?: string | null
           materials_included?: string | null
           payment_paid_amount?: number | null
@@ -821,8 +881,11 @@ export type Database = {
           job_site_state?: string | null
           job_site_street?: string | null
           job_site_zip?: string | null
+          job_state?: string | null
+          job_zip?: string | null
           logo_position?: string | null
           logo_size?: string | null
+          materials_context_count?: number | null
           materials_excluded?: string | null
           materials_included?: string | null
           payment_paid_amount?: number | null
