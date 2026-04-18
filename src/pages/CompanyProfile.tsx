@@ -100,10 +100,14 @@ export default function CompanyProfile() {
     setConnectLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('stripe-connect-onboard');
+      if (data?.error) {
+        toast({ title: 'Connection failed', description: data.error, variant: 'destructive' });
+        return;
+      }
       if (error) throw error;
       if (data?.url) window.location.href = data.url;
     } catch (err: any) {
-      toast({ title: 'Connection failed', description: err.message, variant: 'destructive' });
+      toast({ title: 'Connection failed', description: err?.message || 'Unable to start Stripe onboarding.', variant: 'destructive' });
     } finally {
       setConnectLoading(false);
     }
