@@ -14,7 +14,9 @@ const corsHeaders = {
 };
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-const MODEL = "claude-3-5-sonnet-20241022";
+// Use current generally-available models. Older dated snapshots (e.g. -20241022) return 404.
+const PRIMARY_MODEL = Deno.env.get("ANTHROPIC_MODEL") || "claude-3-5-haiku-latest";
+const FALLBACK_MODEL = "claude-3-haiku-20240307";
 
 interface ClaudeLineItem { name: string; quantity: number; unit: string; type: "material" | "labor"; }
 
