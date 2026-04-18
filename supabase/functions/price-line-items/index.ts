@@ -207,9 +207,6 @@ Return {"unit_price": N} now.`;
   }
 }
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-
 function ok(body: Record<string, unknown>) {
   return new Response(JSON.stringify(body), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }
