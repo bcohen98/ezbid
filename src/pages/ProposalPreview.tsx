@@ -87,9 +87,14 @@ export default function ProposalPreview() {
     }
   }, [proposal?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleHidePricingToggle = async (checked: boolean) => {
+  const handleHidePricingToggle = (checked: boolean) => {
+    // Optimistic — flip local state instantly, sync to DB in background
     setHidePricing(checked);
-    if (proposal) await updateProposal({ id: proposal.id, hide_pricing_from_client: checked } as any);
+    if (proposal) {
+      updateProposal({ id: proposal.id, hide_pricing_from_client: checked } as any).catch((err) => {
+        console.error('[hide_pricing sync failed]', err);
+      });
+    }
   };
 
   const handleAccentChange = async (color: string) => {
@@ -476,7 +481,7 @@ export default function ProposalPreview() {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
           {/* Preview */}
           <div className="border rounded-lg overflow-x-auto bg-background shadow-sm">
-            <ProposalDocument proposal={proposal} lineItems={lineItems} profile={profile} exhibits={exhibits} template={activeTemplate} customAccentColor={accentColor || undefined} fontStyle={fontStyle} customHeaderStyle={headerStyle} onFieldEdit={isSigned ? undefined : handleFieldEdit} onLineItemEdit={isSigned ? undefined : handleLineItemEdit} onDeleteLineItem={isSigned ? undefined : handleDeleteLineItem} onAddLineItem={isSigned ? undefined : handleAddLineItem} onTotalsEdit={isSigned ? undefined : handleTotalsEdit} />
+            <ProposalDocument proposal={{ ...proposal, hide_pricing_from_client: hidePricing } as any} lineItems={lineItems} profile={profile} exhibits={exhibits} template={activeTemplate} customAccentColor={accentColor || undefined} fontStyle={fontStyle} customHeaderStyle={headerStyle} clientView={hidePricing} onFieldEdit={isSigned || hidePricing ? undefined : handleFieldEdit} onLineItemEdit={isSigned || hidePricing ? undefined : handleLineItemEdit} onDeleteLineItem={isSigned || hidePricing ? undefined : handleDeleteLineItem} onAddLineItem={isSigned || hidePricing ? undefined : handleAddLineItem} onTotalsEdit={isSigned || hidePricing ? undefined : handleTotalsEdit} />
           </div>
 
           {/* Side panel */}
