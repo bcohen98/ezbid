@@ -60,13 +60,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
   // ─── Content sections (shared across templates) ───
   const contentSections = (SectionComp: React.FC<{ title: string; children: React.ReactNode }>) => (
     <>
-      {(proposal.enhanced_job_description || proposal.job_description) && (
-        <SectionComp title="Job Description">
-          {editable('job_description', proposal.enhanced_job_description || proposal.job_description,
-            <div className="text-sm leading-relaxed" style={{ color: '#333' }} dangerouslySetInnerHTML={{ __html: renderMarkdown(proposal.enhanced_job_description || proposal.job_description) }} />
-          )}
-        </SectionComp>
-      )}
+      {/* Job Description is internal AI context only — never show on client-facing proposal */}
       {(proposal.enhanced_scope_of_work || proposal.scope_of_work) && (
         <SectionComp title="Scope of Work">
           {editable('scope_of_work', proposal.enhanced_scope_of_work || proposal.scope_of_work,

@@ -436,7 +436,8 @@ export default function NewProposal() {
             const { data: mc, error: mcErr } = await supabase.functions.invoke('get_materials_context', {
               body: { trade, state_code: stateCode },
             });
-            console.log('[get_materials_context]', { stateCode, trade, error: mcErr, count: mc?.materials?.length, sample: mc?.materials?.slice(0, 3) });
+            const returnedLen = Array.isArray(mc?.materials) ? mc.materials.length : 0;
+            console.log('[get_materials_context] returned array length:', returnedLen, { stateCode, trade, error: mcErr, sample: mc?.materials?.slice(0, 3) });
             if (Array.isArray(mc?.materials)) materialsContext = mc.materials;
           } catch (mcErr) {
             console.warn('[get_materials_context] failed (non-blocking):', mcErr);
