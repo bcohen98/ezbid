@@ -442,35 +442,44 @@ export default function NewProposal() {
           },
         });
         if (error) throw error;
-        if (data?.error) throw new Error(data.error);
 
         console.log('[price-line-items] response:', {
+          ok: data?.ok,
           total: data?.total,
           catalog_matched: data?.catalog_matched,
           estimated: data?.estimated,
+          error: data?.error,
         });
 
-        const aiItems: LineItem[] = (data.line_items || []).map((li: any, i: number) => ({
-          id: `ai_mat_${Date.now()}_${i}`,
-          description: li.description,
-          quantity: li.quantity,
-          unit: li.unit,
-          unit_price: li.unit_price,
-          aiSuggested: true,
-          // Internal-only metadata (never shown to client)
-          _price_source: li.price_source,
-          _matched_catalog_id: li.matched_catalog_id,
-          _matched_catalog_name: li.matched_catalog_name,
-        } as any));
-        if (aiItems.length > 0) setItems(aiItems);
-        setPricingAudit({
-          matched: data?.catalog_matched || 0,
-          estimated: data?.estimated || 0,
-          total: data?.total || aiItems.length,
-        });
+        // Graceful fallback: if pricing failed or returned nothing, just proceed.
+        // The contractor can add line items manually in the build step — never block them.
+        if (data?.ok === false || !Array.isArray(data?.line_items) || data.line_items.length === 0) {
+          if (data?.error) console.warn('[price-line-items] soft-failed, continuing without presets:', data.error);
+          setPricingAudit({ matched: 0, estimated: 0, total: 0 });
+        } else {
+          const aiItems: LineItem[] = data.line_items.map((li: any, i: number) => ({
+            id: `ai_mat_${Date.now()}_${i}`,
+            description: li.description,
+            quantity: li.quantity,
+            unit: li.unit,
+            unit_price: li.unit_price,
+            aiSuggested: true,
+            // Internal-only metadata (never shown to client)
+            _price_source: li.price_source,
+            _matched_catalog_id: li.matched_catalog_id,
+            _matched_catalog_name: li.matched_catalog_name,
+          } as any));
+          setItems(aiItems);
+          setPricingAudit({
+            matched: data?.catalog_matched || 0,
+            estimated: data?.estimated || 0,
+            total: data?.total || aiItems.length,
+          });
+        }
       } catch (err: any) {
-        console.error('[price-line-items] failed:', err);
-        toast({ title: 'AI pricing failed', description: err.message || 'Could not get suggestions', variant: 'destructive' });
+        // Never block the contractor — log and proceed silently to the build step.
+        console.error('[price-line-items] failed (continuing without AI presets):', err);
+        setPricingAudit({ matched: 0, estimated: 0, total: 0 });
       } finally {
         setIsSuggestingMaterials(false);
       }

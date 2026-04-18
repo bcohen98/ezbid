@@ -33,7 +33,7 @@ Write only the message body — no subject, no signature, no quotes.`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-3-5-haiku-20241022",
+        model: "claude-3-5-haiku-latest",
         max_tokens: 200,
         system,
         messages: [{ role: "user", content: user }],
