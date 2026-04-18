@@ -110,38 +110,37 @@ async function fetchCatalog(trade: string, state: string | null): Promise<Catalo
   }
 }
 
-async function callAnthropicWithModel(model: string, systemPrompt: string, userPrompt: string, maxTokens: number): Promise<Response> {
-  const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
-  if (!apiKey) throw new Error("ANTHROPIC_API_KEY not configured");
-  return fetch(ANTHROPIC_URL, {
+async function callLovableWithModel(model: string, systemPrompt: string, userPrompt: string, maxTokens: number): Promise<Response> {
+  const apiKey = Deno.env.get("LOVABLE_API_KEY");
+  if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
+  return fetch(LOVABLE_AI_URL, {
     method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "Content-Type": "application/json",
-    },
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       model,
       max_tokens: maxTokens,
-      system: systemPrompt,
-      messages: [{ role: "user", content: userPrompt }],
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
     }),
   });
 }
 
 async function callAnthropic(systemPrompt: string, userPrompt: string, maxTokens = 2000): Promise<string> {
-  let res = await callAnthropicWithModel(PRIMARY_MODEL, systemPrompt, userPrompt, maxTokens);
-  if (res.status === 404 || res.status === 400) {
+  // Name kept for backwards-compat with callers; routes through Lovable AI Gateway.
+  let res = await callLovableWithModel(PRIMARY_MODEL, systemPrompt, userPrompt, maxTokens);
+  if (!res.ok && (res.status === 404 || res.status === 400 || res.status === 429)) {
     const errTxt = await res.text();
-    console.warn(`[anthropic] primary model "${PRIMARY_MODEL}" failed (${res.status}): ${errTxt.slice(0, 200)} — retrying with fallback "${FALLBACK_MODEL}"`);
-    res = await callAnthropicWithModel(FALLBACK_MODEL, systemPrompt, userPrompt, maxTokens);
+    console.warn(`[ai] primary "${PRIMARY_MODEL}" failed (${res.status}): ${errTxt.slice(0, 200)} — retrying "${FALLBACK_MODEL}"`);
+    res = await callLovableWithModel(FALLBACK_MODEL, systemPrompt, userPrompt, maxTokens);
   }
   if (!res.ok) {
     const txt = await res.text();
-    throw new Error(`Anthropic API ${res.status}: ${txt.slice(0, 300)}`);
+    throw new Error(`Lovable AI ${res.status}: ${txt.slice(0, 300)}`);
   }
   const data = await res.json();
-  return data?.content?.[0]?.text || "";
+  return data?.choices?.[0]?.message?.content || "";
 }
 
 function extractJson<T = any>(text: string): T | null {
