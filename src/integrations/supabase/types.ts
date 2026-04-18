@@ -755,11 +755,15 @@ export type Database = {
           payment_terms: string | null
           pdf_url: string | null
           personal_message: string | null
+          pricing_audit: Json | null
           proposal_date: string | null
           proposal_number: number
           revision_history: Json | null
           scope_of_work: string | null
           sent_at: string | null
+          show_materials: boolean
+          show_pricing: boolean
+          show_quantities: boolean
           signing_token: string
           special_conditions: string | null
           status: Database["public"]["Enums"]["proposal_status"]
@@ -825,11 +829,15 @@ export type Database = {
           payment_terms?: string | null
           pdf_url?: string | null
           personal_message?: string | null
+          pricing_audit?: Json | null
           proposal_date?: string | null
           proposal_number: number
           revision_history?: Json | null
           scope_of_work?: string | null
           sent_at?: string | null
+          show_materials?: boolean
+          show_pricing?: boolean
+          show_quantities?: boolean
           signing_token?: string
           special_conditions?: string | null
           status?: Database["public"]["Enums"]["proposal_status"]
@@ -895,11 +903,15 @@ export type Database = {
           payment_terms?: string | null
           pdf_url?: string | null
           personal_message?: string | null
+          pricing_audit?: Json | null
           proposal_date?: string | null
           proposal_number?: number
           revision_history?: Json | null
           scope_of_work?: string | null
           sent_at?: string | null
+          show_materials?: boolean
+          show_pricing?: boolean
+          show_quantities?: boolean
           signing_token?: string
           special_conditions?: string | null
           status?: Database["public"]["Enums"]["proposal_status"]
