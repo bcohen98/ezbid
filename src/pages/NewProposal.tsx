@@ -316,11 +316,31 @@ export default function NewProposal() {
     if (!clientName.trim()) missing.push('Client Name');
     if (!jobAddress.trim()) missing.push('Job Address');
     if (!jobDescription.trim()) missing.push('Job Description');
+    if (!/^\d{5}$/.test(jobZip)) missing.push('Job Site Zip Code (5 digits)');
     if (missing.length > 0) {
       toast({ title: 'Missing required fields', description: `Please fill in: ${missing.join(', ')}`, variant: 'destructive' });
       return false;
     }
     return true;
+  };
+
+  const handleZipBlur = () => {
+    if (!jobZip) { setJobZipError(''); return; }
+    if (!/^\d{5}$/.test(jobZip)) {
+      setJobZipError('Must be exactly 5 digits');
+      return;
+    }
+    setJobZipError('');
+    const st = zipToState(jobZip);
+    setJobState(st);
+    if (st) {
+      const rate = stateToTaxRate(st);
+      // Only auto-populate if user hasn't customized yet
+      if (rate !== null && (!taxEnabled || taxRate === 0)) {
+        setTaxRate(rate);
+        setTaxEnabled(true);
+      }
+    }
   };
 
   // STEP 3: Continue → get clarifying questions
