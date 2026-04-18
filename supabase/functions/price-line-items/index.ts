@@ -13,8 +13,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-const MODEL = "claude-3-5-sonnet-20241022";
+// Uses Lovable AI Gateway (consistent with rest of project) — no Anthropic key needed.
+const LOVABLE_AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const PRIMARY_MODEL = Deno.env.get("PRICING_MODEL") || "google/gemini-2.5-flash";
+const FALLBACK_MODEL = "google/gemini-2.5-flash-lite";
 
 interface ClaudeLineItem { name: string; quantity: number; unit: string; type: "material" | "labor"; }
 
@@ -108,30 +110,37 @@ async function fetchCatalog(trade: string, state: string | null): Promise<Catalo
   }
 }
 
-async function callAnthropic(systemPrompt: string, userPrompt: string, maxTokens = 2000): Promise<string> {
-  const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
-  if (!apiKey) throw new Error("ANTHROPIC_API_KEY not configured");
-  const res = await fetch(ANTHROPIC_URL, {
+async function callLovableWithModel(model: string, systemPrompt: string, userPrompt: string, maxTokens: number): Promise<Response> {
+  const apiKey = Deno.env.get("LOVABLE_API_KEY");
+  if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
+  return fetch(LOVABLE_AI_URL, {
     method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "Content-Type": "application/json",
-    },
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: MODEL,
+      model,
       max_tokens: maxTokens,
-      system: systemPrompt,
-      messages: [{ role: "user", content: userPrompt }],
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
     }),
   });
+}
+
+async function callAnthropic(systemPrompt: string, userPrompt: string, maxTokens = 2000): Promise<string> {
+  // Name kept for backwards-compat with callers; routes through Lovable AI Gateway.
+  let res = await callLovableWithModel(PRIMARY_MODEL, systemPrompt, userPrompt, maxTokens);
+  if (!res.ok && (res.status === 404 || res.status === 400 || res.status === 429)) {
+    const errTxt = await res.text();
+    console.warn(`[ai] primary "${PRIMARY_MODEL}" failed (${res.status}): ${errTxt.slice(0, 200)} — retrying "${FALLBACK_MODEL}"`);
+    res = await callLovableWithModel(FALLBACK_MODEL, systemPrompt, userPrompt, maxTokens);
+  }
   if (!res.ok) {
     const txt = await res.text();
-    throw new Error(`Anthropic API ${res.status}: ${txt.slice(0, 300)}`);
+    throw new Error(`Lovable AI ${res.status}: ${txt.slice(0, 300)}`);
   }
   const data = await res.json();
-  const text = data?.content?.[0]?.text || "";
-  return text;
+  return data?.choices?.[0]?.message?.content || "";
 }
 
 function extractJson<T = any>(text: string): T | null {
@@ -197,83 +206,126 @@ Return {"unit_price": N} now.`;
   }
 }
 
+function ok(body: Record<string, unknown>) {
+  return new Response(JSON.stringify(body), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  // Top-level guard: NEVER return non-2xx. Always return JSON the client can read.
   try {
-    const { trade, job_description, job_state, contractor_context } = await req.json().catch(() => ({}));
+    // Diagnostic: log env-var presence (never values)
+    console.log("[price-line-items] env check:", {
+      has_lovable_key: !!Deno.env.get("LOVABLE_API_KEY"),
+      has_materials_url: !!Deno.env.get("MATERIALS_SUPABASE_URL"),
+      has_materials_key: !!Deno.env.get("MATERIALS_SUPABASE_ANON_KEY"),
+      model: PRIMARY_MODEL,
+    });
+
+    let body: any = {};
+    try { body = await req.json(); } catch { body = {}; }
+    const { trade, job_description, job_state, contractor_context } = body || {};
+
     if (!trade) {
-      return new Response(JSON.stringify({ error: "trade is required" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return ok({ ok: false, error: "trade is required", line_items: [], catalog_matched: 0, estimated: 0, total: 0 });
     }
 
-    // STEP 1 — Claude decides what (no prices)
-    const claudeItems = await step1_getLineItemList(trade, job_description || "", contractor_context || null);
-    console.log("[price-line-items] Claude returned", claudeItems.length, "items");
+    // STEP 1 — Claude decides what (no prices). On failure, return empty-but-OK so client falls back gracefully.
+    let claudeItems: ClaudeLineItem[] = [];
+    try {
+      claudeItems = await step1_getLineItemList(trade, job_description || "", contractor_context || null);
+      console.log("[price-line-items] Claude returned", claudeItems.length, "items");
+    } catch (e) {
+      console.error("[price-line-items] step1 failed:", e);
+      return ok({ ok: false, error: e instanceof Error ? e.message : "step1 failed", line_items: [], catalog_matched: 0, estimated: 0, total: 0, stage: "step1" });
+    }
 
     if (claudeItems.length === 0) {
-      return new Response(JSON.stringify({
-        line_items: [], catalog_matched: 0, estimated: 0, total: 0,
-      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return ok({ ok: true, line_items: [], catalog_matched: 0, estimated: 0, total: 0 });
     }
 
-    // STEP 2 — Catalog lookup (deterministic) with Claude fallback for misses
-    const catalog = await fetchCatalog(trade, job_state || null);
-    console.log("[price-line-items] catalog rows fetched:", catalog.length);
+    // STEP 2 — Catalog lookup with Claude fallback for misses
+    let catalog: CatalogRow[] = [];
+    try {
+      catalog = await fetchCatalog(trade, job_state || null);
+      console.log("[price-line-items] catalog rows fetched:", catalog.length);
+    } catch (e) {
+      console.error("[price-line-items] catalog fetch failed:", e);
+      catalog = [];
+    }
 
     const priced: any[] = [];
     let matched = 0;
     let estimated = 0;
 
     for (const item of claudeItems) {
-      const match = bestMatch(item.name, catalog);
-      let unit_price = 0;
-      let unit = item.unit;
-      let price_source: "catalog" | "estimated" = "estimated";
-      let matched_catalog_id: string | null = null;
-      let matched_catalog_name: string | null = null;
+      try {
+        const match = bestMatch(item.name, catalog);
+        let unit_price = 0;
+        let unit = item.unit;
+        let price_source: "catalog" | "estimated" = "estimated";
+        let matched_catalog_id: string | null = null;
+        let matched_catalog_name: string | null = null;
 
-      if (match) {
-        const r = match.row;
-        unit_price = calcCatalogPrice(Number(r.price_low) || 0, Number(r.price_high) || 0, job_state);
-        unit = r.unit || item.unit; // prefer catalog unit for consistency
-        price_source = "catalog";
-        matched_catalog_id = r.id || null;
-        matched_catalog_name = r.name;
-        matched++;
-      } else {
-        unit_price = await step2_estimatePrice(item, trade, job_state || null);
+        if (match) {
+          const r = match.row;
+          unit_price = calcCatalogPrice(Number(r.price_low) || 0, Number(r.price_high) || 0, job_state);
+          unit = r.unit || item.unit;
+          price_source = "catalog";
+          matched_catalog_id = r.id || null;
+          matched_catalog_name = r.name;
+          matched++;
+        } else {
+          unit_price = await step2_estimatePrice(item, trade, job_state || null);
+          estimated++;
+        }
+
+        console.log(
+          `[price-line-items] "${item.name}" → ${matched_catalog_name ? `matched "${matched_catalog_name}"` : "no match"} · $${unit_price} · ${price_source}`
+        );
+
+        priced.push({
+          description: item.name,
+          quantity: item.quantity,
+          unit,
+          unit_price,
+          type: item.type,
+          price_source,
+          matched_catalog_id,
+          matched_catalog_name,
+        });
+      } catch (itemErr) {
+        console.error(`[price-line-items] item "${item?.name}" failed:`, itemErr);
+        // Push the item with zero price so the contractor can fix manually
+        priced.push({
+          description: item.name,
+          quantity: item.quantity,
+          unit: item.unit,
+          unit_price: 0,
+          type: item.type,
+          price_source: "estimated",
+          matched_catalog_id: null,
+          matched_catalog_name: null,
+        });
         estimated++;
       }
-
-      console.log(
-        `[price-line-items] "${item.name}" → ${matched_catalog_name ? `matched "${matched_catalog_name}"` : "no match"} · $${unit_price} · ${price_source}`
-      );
-
-      priced.push({
-        description: item.name,
-        quantity: item.quantity,
-        unit,
-        unit_price,
-        type: item.type,
-        price_source,
-        matched_catalog_id,
-        matched_catalog_name,
-      });
     }
 
-    return new Response(JSON.stringify({
+    return ok({
+      ok: true,
       line_items: priced,
       catalog_matched: matched,
       estimated,
       total: priced.length,
-    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    });
   } catch (e) {
-    console.error("price-line-items error:", e);
-    return new Response(JSON.stringify({
+    console.error("[price-line-items] UNHANDLED:", e, (e as any)?.stack);
+    return ok({
+      ok: false,
       error: e instanceof Error ? e.message : "Unknown error",
       line_items: [], catalog_matched: 0, estimated: 0, total: 0,
-    }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      stage: "unhandled",
+    });
   }
 });
