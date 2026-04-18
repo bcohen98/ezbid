@@ -362,7 +362,7 @@ serve(async (req) => {
     };
 
     // Check timeout
-    if (Date.now() - startTime > 8000) {
+    if (Date.now() - startTime > 1200) {
       return new Response(JSON.stringify({
         has_sufficient_history: true,
         proposal_count: proposals.length,
