@@ -37,50 +37,62 @@ async function synthesizeIntelligenceBackground(
   cached: any,
 ) {
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) return;
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_API_KEY) return;
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // MODEL: claude-haiku-4-5-20251001 — background stats synthesis, structured output, not in core list
+    const MODEL = "claude-haiku-4-5-20251001";
+    const MAX_TOKENS = 1024;
+    const FN_NAME = "build-user-context";
+    console.log(`[AI CALL] function: ${FN_NAME} | model: ${MODEL} | task: synthesize | tokens: ${MAX_TOKENS}`);
+
+    const aiResponse = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      headers: {
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: MODEL,
+        max_tokens: MAX_TOKENS,
+        system: "You are an expert construction industry analyst. Synthesize stats into a structured profile. Be precise. Return only valid JSON via the tool.",
         messages: [
-          { role: "system", content: "You are an expert construction industry analyst. Synthesize stats into a structured profile. Be precise. Return only valid JSON via the tool." },
           { role: "user", content: `Stats:\n\n${JSON.stringify(computedStats, null, 2)}\n\nJob: trade=${trade}, desc=${job_description||"n/a"}, loc=${job_address||"n/a"}.` },
         ],
         tools: [{
-          type: "function",
-          function: {
-            name: "return_user_intelligence",
-            description: "Return the synthesized intelligence profile",
-            parameters: {
-              type: "object",
-              properties: {
-                pricing_personality: { type: "string", enum: ["budget_friendly","mid_market","premium","variable"] },
-                pricing_confidence: { type: "string", enum: ["high","medium","low"] },
-                signature_line_items: { type: "array", items: { type: "object", properties: { description: { type: "string" }, suggested_quantity: { type: "number" }, suggested_unit: { type: "string" }, suggested_unit_price: { type: "number" }, confidence: { type: "string", enum: ["high","medium","low"] }, reason: { type: "string" } } } },
-                pricing_benchmarks: { type: "array", items: { type: "object", properties: { line_item_type: { type: "string" }, learned_unit_price: { type: "number" }, learned_unit: { type: "string" }, price_range_low: { type: "number" }, price_range_high: { type: "number" }, based_on_n_proposals: { type: "number" }, confidence: { type: "string", enum: ["high","medium","low"] } } } },
-                smart_defaults: { type: "object", properties: { suggested_tax_rate: { type: "number" }, suggested_deposit_pct: { type: "number" }, suggested_payment_terms: { type: "string" }, suggested_warranty_terms: { type: "string" }, suggested_deposit_mode: { type: "string", enum: ["percentage","flat"] } } },
-                job_size_estimate: { type: "object", properties: { estimated_total_low: { type: "number" }, estimated_total_mid: { type: "number" }, estimated_total_high: { type: "number" }, estimated_line_item_count: { type: "number" }, sizing_rationale: { type: "string" } } },
-                clarifying_question_priorities: { type: "array", items: { type: "string" } },
-                contractor_insights: { type: "array", items: { type: "string" } },
-                anomaly_flags: { type: "array", items: { type: "string" } },
-              },
-              required: ["pricing_personality","pricing_confidence","signature_line_items","pricing_benchmarks","smart_defaults","job_size_estimate","clarifying_question_priorities","contractor_insights"],
+          name: "return_user_intelligence",
+          description: "Return the synthesized intelligence profile",
+          input_schema: {
+            type: "object",
+            properties: {
+              pricing_personality: { type: "string", enum: ["budget_friendly","mid_market","premium","variable"] },
+              pricing_confidence: { type: "string", enum: ["high","medium","low"] },
+              signature_line_items: { type: "array", items: { type: "object", properties: { description: { type: "string" }, suggested_quantity: { type: "number" }, suggested_unit: { type: "string" }, suggested_unit_price: { type: "number" }, confidence: { type: "string", enum: ["high","medium","low"] }, reason: { type: "string" } } } },
+              pricing_benchmarks: { type: "array", items: { type: "object", properties: { line_item_type: { type: "string" }, learned_unit_price: { type: "number" }, learned_unit: { type: "string" }, price_range_low: { type: "number" }, price_range_high: { type: "number" }, based_on_n_proposals: { type: "number" }, confidence: { type: "string", enum: ["high","medium","low"] } } } },
+              smart_defaults: { type: "object", properties: { suggested_tax_rate: { type: "number" }, suggested_deposit_pct: { type: "number" }, suggested_payment_terms: { type: "string" }, suggested_warranty_terms: { type: "string" }, suggested_deposit_mode: { type: "string", enum: ["percentage","flat"] } } },
+              job_size_estimate: { type: "object", properties: { estimated_total_low: { type: "number" }, estimated_total_mid: { type: "number" }, estimated_total_high: { type: "number" }, estimated_line_item_count: { type: "number" }, sizing_rationale: { type: "string" } } },
+              clarifying_question_priorities: { type: "array", items: { type: "string" } },
+              contractor_insights: { type: "array", items: { type: "string" } },
+              anomaly_flags: { type: "array", items: { type: "string" } },
             },
+            required: ["pricing_personality","pricing_confidence","signature_line_items","pricing_benchmarks","smart_defaults","job_size_estimate","clarifying_question_priorities","contractor_insights"],
           },
         }],
-        tool_choice: { type: "function", function: { name: "return_user_intelligence" } },
+        tool_choice: { type: "tool", name: "return_user_intelligence" },
       }),
     });
 
-    if (!aiResponse.ok) return;
+    if (!aiResponse.ok) {
+      const t = await aiResponse.text();
+      console.error(`[AI ERROR] function: ${FN_NAME} | model: ${MODEL} | error: ${aiResponse.status} ${t.slice(0, 300)}`);
+      return;
+    }
     const aiData = await aiResponse.json();
-    const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall) return;
-    const intelligenceProfile = typeof toolCall.function.arguments === "string"
-      ? JSON.parse(toolCall.function.arguments) : toolCall.function.arguments;
+    console.log(`[AI RESPONSE] function: ${FN_NAME} | model: ${MODEL} | tokens_used: ${aiData?.usage?.input_tokens ?? "?"} in / ${aiData?.usage?.output_tokens ?? "?"} out | status: success`);
+    const toolUse = (aiData.content || []).find((c: any) => c.type === "tool_use");
+    if (!toolUse) return;
+    const intelligenceProfile = toolUse.input;
 
     if (cached) {
       await supabaseAdmin.from("user_intelligence_cache").update({
