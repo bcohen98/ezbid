@@ -741,8 +741,11 @@ export type Database = {
           job_site_state: string | null
           job_site_street: string | null
           job_site_zip: string | null
+          job_state: string | null
+          job_zip: string | null
           logo_position: string | null
           logo_size: string | null
+          materials_context_count: number | null
           materials_excluded: string | null
           materials_included: string | null
           payment_paid_amount: number | null
@@ -808,8 +811,11 @@ export type Database = {
           job_site_state?: string | null
           job_site_street?: string | null
           job_site_zip?: string | null
+          job_state?: string | null
+          job_zip?: string | null
           logo_position?: string | null
           logo_size?: string | null
+          materials_context_count?: number | null
           materials_excluded?: string | null
           materials_included?: string | null
           payment_paid_amount?: number | null
@@ -875,8 +881,11 @@ export type Database = {
           job_site_state?: string | null
           job_site_street?: string | null
           job_site_zip?: string | null
+          job_state?: string | null
+          job_zip?: string | null
           logo_position?: string | null
           logo_size?: string | null
+          materials_context_count?: number | null
           materials_excluded?: string | null
           materials_included?: string | null
           payment_paid_amount?: number | null
