@@ -210,80 +210,126 @@ Return {"unit_price": N} now.`;
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+function ok(body: Record<string, unknown>) {
+  return new Response(JSON.stringify(body), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+}
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // Top-level guard: NEVER return non-2xx. Always return JSON the client can read.
   try {
-    const { trade, job_description, job_state, contractor_context } = await req.json().catch(() => ({}));
+    // Diagnostic: log env-var presence (never values)
+    console.log("[price-line-items] env check:", {
+      has_anthropic: !!Deno.env.get("ANTHROPIC_API_KEY"),
+      has_materials_url: !!Deno.env.get("MATERIALS_SUPABASE_URL"),
+      has_materials_key: !!Deno.env.get("MATERIALS_SUPABASE_ANON_KEY"),
+      model: PRIMARY_MODEL,
+    });
+
+    let body: any = {};
+    try { body = await req.json(); } catch { body = {}; }
+    const { trade, job_description, job_state, contractor_context } = body || {};
+
     if (!trade) {
-      return new Response(JSON.stringify({ error: "trade is required" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return ok({ ok: false, error: "trade is required", line_items: [], catalog_matched: 0, estimated: 0, total: 0 });
     }
 
-    // STEP 1 — Claude decides what (no prices)
-    const claudeItems = await step1_getLineItemList(trade, job_description || "", contractor_context || null);
-    console.log("[price-line-items] Claude returned", claudeItems.length, "items");
+    // STEP 1 — Claude decides what (no prices). On failure, return empty-but-OK so client falls back gracefully.
+    let claudeItems: ClaudeLineItem[] = [];
+    try {
+      claudeItems = await step1_getLineItemList(trade, job_description || "", contractor_context || null);
+      console.log("[price-line-items] Claude returned", claudeItems.length, "items");
+    } catch (e) {
+      console.error("[price-line-items] step1 failed:", e);
+      return ok({ ok: false, error: e instanceof Error ? e.message : "step1 failed", line_items: [], catalog_matched: 0, estimated: 0, total: 0, stage: "step1" });
+    }
 
     if (claudeItems.length === 0) {
-      return new Response(JSON.stringify({
-        line_items: [], catalog_matched: 0, estimated: 0, total: 0,
-      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return ok({ ok: true, line_items: [], catalog_matched: 0, estimated: 0, total: 0 });
     }
 
-    // STEP 2 — Catalog lookup (deterministic) with Claude fallback for misses
-    const catalog = await fetchCatalog(trade, job_state || null);
-    console.log("[price-line-items] catalog rows fetched:", catalog.length);
+    // STEP 2 — Catalog lookup with Claude fallback for misses
+    let catalog: CatalogRow[] = [];
+    try {
+      catalog = await fetchCatalog(trade, job_state || null);
+      console.log("[price-line-items] catalog rows fetched:", catalog.length);
+    } catch (e) {
+      console.error("[price-line-items] catalog fetch failed:", e);
+      catalog = [];
+    }
 
     const priced: any[] = [];
     let matched = 0;
     let estimated = 0;
 
     for (const item of claudeItems) {
-      const match = bestMatch(item.name, catalog);
-      let unit_price = 0;
-      let unit = item.unit;
-      let price_source: "catalog" | "estimated" = "estimated";
-      let matched_catalog_id: string | null = null;
-      let matched_catalog_name: string | null = null;
+      try {
+        const match = bestMatch(item.name, catalog);
+        let unit_price = 0;
+        let unit = item.unit;
+        let price_source: "catalog" | "estimated" = "estimated";
+        let matched_catalog_id: string | null = null;
+        let matched_catalog_name: string | null = null;
 
-      if (match) {
-        const r = match.row;
-        unit_price = calcCatalogPrice(Number(r.price_low) || 0, Number(r.price_high) || 0, job_state);
-        unit = r.unit || item.unit; // prefer catalog unit for consistency
-        price_source = "catalog";
-        matched_catalog_id = r.id || null;
-        matched_catalog_name = r.name;
-        matched++;
-      } else {
-        unit_price = await step2_estimatePrice(item, trade, job_state || null);
+        if (match) {
+          const r = match.row;
+          unit_price = calcCatalogPrice(Number(r.price_low) || 0, Number(r.price_high) || 0, job_state);
+          unit = r.unit || item.unit;
+          price_source = "catalog";
+          matched_catalog_id = r.id || null;
+          matched_catalog_name = r.name;
+          matched++;
+        } else {
+          unit_price = await step2_estimatePrice(item, trade, job_state || null);
+          estimated++;
+        }
+
+        console.log(
+          `[price-line-items] "${item.name}" → ${matched_catalog_name ? `matched "${matched_catalog_name}"` : "no match"} · $${unit_price} · ${price_source}`
+        );
+
+        priced.push({
+          description: item.name,
+          quantity: item.quantity,
+          unit,
+          unit_price,
+          type: item.type,
+          price_source,
+          matched_catalog_id,
+          matched_catalog_name,
+        });
+      } catch (itemErr) {
+        console.error(`[price-line-items] item "${item?.name}" failed:`, itemErr);
+        // Push the item with zero price so the contractor can fix manually
+        priced.push({
+          description: item.name,
+          quantity: item.quantity,
+          unit: item.unit,
+          unit_price: 0,
+          type: item.type,
+          price_source: "estimated",
+          matched_catalog_id: null,
+          matched_catalog_name: null,
+        });
         estimated++;
       }
-
-      console.log(
-        `[price-line-items] "${item.name}" → ${matched_catalog_name ? `matched "${matched_catalog_name}"` : "no match"} · $${unit_price} · ${price_source}`
-      );
-
-      priced.push({
-        description: item.name,
-        quantity: item.quantity,
-        unit,
-        unit_price,
-        type: item.type,
-        price_source,
-        matched_catalog_id,
-        matched_catalog_name,
-      });
     }
 
-    return new Response(JSON.stringify({
+    return ok({
+      ok: true,
       line_items: priced,
       catalog_matched: matched,
       estimated,
       total: priced.length,
-    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    });
   } catch (e) {
-    console.error("price-line-items error:", e);
-    return new Response(JSON.stringify({
+    console.error("[price-line-items] UNHANDLED:", e, (e as any)?.stack);
+    return ok({
+      ok: false,
       error: e instanceof Error ? e.message : "Unknown error",
       line_items: [], catalog_matched: 0, estimated: 0, total: 0,
-    }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      stage: "unhandled",
+    });
   }
 });
