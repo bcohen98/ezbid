@@ -748,6 +748,7 @@ export type Database = {
           materials_context_count: number | null
           materials_excluded: string | null
           materials_included: string | null
+          payment_link_url: string | null
           payment_paid_amount: number | null
           payment_paid_at: string | null
           payment_requested_at: string | null
@@ -822,6 +823,7 @@ export type Database = {
           materials_context_count?: number | null
           materials_excluded?: string | null
           materials_included?: string | null
+          payment_link_url?: string | null
           payment_paid_amount?: number | null
           payment_paid_at?: string | null
           payment_requested_at?: string | null
@@ -896,6 +898,7 @@ export type Database = {
           materials_context_count?: number | null
           materials_excluded?: string | null
           materials_included?: string | null
+          payment_link_url?: string | null
           payment_paid_amount?: number | null
           payment_paid_at?: string | null
           payment_requested_at?: string | null
