@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import AppLayout from '@/components/AppLayout';
 import SubscriptionCard from '@/components/SubscriptionCard';
 import ReferralPromoCard from '@/components/ReferralPromoCard';
+import PaymentsSection from '@/components/PaymentsSection';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -233,6 +234,9 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Payments */}
+        <PaymentsSection proposals={proposals as any} />
 
         {/* Tabs + Create */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
