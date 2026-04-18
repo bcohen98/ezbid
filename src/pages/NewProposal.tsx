@@ -433,14 +433,31 @@ export default function NewProposal() {
           ? `Contractor pricing personality: ${uc.pricing_personality || 'unknown'}. Insights: ${uc.contractor_insights.join('. ')}`
           : null;
 
-        const { data, error } = await supabase.functions.invoke('price-line-items', {
-          body: {
+        // Use direct fetch so we can read the x-ai-routing-log response header.
+        const projectId = (import.meta as any).env?.VITE_SUPABASE_PROJECT_ID;
+        const supaUrl = (import.meta as any).env?.VITE_SUPABASE_URL || (projectId ? `https://${projectId}.supabase.co` : '');
+        const anonKey = (import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY;
+        const { data: { session } } = await supabase.auth.getSession();
+        const resp = await fetch(`${supaUrl}/functions/v1/price-line-items`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: anonKey,
+            Authorization: `Bearer ${session?.access_token || anonKey}`,
+          },
+          body: JSON.stringify({
             trade,
             job_description: getEnrichedDescription(),
             job_state: stateCode,
             contractor_context: contractorContext,
-          },
+          }),
         });
+        const routingHeader = resp.headers.get('x-ai-routing-log');
+        if (routingHeader) {
+          try { console.log('[AI ROUTING]', JSON.parse(routingHeader)); } catch { /* ignore */ }
+        }
+        const data: any = await resp.json().catch(() => ({}));
+        const error = !resp.ok ? new Error(`HTTP ${resp.status}`) : null;
         if (error) throw error;
 
         console.log('[price-line-items] response:', {
