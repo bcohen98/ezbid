@@ -1,10 +1,6 @@
-// Two-step pricing: STEP 1 Anthropic returns line item names (no prices),
+// Two-step pricing: STEP 1 Sonnet returns line item names (no prices),
 // STEP 2 we look up each item in the materials_catalog table; if no match,
-// we ask Anthropic for a single-item price estimate and flag it as "estimated".
-//
-// External catalog source is read via MATERIALS_SUPABASE_URL / MATERIALS_SUPABASE_ANON_KEY.
-// All future supplier integrations (ABC Supply, Ferguson, etc.) plug into this file only —
-// the Claude step never touches a number that exists in any catalog.
+// we ask Haiku for a single-item price estimate and flag it as "estimated".
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -13,10 +9,13 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Uses Lovable AI Gateway (consistent with rest of project) — no Anthropic key needed.
-const LOVABLE_AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const PRIMARY_MODEL = Deno.env.get("PRICING_MODEL") || "google/gemini-2.5-flash";
-const FALLBACK_MODEL = "google/gemini-2.5-flash-lite";
+// MODEL: claude-sonnet-4-20250514 (STEP 1) — line item list generation requires trade-specific domain knowledge & accurate quantity reasoning
+const STEP1_MODEL = "claude-sonnet-4-20250514";
+const STEP1_MAX_TOKENS = 4096;
+// MODEL: claude-haiku-4-5-20251001 (STEP 2 fallback) — short single-item price estimate, simple structured output
+const STEP2_MODEL = "claude-haiku-4-5-20251001";
+const STEP2_MAX_TOKENS = 1024;
+const FN_NAME = "price-line-items";
 
 interface ClaudeLineItem { name: string; quantity: number; unit: string; type: "material" | "labor"; }
 
@@ -100,7 +99,6 @@ async function fetchCatalog(trade: string, state: string | null): Promise<Catalo
         if (Array.isArray(data)) rows.push(...data);
       }
     }
-    // De-dup by lowercase name; state takes precedence (last in wins via map)
     const map = new Map<string, CatalogRow>();
     for (const r of rows) if (r?.name) map.set(r.name.toLowerCase(), r);
     return [...map.values()];
@@ -110,43 +108,37 @@ async function fetchCatalog(trade: string, state: string | null): Promise<Catalo
   }
 }
 
-async function callLovableWithModel(model: string, systemPrompt: string, userPrompt: string, maxTokens: number): Promise<Response> {
-  const apiKey = Deno.env.get("LOVABLE_API_KEY");
-  if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
-  return fetch(LOVABLE_AI_URL, {
+async function callAnthropic(model: string, system: string, user: string, maxTokens: number, task: string): Promise<string> {
+  const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
+  if (!apiKey) throw new Error("ANTHROPIC_API_KEY not configured");
+  console.log(`[AI CALL] function: ${FN_NAME} | model: ${model} | task: ${task} | tokens: ${maxTokens}`);
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    headers: {
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({
       model,
       max_tokens: maxTokens,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
+      system,
+      messages: [{ role: "user", content: user }],
     }),
   });
-}
-
-async function callAnthropic(systemPrompt: string, userPrompt: string, maxTokens = 2000): Promise<string> {
-  // Name kept for backwards-compat with callers; routes through Lovable AI Gateway.
-  let res = await callLovableWithModel(PRIMARY_MODEL, systemPrompt, userPrompt, maxTokens);
-  if (!res.ok && (res.status === 404 || res.status === 400 || res.status === 429)) {
-    const errTxt = await res.text();
-    console.warn(`[ai] primary "${PRIMARY_MODEL}" failed (${res.status}): ${errTxt.slice(0, 200)} — retrying "${FALLBACK_MODEL}"`);
-    res = await callLovableWithModel(FALLBACK_MODEL, systemPrompt, userPrompt, maxTokens);
-  }
   if (!res.ok) {
     const txt = await res.text();
-    throw new Error(`Lovable AI ${res.status}: ${txt.slice(0, 300)}`);
+    console.error(`[AI ERROR] function: ${FN_NAME} | model: ${model} | error: ${res.status} ${txt.slice(0, 300)}`);
+    throw new Error(`Anthropic ${res.status}: ${txt.slice(0, 300)}`);
   }
   const data = await res.json();
-  return data?.choices?.[0]?.message?.content || "";
+  console.log(`[AI RESPONSE] function: ${FN_NAME} | model: ${model} | tokens_used: ${data?.usage?.input_tokens ?? "?"} in / ${data?.usage?.output_tokens ?? "?"} out | status: success`);
+  const txt = (data.content || []).filter((c: any) => c.type === "text").map((c: any) => c.text).join("\n");
+  return txt || "";
 }
 
 function extractJson<T = any>(text: string): T | null {
-  // Strip code fences and find JSON
   const cleaned = text.replace(/```(?:json)?/g, "").trim();
-  // Try to find first JSON array or object
   const arrMatch = cleaned.match(/\[[\s\S]*\]/);
   const objMatch = cleaned.match(/\{[\s\S]*\}/);
   const candidate = arrMatch?.[0] || objMatch?.[0] || cleaned;
@@ -159,13 +151,13 @@ async function step1_getLineItemList(
   const system = `You are an experienced ${trade.replace(/_/g, " ")} contractor and estimator. Your only job is to decide WHICH line items belong on a proposal and the QUANTITY of each. You MUST NOT include any prices, dollar amounts, or cost estimates. Return only valid JSON — an array of line items.
 
 Each line item has exactly these fields:
-- name: short descriptive name (e.g. "30yr Architectural Shingles", "Tear off and disposal")
+- name: short descriptive name
 - quantity: numeric quantity for the job
 - unit: the unit of measure ("square","roll","bundle","piece","lot","sqft","lf","hr","ea","day","gal","ton","yd","bag","box","pallet")
 - type: "material" or "labor"
 
 Rules:
-- Pick units that match how this trade is actually quoted (e.g. roofing materials in "square" or "bundle", lumber in "lf" or "piece").
+- Pick units that match how this trade is actually quoted.
 - Quantities must be reasonable estimates for the job size described.
 - Include both materials AND labor items.
 - DO NOT include any prices, costs, dollar amounts, or unit_price fields.
@@ -178,7 +170,7 @@ ${contractorContext ? `\nCONTRACTOR CONTEXT:\n${contractorContext}` : ""}
 
 Return the JSON array of line items now.`;
 
-  const text = await callAnthropic(system, user, 1500);
+  const text = await callAnthropic(STEP1_MODEL, system, user, STEP1_MAX_TOKENS, "step1_items");
   const parsed = extractJson<ClaudeLineItem[]>(text);
   if (!Array.isArray(parsed)) return [];
   return parsed.filter(li => li && typeof li.name === "string" && typeof li.quantity === "number" && typeof li.unit === "string");
@@ -187,7 +179,7 @@ Return the JSON array of line items now.`;
 async function step2_estimatePrice(
   item: ClaudeLineItem, trade: string, state: string | null
 ): Promise<number> {
-  const system = `You are a ${trade.replace(/_/g, " ")} pricing expert. Return a single realistic CURRENT MARKET unit price in US dollars for the line item below. No markup. Return ONLY a JSON object: {"unit_price": <number>}. No prose.`;
+  const system = `You are a ${trade.replace(/_/g, " ")} pricing expert. Return a single realistic CURRENT MARKET unit price in US dollars for the line item. No markup. Return ONLY a JSON object: {"unit_price": <number>}. No prose.`;
   const user = `Item: ${item.name}
 Quantity: ${item.quantity}
 Unit: ${item.unit}
@@ -196,7 +188,7 @@ ${state ? `State: ${state}` : ""}
 
 Return {"unit_price": N} now.`;
   try {
-    const text = await callAnthropic(system, user, 100);
+    const text = await callAnthropic(STEP2_MODEL, system, user, STEP2_MAX_TOKENS, "step2_estimate");
     const parsed = extractJson<{ unit_price: number }>(text);
     const p = Number(parsed?.unit_price);
     return Number.isFinite(p) && p >= 0 ? p : 0;
@@ -213,14 +205,11 @@ function ok(body: Record<string, unknown>) {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  // Top-level guard: NEVER return non-2xx. Always return JSON the client can read.
   try {
-    // Diagnostic: log env-var presence (never values)
-    console.log("[price-line-items] env check:", {
-      has_lovable_key: !!Deno.env.get("LOVABLE_API_KEY"),
+    console.log(`[${FN_NAME}] env check:`, {
+      has_anthropic_key: !!Deno.env.get("ANTHROPIC_API_KEY"),
       has_materials_url: !!Deno.env.get("MATERIALS_SUPABASE_URL"),
       has_materials_key: !!Deno.env.get("MATERIALS_SUPABASE_ANON_KEY"),
-      model: PRIMARY_MODEL,
     });
 
     let body: any = {};
@@ -231,13 +220,12 @@ serve(async (req) => {
       return ok({ ok: false, error: "trade is required", line_items: [], catalog_matched: 0, estimated: 0, total: 0 });
     }
 
-    // STEP 1 — Claude decides what (no prices). On failure, return empty-but-OK so client falls back gracefully.
     let claudeItems: ClaudeLineItem[] = [];
     try {
       claudeItems = await step1_getLineItemList(trade, job_description || "", contractor_context || null);
-      console.log("[price-line-items] Claude returned", claudeItems.length, "items");
+      console.log(`[${FN_NAME}] step1 returned`, claudeItems.length, "items");
     } catch (e) {
-      console.error("[price-line-items] step1 failed:", e);
+      console.error(`[${FN_NAME}] step1 failed:`, e);
       return ok({ ok: false, error: e instanceof Error ? e.message : "step1 failed", line_items: [], catalog_matched: 0, estimated: 0, total: 0, stage: "step1" });
     }
 
@@ -245,13 +233,12 @@ serve(async (req) => {
       return ok({ ok: true, line_items: [], catalog_matched: 0, estimated: 0, total: 0 });
     }
 
-    // STEP 2 — Catalog lookup with Claude fallback for misses
     let catalog: CatalogRow[] = [];
     try {
       catalog = await fetchCatalog(trade, job_state || null);
-      console.log("[price-line-items] catalog rows fetched:", catalog.length);
+      console.log(`[${FN_NAME}] catalog rows:`, catalog.length);
     } catch (e) {
-      console.error("[price-line-items] catalog fetch failed:", e);
+      console.error(`[${FN_NAME}] catalog fetch failed:`, e);
       catalog = [];
     }
 
@@ -281,10 +268,6 @@ serve(async (req) => {
           estimated++;
         }
 
-        console.log(
-          `[price-line-items] "${item.name}" → ${matched_catalog_name ? `matched "${matched_catalog_name}"` : "no match"} · $${unit_price} · ${price_source}`
-        );
-
         priced.push({
           description: item.name,
           quantity: item.quantity,
@@ -296,8 +279,7 @@ serve(async (req) => {
           matched_catalog_name,
         });
       } catch (itemErr) {
-        console.error(`[price-line-items] item "${item?.name}" failed:`, itemErr);
-        // Push the item with zero price so the contractor can fix manually
+        console.error(`[${FN_NAME}] item "${item?.name}" failed:`, itemErr);
         priced.push({
           description: item.name,
           quantity: item.quantity,
@@ -320,7 +302,7 @@ serve(async (req) => {
       total: priced.length,
     });
   } catch (e) {
-    console.error("[price-line-items] UNHANDLED:", e, (e as any)?.stack);
+    console.error(`[${FN_NAME}] UNHANDLED:`, e, (e as any)?.stack);
     return ok({
       ok: false,
       error: e instanceof Error ? e.message : "Unknown error",

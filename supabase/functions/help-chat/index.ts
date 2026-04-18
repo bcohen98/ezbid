@@ -7,43 +7,37 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// MODEL: claude-haiku-4-5-20251001 — short helpful chat answers, not in core list
+const MODEL = "claude-haiku-4-5-20251001";
+const MAX_TOKENS = 1024;
+const FN_NAME = "help-chat";
+
 const SYSTEM_PROMPT = `You are the EZ-Bid Help Assistant — a friendly, concise guide for contractors using the EZ-Bid proposal platform.
 
 EZ-Bid helps contractors create, send, and manage professional proposals. Here's what you know about the app:
 
 **Navigation & Pages:**
-- **Dashboard** (/dashboard) — Overview of all proposals with status badges, search, sort, and quick stats. Click any proposal to see details.
-- **New Proposal** (/proposals/new) — Start by selecting a template, then fill in client info, job details, line items, pricing, terms, and delivery method. You can "Polish with AI" to enhance the text.
-- **Proposal Preview** (/proposals/:id/preview) — See a live preview. Use the side panel for AI revisions, uploading exhibits/attachments, downloading PDF, or sending to client via email.
-- **Proposal Detail** (/proposals/:id) — View proposal summary, client info, line items, exhibits. Duplicate, resend, or edit from here.
-- **Clients** (/clients) — Manage your client list (add, edit, delete).
-- **Company Profile** (/company-profile) — Set up your company name, logo, address, license numbers, trade type, default warranty, payment terms, and disclosures.
-- **Signing** — After sending, clients get a link to review and e-sign. Once signed, you'll see a "Countersign Required" badge — click it to add your countersignature.
+- **Dashboard** (/dashboard) — Overview of all proposals with status badges, search, sort, and quick stats.
+- **New Proposal** (/proposals/new) — Select a template, fill in client info, job details, line items, pricing, terms.
+- **Proposal Preview** (/proposals/:id/preview) — Live preview. Side panel for AI revisions, exhibits, PDF, email.
+- **Proposal Detail** (/proposals/:id) — View summary, client info, line items, exhibits.
+- **Clients** (/clients) — Manage your client list.
+- **Company Profile** (/company-profile) — Set up your company name, logo, address, license, defaults.
 
 **Key Features:**
 - Templates: classic, modern, minimal, bold, executive, contractor, premium, clean
-- AI Polish: Enhances job description and scope of work text
-- AI Revision: In preview, describe changes in plain English and AI updates the proposal
-- Exhibits: Upload photos, diagrams, or documents to attach to proposals
-- PDF Download: Generate and download proposals as PDF
-- Email: Send proposals to yourself or directly to clients for e-signature
-- E-Signature: Clients sign on their device; contractors countersign in-app
-- Subscription: Free tier includes 3 proposals, then upgrade to Pro ($29/mo)
+- AI Polish: Enhances job description and scope of work
+- AI Revision: Describe changes in plain English
+- Exhibits, PDF, Email, E-Signature
+- Subscription: Free tier 3 proposals, then Pro ($29/mo)
 
-**Tips:**
-- Complete your Company Profile first — it auto-fills into every proposal
-- Use "Polish with AI" before sending for more professional language
-- The proposal form auto-saves drafts to local storage
-- You can edit fields directly on the preview by clicking the pencil icons
-
-Keep answers short (2-3 sentences max). Use bullet points for multi-step instructions. If unsure, suggest checking the relevant page.`;
+Keep answers short (2-3 sentences max). Use bullet points for multi-step instructions.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS")
     return new Response(null, { headers: corsHeaders });
 
   try {
-    // Authenticate user
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -63,54 +57,93 @@ serve(async (req) => {
     }
 
     const { messages } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not configured");
 
-    const response = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
-          messages: [
-            { role: "system", content: SYSTEM_PROMPT },
-            ...messages,
-          ],
-          stream: true,
-        }),
-      }
-    );
+    console.log(`[AI CALL] function: ${FN_NAME} | model: ${MODEL} | task: chat | tokens: ${MAX_TOKENS}`);
+
+    // Anthropic streaming via SSE
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: MAX_TOKENS,
+        system: SYSTEM_PROMPT,
+        messages,
+        stream: true,
+      }),
+    });
 
     if (!response.ok) {
+      const t = await response.text();
+      console.error(`[AI ERROR] function: ${FN_NAME} | model: ${MODEL} | error: ${response.status} ${t.slice(0, 300)}`);
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limited — please try again in a moment." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "AI credits exhausted. Please add funds in Settings." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
       return new Response(
         JSON.stringify({ error: "AI service unavailable" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    return new Response(response.body, {
+    // Translate Anthropic SSE to OpenAI-style SSE chunks the client expects
+    const stream = new ReadableStream({
+      async start(controller) {
+        const reader = response.body!.getReader();
+        const decoder = new TextDecoder();
+        const encoder = new TextEncoder();
+        let buffer = "";
+        let inputTokens = 0;
+        let outputTokens = 0;
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+            for (const line of lines) {
+              if (!line.startsWith("data:")) continue;
+              const dataStr = line.slice(5).trim();
+              if (!dataStr) continue;
+              try {
+                const evt = JSON.parse(dataStr);
+                if (evt.type === "content_block_delta" && evt.delta?.type === "text_delta") {
+                  const chunk = {
+                    choices: [{ delta: { content: evt.delta.text } }],
+                  };
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`));
+                } else if (evt.type === "message_start") {
+                  inputTokens = evt.message?.usage?.input_tokens || 0;
+                } else if (evt.type === "message_delta") {
+                  outputTokens = evt.usage?.output_tokens || outputTokens;
+                }
+              } catch { /* skip */ }
+            }
+          }
+          controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+          console.log(`[AI RESPONSE] function: ${FN_NAME} | model: ${MODEL} | tokens_used: ${inputTokens} in / ${outputTokens} out | status: success`);
+        } catch (err) {
+          console.error(`[AI ERROR] function: ${FN_NAME} | model: ${MODEL} | error: stream ${err}`);
+        } finally {
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(stream, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {
-    console.error("help-chat error:", e);
+    console.error(`[AI ERROR] function: ${FN_NAME} | model: ${MODEL} | error: ${e instanceof Error ? e.message : "unknown"}`);
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

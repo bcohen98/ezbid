@@ -6,11 +6,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// MODEL: claude-haiku-4-5-20251001 — small structured suggestion task, not in core list
+const MODEL = "claude-haiku-4-5-20251001";
+const MAX_TOKENS = 1024;
+const FN_NAME = "suggest-line-items";
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // Auth is optional for guest proposals
     const authHeader = req.headers.get("Authorization");
     let user = null;
     if (authHeader?.startsWith("Bearer ")) {
@@ -25,8 +29,8 @@ serve(async (req) => {
 
     const { trade, job_description, existing_items } = await req.json();
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not configured");
 
     const tradeLabel = (trade || "general_contractor").replace(/_/g, " ");
 
@@ -42,97 +46,81 @@ ${job_description}
 EXISTING LINE ITEMS:
 ${existingList || "None"}
 
-Analyze the job description carefully. Identify any work, materials, fees, or tasks mentioned in the description that are NOT already covered by the existing line items. Only suggest items that are clearly implied by the job description — do NOT add generic padding items.
+Identify any work, materials, fees, or tasks mentioned in the description that are NOT already covered. Only suggest items clearly implied by the job description — do NOT add generic padding.
 
 If the existing items already cover everything, return an empty suggestions array.
 
-For each suggested item, provide a description, appropriate unit (ea, sq ft, hr, lf, cu yd, gal, etc), and a suggested quantity based on what the description implies. Set unit_price to 0 (the user will fill in pricing).`;
+For each suggested item provide a description, appropriate unit (ea, sq ft, hr, lf, cu yd, gal, etc), and a suggested quantity. Set unit_price to 0 (the user will fill in pricing).`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    console.log(`[AI CALL] function: ${FN_NAME} | model: ${MODEL} | task: suggest | tokens: ${MAX_TOKENS}`);
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: "You are a trade contractor expert. Analyze job descriptions and suggest missing line items." },
-          { role: "user", content: prompt },
-        ],
+        model: MODEL,
+        max_tokens: MAX_TOKENS,
+        system: "You are a trade contractor expert. Analyze job descriptions and suggest missing line items.",
+        messages: [{ role: "user", content: prompt }],
         tools: [
           {
-            type: "function",
-            function: {
-              name: "suggest_items",
-              description: "Return suggested missing line items",
-              parameters: {
-                type: "object",
-                properties: {
-                  suggestions: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        description: { type: "string" },
-                        quantity: { type: "number" },
-                        unit: { type: "string" },
-                        unit_price: { type: "number" },
-                        reason: { type: "string", description: "Brief reason why this was suggested based on the job description" },
-                      },
-                      required: ["description", "quantity", "unit", "unit_price", "reason"],
+            name: "suggest_items",
+            description: "Return suggested missing line items",
+            input_schema: {
+              type: "object",
+              properties: {
+                suggestions: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      description: { type: "string" },
+                      quantity: { type: "number" },
+                      unit: { type: "string" },
+                      unit_price: { type: "number" },
+                      reason: { type: "string" },
                     },
+                    required: ["description", "quantity", "unit", "unit_price", "reason"],
                   },
                 },
-                required: ["suggestions"],
               },
+              required: ["suggestions"],
             },
           },
         ],
-        tool_choice: { type: "function", function: { name: "suggest_items" } },
+        tool_choice: { type: "tool", name: "suggest_items" },
       }),
     });
 
     if (!response.ok) {
+      const t = await response.text();
+      console.error(`[AI ERROR] function: ${FN_NAME} | model: ${MODEL} | error: ${response.status} ${t.slice(0, 300)}`);
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limited. Please try again." }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const t = await response.text();
-      console.error("AI error:", response.status, t);
-      throw new Error("AI gateway error");
+      throw new Error("Anthropic API error");
     }
 
     const data = await response.json();
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall) {
+    console.log(`[AI RESPONSE] function: ${FN_NAME} | model: ${MODEL} | tokens_used: ${data?.usage?.input_tokens ?? "?"} in / ${data?.usage?.output_tokens ?? "?"} out | status: success`);
+    const toolUse = (data.content || []).find((c: any) => c.type === "tool_use");
+    if (!toolUse) {
       return new Response(JSON.stringify({ suggestions: [] }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    let result;
-    try {
-      result = typeof toolCall.function.arguments === "string"
-        ? JSON.parse(toolCall.function.arguments)
-        : toolCall.function.arguments;
-    } catch {
-      return new Response(JSON.stringify({ suggestions: [] }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    return new Response(JSON.stringify(result), {
+    return new Response(JSON.stringify(toolUse.input), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("suggest-line-items error:", e);
+    console.error(`[AI ERROR] function: ${FN_NAME} | model: ${MODEL} | error: ${e instanceof Error ? e.message : "unknown"}`);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
