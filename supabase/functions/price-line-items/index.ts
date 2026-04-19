@@ -386,7 +386,7 @@ serve(async (req) => {
   try {
     let body: any = {};
     try { body = await req.json(); } catch { body = {}; }
-    const { trade, job_description, job_state, contractor_context } = body || {};
+    const { trade, job_description, job_state, job_zip, contractor_context } = body || {};
 
     if (!trade) {
       return ok({ ok: false, error: "trade is required", line_items: [], catalog_matched: 0, estimated: 0, total: 0 }, routing);
