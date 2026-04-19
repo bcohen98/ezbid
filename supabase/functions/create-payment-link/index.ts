@@ -1,3 +1,4 @@
+// v3 force redeploy
 // Requires: STRIPE_SECRET_KEY_CONNECT, RESEND_API_KEY, LOVABLE_API_KEY
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
