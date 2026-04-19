@@ -323,7 +323,31 @@ Return the JSON array of line items now.`;
 }
 
 async function step2_estimatePrice(item: ClaudeLineItem, trade: string, state: string | null): Promise<{ price: number; in: number; out: number }> {
-  const system = `You are a ${trade.replace(/_/g, " ")} pricing expert. Return a single realistic CURRENT MARKET unit price in US dollars for the line item. No markup. Return ONLY a JSON object: {"unit_price": <number>}. No prose.`;
+  const system = `You are a ${trade.replace(/_/g, " ")} pricing expert. Return a single realistic CURRENT MARKET unit price in US dollars for the line item. No markup. Return ONLY a JSON object: {"unit_price": <number>}. No prose.
+
+Use these contractor labor rate ranges when pricing service or labor line items:
+
+Painting: wall/ceiling painting $1.50-3.00/sqft, surface prep $0.50-1.50/sqft, priming $0.75-1.50/sqft, masking/protection $45-65/hr, cleanup $45-65/hr
+
+Roofing: tear-off/removal $0.50-1.50/sqft, shingle installation $1.50-4.00/sqft, flashing installation $8-15/lf, ridge cap $5-10/lf
+
+HVAC: equipment installation $500-2000/unit, ductwork $8-15/lf, refrigerant charging $150-300/unit, diagnostic $85-150/hr
+
+Plumbing: fixture installation $150-400/ea, pipe installation $15-40/lf, drain cleaning $150-300/ea, service call $85-150/hr
+
+Electrical: outlet/switch $50-150/ea, panel work $75-150/hr, wire pulling $2-5/lf, fixture installation $75-150/ea
+
+Flooring: installation $2-6/sqft, subfloor prep $1-3/sqft, baseboard $3-6/lf, carpet $1-3/sqft
+
+Landscaping: planting $45-85/hr, grading $75-150/hr, sod installation $0.50-1.50/sqft, mulch $35-65/hr
+
+Pressure Washing: house $0.15-0.35/sqft, driveway $0.10-0.25/sqft, deck $0.25-0.50/sqft
+
+Foundation: excavation $50-150/hr, concrete $8-15/sqft, waterproofing $3-8/sqft, crack repair $300-800/ea
+
+General Contracting: framing $5-15/sqft, drywall $2-5/sqft, general labor $45-85/hr
+
+NEVER price labor items using retail product prices. Always estimate within these ranges based on job complexity and scope.`;
   const user = `Item: ${item.name}
 Quantity: ${item.quantity}
 Unit: ${item.unit}
@@ -425,6 +449,19 @@ serve(async (req) => {
     routing.dedupe_removed = beforeCount - claudeItems.length;
 
     // CATALOG FETCH — live Home Depot pricing via get_materials_context
+    const LABOR_KEYWORDS = ["labor","installation","install","prep","preparation","priming","laying","pouring","framing","wiring","running","pulling","masking","cleanup","touch-up","touchup","protection","moving","haul","disposal","demolition","demo","excavation","grading","leveling","trenching","inspection","permit","mobilization","teardown","removal","rental","diagnostic","commissioning","testing","balancing","startup","service call","painting walls","painting ceilings","paint walls","paint ceilings","seal coat","pressure wash","power wash"];
+    const MATERIAL_UNITS = new Set(["gal","gallon","roll","ea","each","sheet","piece","bag","box","lb","ft","lf","bundle","square","ton","yard","lot","pallet"]);
+    function isMaterialItem(item: ClaudeLineItem): boolean {
+      const unitNorm = normalizeUnit(item.unit);
+      const unitOk = MATERIAL_UNITS.has(item.unit?.toLowerCase?.() ?? "") || MATERIAL_UNITS.has(unitNorm ?? "");
+      const nameLower = item.name.toLowerCase();
+      const nameOk = !LABOR_KEYWORDS.some(kw => nameLower.includes(kw));
+      return unitOk && nameOk;
+    }
+    const materialItemsForHD = claudeItems.filter(isMaterialItem);
+    const laborItems = claudeItems.filter(i => !isMaterialItem(i));
+    console.log(`[HD FILTER] total: ${claudeItems.length} | sending to HD: ${materialItemsForHD.length} | labor/service (skip HD): ${laborItems.length}`);
+
     let catalog: CatalogRow[] = [];
     try {
       const supaUrl = Deno.env.get("SUPABASE_URL");
@@ -440,7 +477,7 @@ serve(async (req) => {
           body: JSON.stringify({
             trade,
             state_code: job_state || null,
-            line_items: claudeItems.map(i => ({ name: i.name, unit: i.unit })),
+            line_items: materialItemsForHD.map(i => ({ name: i.name, unit: i.unit })),
             zip: job_zip,
           }),
           signal: AbortSignal.timeout(15000),
