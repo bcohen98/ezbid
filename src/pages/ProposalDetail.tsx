@@ -7,11 +7,13 @@ import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, Eye, Copy, Send, Pencil, Loader2 } from 'lucide-react';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { ArrowLeft, Eye, Copy, Send, Pencil, Loader2, DollarSign } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/lib/formatCurrency';
 import EditClientDialog from '@/components/EditClientDialog';
 import ExhibitsUpload from '@/components/proposal/ExhibitsUpload';
+import RequestPaymentModal from '@/components/proposal/RequestPaymentModal';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function ProposalDetail() {
@@ -25,6 +27,7 @@ export default function ProposalDetail() {
   const { exhibits, isAdding, addExhibit, updateCaption, removeExhibit } = useProposalExhibits(id);
   const [editClientOpen, setEditClientOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   const handleResend = useCallback(async () => {
     if (!proposal) return;
@@ -136,6 +139,32 @@ export default function ProposalDetail() {
               {isSending ? 'Sending…' : 'Resend'}
             </Button>
           )}
+          {isSigned && (() => {
+            const connectReady = !!(profile as any)?.stripe_connect_charges_enabled;
+            const ps = (proposal as any).payment_status || 'unpaid';
+            const fullyPaid = ps === 'paid';
+            if (fullyPaid) return null;
+            const label = ps === 'deposit_paid' ? 'Request Remaining Balance' : 'Request Payment';
+            if (!connectReady) {
+              return (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="flex-1 sm:flex-none">
+                      <Button size="sm" className="gap-2 w-full sm:w-auto" disabled>
+                        <DollarSign className="h-4 w-4" /> {label}
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>Connect your bank account in Settings to accept payments</TooltipContent>
+                </Tooltip>
+              );
+            }
+            return (
+              <Button size="sm" className="gap-2 flex-1 sm:flex-none" onClick={() => setShowPaymentModal(true)}>
+                <DollarSign className="h-4 w-4" /> {label}
+              </Button>
+            );
+          })()}
         </div>
 
         {/* Summary */}
@@ -189,6 +218,12 @@ export default function ProposalDetail() {
             />
           </div>
         )}
+        <RequestPaymentModal
+          open={showPaymentModal}
+          onOpenChange={setShowPaymentModal}
+          proposal={proposal}
+          onRequested={() => refetch()}
+        />
         {proposal && (
           <EditClientDialog
             open={editClientOpen}
