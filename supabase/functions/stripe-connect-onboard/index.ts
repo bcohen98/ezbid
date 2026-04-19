@@ -1,3 +1,4 @@
+// v2
 // Requires: STRIPE_SECRET_KEY_CONNECT
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
