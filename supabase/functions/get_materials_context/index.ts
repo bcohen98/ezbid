@@ -35,15 +35,29 @@ serve(async (req) => {
         const product = data?.products?.[0];
         if (!product?.price) return null;
         const price = Number(product.price);
-        console.log(`[HD PRICE] item: ${item.name} | matched: ${product.title} | price: $${price} | zip: ${zip}`);
+        const title = (product.title || "").toLowerCase();
+        // Detect multi-pack quantities in title and normalize to unit price
+        let unitPrice = price;
+        const multiPackMatch =
+          title.match(/\((\d+)[\s-]*(pack|pk|count|ct|piece|pc|rolls?|sheets?|gallons?)\)/i) ||
+          title.match(/^(\d+)[\s-]*(pack|pk|count|ct)\b/i) ||
+          title.match(/set of (\d+)/i);
+        if (multiPackMatch) {
+          const qty = parseInt(multiPackMatch[1], 10);
+          if (qty > 1 && qty <= 50) {
+            unitPrice = price / qty;
+            console.log(`[HD MULTIPACK] item: ${item.name} | title: ${product.title} | pack_qty: ${qty} | raw_price: $${price} | unit_price: $${unitPrice.toFixed(2)}`);
+          }
+        }
+        console.log(`[HD PRICE] item: ${item.name} | matched: ${product.title} | price: $${unitPrice} | zip: ${zip}`);
         // Map back to ORIGINAL item name (not HD product title) so price-line-items
         // can do a direct name lookup without fuzzy matching.
         return {
           name: item.name,
           matched_product: product.title,
-          price_low: Math.round(price * 0.9 * 100) / 100,
-          price_high: Math.round(price * 1.1 * 100) / 100,
-          suggested_price: price,
+          price_low: Math.round(unitPrice * 0.9 * 100) / 100,
+          price_high: Math.round(unitPrice * 1.1 * 100) / 100,
+          suggested_price: unitPrice,
           unit: item.unit,
           source: "home_depot_live",
         };
