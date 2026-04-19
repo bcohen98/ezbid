@@ -97,6 +97,93 @@ serve(async (req) => {
             console.error(`[STRIPE-WEBHOOK] Could not find user for customer ${customerId}`);
           }
         }
+
+        if (session.mode === "payment") {
+          const proposalId = session.metadata?.proposal_id;
+          const userId = session.metadata?.user_id;
+          const paymentType = session.metadata?.payment_type;
+
+          console.log("[STRIPE-WEBHOOK] Payment session completed, proposal_id:", proposalId);
+
+          if (!proposalId) {
+            console.log("[STRIPE-WEBHOOK] No proposal_id in session metadata, skipping");
+            break;
+          }
+
+          const amountTotal = session.amount_total ?? 0;
+          const amountDollars = amountTotal / 100;
+          const amountStr = amountDollars.toLocaleString("en-US", { minimumFractionDigits: 2 });
+
+          const updateData: Record<string, any> = paymentType === "deposit"
+            ? {
+                payment_status: "deposit_paid",
+                deposit_paid_at: new Date().toISOString(),
+                deposit_paid_amount: amountDollars,
+              }
+            : {
+                payment_status: "paid",
+                payment_paid_at: new Date().toISOString(),
+                payment_paid_amount: amountDollars,
+              };
+
+          await supabase.from("proposals").update(updateData).eq("id", proposalId);
+
+          await supabase.from("payment_transactions")
+            .update({ status: "succeeded" })
+            .eq("proposal_id", proposalId)
+            .eq("status", "pending");
+
+          console.log("[STRIPE-WEBHOOK] Updated proposal", proposalId, "to", updateData.payment_status);
+
+          const { data: proposal } = await supabase.from("proposals")
+            .select("title, client_name, client_email, user_id")
+            .eq("id", proposalId).single();
+          const { data: profile } = await supabase.from("company_profiles")
+            .select("email, company_name")
+            .eq("user_id", userId || proposal?.user_id).single();
+
+          const resendKey = Deno.env.get("RESEND_API_KEY");
+          const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+          const PAYMENTS_FROM = "EZ-Bid Payments <payments@ezbid.pro>";
+
+          if (resendKey && lovableKey) {
+            if (profile?.email) {
+              await fetch("https://connector-gateway.lovable.dev/resend/emails", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${lovableKey}`,
+                  "X-Connection-Api-Key": resendKey,
+                },
+                body: JSON.stringify({
+                  from: PAYMENTS_FROM,
+                  to: [profile.email],
+                  reply_to: profile.email,
+                  subject: `Payment Received — ${proposal?.title || "Proposal"}`,
+                  html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:30px 20px;"><h1 style="font-size:22px;color:#1a1a1a;">Payment Received! 💰</h1><p style="font-size:15px;color:#555;line-height:1.6;"><strong>${proposal?.client_name || "Your client"}</strong> has paid <strong>$${amountStr}</strong> for <strong>${proposal?.title || "your proposal"}</strong>. The funds are being transferred to your bank account.</p><p style="font-size:13px;color:#888;">Funds typically arrive next business day.</p></div>`,
+                }),
+              });
+            }
+
+            if (proposal?.client_email) {
+              await fetch("https://connector-gateway.lovable.dev/resend/emails", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${lovableKey}`,
+                  "X-Connection-Api-Key": resendKey,
+                },
+                body: JSON.stringify({
+                  from: PAYMENTS_FROM,
+                  to: [proposal.client_email],
+                  reply_to: profile?.email || "payments@ezbid.pro",
+                  subject: `Payment Confirmed — ${proposal?.title || "Proposal"}`,
+                  html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:30px 20px;"><h1 style="font-size:22px;color:#1a1a1a;">Payment Confirmed ✓</h1><p style="font-size:15px;color:#555;line-height:1.6;">Your payment of <strong>$${amountStr}</strong> to <strong>${profile?.company_name || "your contractor"}</strong> has been received. Thank you!</p><p style="font-size:12px;color:#999;margin-top:20px;">— ${profile?.company_name || "Your contractor"}</p></div>`,
+                }),
+              });
+            }
+          }
+        }
         break;
       }
 
