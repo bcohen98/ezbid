@@ -386,7 +386,7 @@ serve(async (req) => {
   try {
     let body: any = {};
     try { body = await req.json(); } catch { body = {}; }
-    const { trade, job_description, job_state, contractor_context } = body || {};
+    const { trade, job_description, job_state, job_zip, contractor_context } = body || {};
 
     if (!trade) {
       return ok({ ok: false, error: "trade is required", line_items: [], catalog_matched: 0, estimated: 0, total: 0 }, routing);
@@ -414,12 +414,49 @@ serve(async (req) => {
     claudeItems = dedupeLineItems(claudeItems, dedupeLog);
     routing.dedupe_removed = beforeCount - claudeItems.length;
 
-    // CATALOG FETCH
+    // CATALOG FETCH — live Home Depot pricing via get_materials_context
     let catalog: CatalogRow[] = [];
     try {
-      catalog = await fetchCatalog(trade, job_state || null);
+      const supaUrl = Deno.env.get("SUPABASE_URL");
+      const supaKey = Deno.env.get("SUPABASE_ANON_KEY");
+      if (supaUrl && supaKey && job_zip) {
+        const res = await fetch(`${supaUrl}/functions/v1/get_materials_context`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            apikey: supaKey,
+            Authorization: `Bearer ${supaKey}`,
+          },
+          body: JSON.stringify({
+            trade,
+            state_code: job_state || null,
+            line_items: claudeItems.map(i => ({ name: i.name, unit: i.unit })),
+            zip: job_zip,
+          }),
+          signal: AbortSignal.timeout(15000),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const materials = Array.isArray(data?.materials) ? data.materials : [];
+          catalog = materials.map((m: any) => ({
+            id: null,
+            name: m.name,
+            unit: m.unit,
+            price_low: Number(m.price_low) || 0,
+            price_high: Number(m.price_high) || 0,
+            source: m.source || "home_depot_live",
+            region: null,
+            typical_job_qty: null,
+          })) as CatalogRow[];
+          console.log(`[${FN_NAME}] get_materials_context returned ${catalog.length} live HD prices`);
+        } else {
+          console.error(`[${FN_NAME}] get_materials_context returned ${res.status}`);
+        }
+      } else {
+        console.log(`[${FN_NAME}] skipping get_materials_context (missing zip or supabase env)`);
+      }
     } catch (e) {
-      console.error(`[${FN_NAME}] catalog fetch failed:`, e);
+      console.error(`[${FN_NAME}] get_materials_context fetch failed:`, e);
       catalog = [];
     }
 
