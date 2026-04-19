@@ -354,6 +354,14 @@ export default function Dashboard() {
                   <Badge variant="outline" className={statusColors[p.status] || ''}>
                     {p.status}
                   </Badge>
+                  {(() => {
+                    const ps = (p as any).payment_status;
+                    const paidAmt = Number((p as any).payment_paid_amount) || Number((p as any).deposit_paid_amount) || 0;
+                    if (ps === 'paid') return <Badge variant="outline" className="border-green-300 text-green-700 bg-green-50">Paid ${formatCurrency(paidAmt)}</Badge>;
+                    if (ps === 'deposit_paid') return <Badge variant="outline" className="border-green-300 text-green-700 bg-green-50">Deposit Paid</Badge>;
+                    if (ps === 'deposit_requested' || ps === 'payment_requested') return <Badge variant="outline" className="border-yellow-300 text-yellow-800 bg-yellow-50">Payment Pending</Badge>;
+                    return null;
+                  })()}
                   {p.status === 'signed' && p.client_signature_url && !(p as any).contractor_signature_url && (
                     <Button
                       variant="outline"
