@@ -5,7 +5,8 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const PAYMENTS_FROM = "EZ-Bid Payments <payments@ezbid.pro>";
@@ -18,13 +19,17 @@ serve(async (req) => {
     const supabaseAnon = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY")!;
-    const appUrl = Deno.env.get("APP_URL") || "https://ezbid.lovable.app";
+    const appUrl = "https://ezbid.pro";
 
     const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
     const anonClient = createClient(supabaseUrl, supabaseAnon);
-    const { data: { user }, error: authErr } = await anonClient.auth.getUser(token);
-    if (authErr || !user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+    const {
+      data: { user },
+      error: authErr,
+    } = await anonClient.auth.getUser(token);
+    if (authErr || !user)
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
 
     const {
       proposal_id,
@@ -42,13 +47,19 @@ serve(async (req) => {
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
     const { data: proposal } = await adminClient
-      .from("proposals").select("*").eq("id", proposal_id).eq("user_id", user.id).single();
-    if (!proposal) return new Response(JSON.stringify({ error: "Proposal not found" }), { status: 404, headers: corsHeaders });
+      .from("proposals")
+      .select("*")
+      .eq("id", proposal_id)
+      .eq("user_id", user.id)
+      .single();
+    if (!proposal)
+      return new Response(JSON.stringify({ error: "Proposal not found" }), { status: 404, headers: corsHeaders });
 
     const { data: profile } = await adminClient
       .from("company_profiles")
       .select("stripe_connect_account_id, stripe_connect_charges_enabled, company_name, email")
-      .eq("user_id", user.id).single();
+      .eq("user_id", user.id)
+      .single();
     if (!profile?.stripe_connect_account_id || !profile.stripe_connect_charges_enabled) {
       return new Response(JSON.stringify({ error: "Stripe Connect not ready" }), { status: 400, headers: corsHeaders });
     }
@@ -69,8 +80,8 @@ serve(async (req) => {
     }
 
     const clientEmail = (clientEmailOverride && String(clientEmailOverride).trim()) || proposal.client_email;
-    const description = (descriptionOverride && String(descriptionOverride).trim()) ||
-      `${proposal.title || "Proposal"} — ${typeLabel}`;
+    const description =
+      (descriptionOverride && String(descriptionOverride).trim()) || `${proposal.title || "Proposal"} — ${typeLabel}`;
 
     const amountCents = Math.round(amount * 100);
     const platformFeeCents = Math.round(amountCents * 0.01);
@@ -122,9 +133,10 @@ serve(async (req) => {
       const lovableKey = Deno.env.get("LOVABLE_API_KEY");
       if (resendKey && lovableKey) {
         const companyName = profile.company_name || "your contractor";
-        const messageBlock = personal_message && String(personal_message).trim()
-          ? `<div style="margin:20px 0;padding:16px 18px;background:#f7f7f8;border-left:3px solid #1a1a1a;border-radius:4px;"><p style="font-size:14px;color:#333;line-height:1.6;margin:0;white-space:pre-wrap;">${String(personal_message).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]!))}</p></div>`
-          : "";
+        const messageBlock =
+          personal_message && String(personal_message).trim()
+            ? `<div style="margin:20px 0;padding:16px 18px;background:#f7f7f8;border-left:3px solid #1a1a1a;border-radius:4px;"><p style="font-size:14px;color:#333;line-height:1.6;margin:0;white-space:pre-wrap;">${String(personal_message).replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" })[c]!)}</p></div>`
+            : "";
         const emailPayload: Record<string, any> = {
           from: PAYMENTS_FROM,
           to: [clientEmail],
@@ -167,7 +179,8 @@ serve(async (req) => {
   } catch (err: any) {
     console.error("[create-payment-link]", err);
     return new Response(JSON.stringify({ error: err.message }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
