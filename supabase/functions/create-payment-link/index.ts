@@ -1,4 +1,4 @@
-// Requires: STRIPE_SECRET_KEY, APP_URL, RESEND_API_KEY, LOVABLE_API_KEY
+// Requires: STRIPE_SECRET_KEY_CONNECT, RESEND_API_KEY, LOVABLE_API_KEY
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
@@ -10,6 +10,7 @@ const corsHeaders = {
 };
 
 const PAYMENTS_FROM = "EZ-Bid Payments <payments@ezbid.pro>";
+const APP_URL = "https://ezbid.pro";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -18,8 +19,16 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnon = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY")!;
-    const appUrl = "https://ezbid.pro";
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY_CONNECT")!;
+
+    console.log("[create-payment-link] v2 start");
+
+    if (!stripeKey) {
+      return new Response(JSON.stringify({ error: "STRIPE_SECRET_KEY_CONNECT not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
@@ -39,6 +48,7 @@ serve(async (req) => {
       personal_message,
       description: descriptionOverride,
     } = await req.json();
+
     if (!proposal_id || !payment_type) {
       return new Response(JSON.stringify({ error: "Missing fields" }), { status: 400, headers: corsHeaders });
     }
@@ -60,11 +70,14 @@ serve(async (req) => {
       .select("stripe_connect_account_id, stripe_connect_charges_enabled, company_name, email")
       .eq("user_id", user.id)
       .single();
-    if (!profile?.stripe_connect_account_id || !profile.stripe_connect_charges_enabled) {
-      return new Response(JSON.stringify({ error: "Stripe Connect not ready" }), { status: 400, headers: corsHeaders });
+
+    if (!profile?.stripe_connect_account_id) {
+      return new Response(JSON.stringify({ error: "Stripe Connect not configured" }), {
+        status: 400,
+        headers: corsHeaders,
+      });
     }
 
-    // Resolve amount: user-supplied takes priority, otherwise default to proposal totals
     let amount: number;
     const typeLabel = payment_type === "deposit" ? "Deposit" : "Payment";
     if (amountOverride !== undefined && amountOverride !== null && amountOverride !== "") {
@@ -75,6 +88,7 @@ serve(async (req) => {
       const depositPaid = Number(proposal.deposit_paid_amount) || 0;
       amount = (Number(proposal.total) || 0) - depositPaid;
     }
+
     if (!amount || amount <= 0 || isNaN(amount)) {
       return new Response(JSON.stringify({ error: "Invalid amount" }), { status: 400, headers: corsHeaders });
     }
@@ -85,6 +99,9 @@ serve(async (req) => {
 
     const amountCents = Math.round(amount * 100);
     const platformFeeCents = Math.round(amountCents * 0.01);
+
+    const redirectUrl = `${APP_URL}/payment-complete?proposal=${proposal_id}`;
+    console.log("[create-payment-link] redirect url:", redirectUrl);
 
     const price = await stripe.prices.create({
       unit_amount: amountCents,
@@ -98,12 +115,13 @@ serve(async (req) => {
       transfer_data: { destination: profile.stripe_connect_account_id },
       after_completion: {
         type: "redirect",
-        redirect: { url: `${appUrl}/payment-complete?proposal=${proposal_id}` },
+        redirect: { url: redirectUrl },
       },
       metadata: { proposal_id, user_id: user.id, payment_type },
     });
 
-    // Update proposal status + persist link
+    console.log("[create-payment-link] payment link created:", paymentLink.url);
+
     const update: Record<string, any> = {
       payment_requested_at: new Date().toISOString(),
       payment_link_url: paymentLink.url,
@@ -115,7 +133,6 @@ serve(async (req) => {
     }
     await adminClient.from("proposals").update(update).eq("id", proposal_id);
 
-    // Insert pending transaction
     await adminClient.from("payment_transactions").insert({
       proposal_id,
       user_id: user.id,
@@ -127,7 +144,6 @@ serve(async (req) => {
       platform_fee: platformFeeCents / 100,
     });
 
-    // Send payment email to client
     if (clientEmail) {
       const resendKey = Deno.env.get("RESEND_API_KEY");
       const lovableKey = Deno.env.get("LOVABLE_API_KEY");
