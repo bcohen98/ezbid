@@ -36,6 +36,8 @@ serve(async (req) => {
         if (!product?.price) return null;
         const price = Number(product.price);
         console.log(`[HD PRICE] item: ${item.name} | matched: ${product.title} | price: $${price} | zip: ${zip}`);
+        // Map back to ORIGINAL item name (not HD product title) so price-line-items
+        // can do a direct name lookup without fuzzy matching.
         return {
           name: item.name,
           matched_product: product.title,

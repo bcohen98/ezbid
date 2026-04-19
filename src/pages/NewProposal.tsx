@@ -449,6 +449,7 @@ export default function NewProposal() {
             trade,
             job_description: getEnrichedDescription(),
             job_state: stateCode,
+            job_zip: jobZip || null,
             contractor_context: contractorContext,
           }),
         });

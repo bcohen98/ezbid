@@ -295,7 +295,17 @@ Rules:
 - Include both materials AND labor items.
 - Do NOT list the same material twice with different phrasings.
 - DO NOT include any prices, costs, dollar amounts, or unit_price fields.
-- Return ONLY the JSON array, no prose.`;
+- Return ONLY the JSON array, no prose.
+
+NAMING CONVENTION (CRITICAL):
+Generate line item names that are generic trade-standard material descriptions, not brand-specific. For example:
+- Use "Interior Wall Paint - Eggshell" not "Sherwin Williams Agreeable Gray SW7029"
+- Use "Interior Ceiling Paint - Flat White" not "Behr Ceiling Paint Ultra Pure White"
+- Use "Interior Trim Paint - Semi-Gloss White" not "Benjamin Moore Advance White"
+- Use "Primer - Interior Drywall" not "Zinsser Bulls Eye 1-2-3"
+- Use "Painter's Tape - 2 inch" not "3M ScotchBlue Painter's Tape"
+- Use "Drop Cloths - Canvas" not any brand name
+Exception: if the client specifically requested a brand in the job description, include it in the line item name.`;
 
   const user = `TRADE: ${trade}
 JOB DESCRIPTION:
@@ -466,9 +476,32 @@ serve(async (req) => {
     let matched = 0;
     let estimated = 0;
 
+    // Build direct-name lookup map for live HD results (no fuzzy matching)
+    const hdMap = new Map<string, CatalogRow>();
+    for (const c of catalog) {
+      if (c.source === "home_depot_live" && c.name) {
+        hdMap.set(c.name.toLowerCase(), c);
+      }
+    }
+
     for (const item of claudeItems) {
       try {
-        const m = bestMatch(item.name, catalog);
+        // 1) Direct name lookup for live HD prices
+        const hd = hdMap.get(item.name.toLowerCase());
+        if (hd) {
+          const price = (Number(hd.price_low) + Number(hd.price_high)) / 2;
+          console.log(`[HD MATCH] item: ${item.name} | matched_product: ${hd.name} | price: $${price} | source: home_depot_live`);
+          intermediate.push({
+            item, row: hd, multiplier: 1, unit_price: roundPrice(price),
+            price_source: "catalog",
+            matched_catalog_id: hd.id || null,
+            matched_catalog_name: hd.name,
+          });
+          matched++;
+          continue;
+        }
+        // 2) Fall back to fuzzy catalog match (legacy non-HD rows, if any)
+        const m = bestMatch(item.name, catalog.filter(c => c.source !== "home_depot_live"));
         if (m) {
           const rec = reconcileUnits(item.unit, m.row.unit);
           const action = rec.ok ? "applied" : "rejected";
