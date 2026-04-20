@@ -31,6 +31,10 @@ interface Props {
   customHeaderStyle?: HeaderStyle;
   /** When true, render the client-facing view: respects show_materials, show_quantities, show_pricing on the proposal. */
   clientView?: boolean;
+  /** Optional overrides for client-side interactive toggles (take precedence over DB fields). */
+  showMaterialsOverride?: boolean;
+  showQuantitiesOverride?: boolean;
+  showPricingOverride?: boolean;
   onFieldEdit?: (field: string, value: string) => void;
   onLineItemEdit?: (id: string, updates: { description: string; quantity: number; unit: string; unit_price: number; subtotal: number }) => void;
   onDeleteLineItem?: (id: string) => void;
@@ -38,16 +42,16 @@ interface Props {
   onTotalsEdit?: (updates: { tax_rate: number; deposit_mode: string; deposit_value: number }) => void;
 }
 
-export default function ProposalDocument({ proposal, lineItems, profile, exhibits, template = 'edge', customAccentColor, fontStyle = 'modern', customHeaderStyle = 'dark', clientView = false, onFieldEdit, onLineItemEdit, onDeleteLineItem, onAddLineItem, onTotalsEdit }: Props) {
+export default function ProposalDocument({ proposal, lineItems, profile, exhibits, template = 'edge', customAccentColor, fontStyle = 'modern', customHeaderStyle = 'dark', clientView = false, showMaterialsOverride, showQuantitiesOverride, showPricingOverride, onFieldEdit, onLineItemEdit, onDeleteLineItem, onAddLineItem, onTotalsEdit }: Props) {
   const rawTrade = getTradeStyle((proposal as any).trade_type || profile?.trade_type);
   const trade = customAccentColor ? { ...rawTrade, accentColor: customAccentColor } : rawTrade;
   const fontFamily = FONT_FAMILIES[fontStyle];
   const address = [profile?.street_address, profile?.city, profile?.state, profile?.zip].filter(Boolean).join(', ');
 
-  // Granular client-view visibility — defaults true so legacy proposals show everything.
-  const showMaterials = !clientView || (proposal as any).show_materials !== false;
-  const showQuantities = !clientView || (proposal as any).show_quantities !== false;
-  const showPricing = !clientView || (proposal as any).show_pricing !== false;
+  // Granular client-view visibility — overrides take precedence; otherwise read DB fields; defaults true so legacy proposals show everything.
+  const showMaterials = showMaterialsOverride ?? (!clientView || (proposal as any).show_materials !== false);
+  const showQuantities = showQuantitiesOverride ?? (!clientView || (proposal as any).show_quantities !== false);
+  const showPricing = showPricingOverride ?? (!clientView || (proposal as any).show_pricing !== false);
 
   const editable = (field: string, value: string | null, children: React.ReactNode) => {
     if (!onFieldEdit || !value) return children;
