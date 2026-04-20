@@ -211,144 +211,175 @@ export default function LineItemsTable({
     <div>
       <h2 className="text-lg font-semibold text-foreground mb-3">Quote</h2>
 
-      {/* Desktop table */}
-      <div className="hidden md:block border rounded-lg overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50">
-            <tr>
-              <th className="text-left p-3 font-medium text-muted-foreground">Description</th>
-              <th className="text-center p-3 font-medium text-muted-foreground w-20">Qty</th>
-              <th className="text-center p-3 font-medium text-muted-foreground w-24">Unit</th>
-              <th className="text-right p-3 font-medium text-muted-foreground w-28">Unit Price</th>
-              <th className="text-right p-3 font-medium text-muted-foreground w-28">Total</th>
-              <th className="w-10"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map(item => (
-              <tr key={item.id} className={cn('border-t', item.aiSuggested && 'bg-blue-50/60')}>
-                <td className="p-2">
-                  <div className="flex items-center gap-2">
-                    <Input
-                      value={item.description}
-                      onChange={e => updateItem(item.id, 'description', e.target.value)}
-                      placeholder="Item description"
-                      className="border-0 bg-transparent shadow-none focus-visible:ring-1 h-10"
-                    />
-                    {item.aiSuggested && (
-                      <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">AI</span>
-                    )}
-                    {item.fromHistory && (
-                      <span className="shrink-0 text-xs text-muted-foreground italic">✓ From your history</span>
-                    )}
-                  </div>
-                </td>
-                <td className="p-2">
-                  <Input
-                    type="number"
-                    min={0}
-                    value={item.quantity || ''}
-                    onChange={e => updateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
-                    className="border-0 bg-transparent shadow-none focus-visible:ring-1 text-center h-10"
-                  />
-                </td>
-                <td className="p-2">
-                  <UnitCombobox
-                    value={item.unit}
-                    onChange={v => updateItem(item.id, 'unit', v)}
-                    className="border-0 bg-transparent shadow-none focus-visible:ring-1 text-center h-10"
-                  />
-                </td>
-                <td className="p-2">
-                  <div className="relative">
-                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">$</span>
-                    <Input
-                      type="number"
-                      min={0}
-                      step={0.01}
-                      value={item.unit_price || ''}
-                      onChange={e => updateItem(item.id, 'unit_price', parseFloat(e.target.value) || 0)}
-                      className="border-0 bg-transparent shadow-none focus-visible:ring-1 text-right h-10 pl-5"
-                    />
-                  </div>
-                </td>
-                <td className="p-2 text-right font-medium pr-3">{fmt(item.quantity * item.unit_price)}</td>
-                <td className="p-2">
-                  <button type="button" onClick={() => removeItem(item.id)} className="text-muted-foreground hover:text-destructive p-1">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Mobile cards */}
-      <div className="md:hidden space-y-3">
-        {items.map(item => (
-          <div key={item.id} className={cn('border rounded-lg p-3 space-y-2 bg-background', item.aiSuggested && 'border-blue-200 bg-blue-50/40')}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 flex-1 mr-2">
-                <Input
-                  value={item.description}
-                  onChange={e => updateItem(item.id, 'description', e.target.value)}
-                  placeholder="Description"
-                  className="h-11"
-                />
-                {item.aiSuggested && (
-                  <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">AI</span>
-                )}
-                {item.fromHistory && (
-                  <span className="shrink-0 text-xs text-muted-foreground italic">✓ From your history</span>
-                )}
-              </div>
-              <button type="button" onClick={() => removeItem(item.id)} className="text-muted-foreground hover:text-destructive p-2">
-                <Trash2 className="h-4 w-4" />
-              </button>
+      {/* Desktop table — split by Materials / Labor & Services */}
+      <div className="hidden md:block space-y-4">
+        {([
+          { key: 'material' as const, label: 'Materials', list: materialItems, sub: materialsSubtotal },
+          { key: 'labor' as const, label: 'Labor & Services', list: laborItems, sub: laborSubtotal },
+        ]).filter(s => s.list.length > 0 || s.key === 'material').map(section => (
+          <div key={section.key} className="border rounded-lg overflow-hidden">
+            <div className="flex items-center justify-between px-3 py-2 bg-muted/50 border-b">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{section.label}</span>
+              {section.list.length > 0 && (
+                <span className="text-xs font-medium text-muted-foreground">Subtotal: <span className="text-foreground">{fmt(section.sub)}</span></span>
+              )}
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              <div>
-                <label className="text-xs text-muted-foreground">Qty</label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={item.quantity || ''}
-                  onChange={e => updateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
-                  className="h-11"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground">Unit</label>
-                <UnitCombobox
-                  value={item.unit}
-                  onChange={v => updateItem(item.id, 'unit', v)}
-                  className="h-11"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground">Price</label>
-                <div className="relative">
-                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">$</span>
-                  <Input
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    value={item.unit_price || ''}
-                    onChange={e => updateItem(item.id, 'unit_price', parseFloat(e.target.value) || 0)}
-                    className="h-11 pl-5"
-                  />
-                </div>
-              </div>
+            {section.list.length > 0 ? (
+              <table className="w-full text-sm">
+                <thead className="bg-muted/30">
+                  <tr>
+                    <th className="text-left p-3 font-medium text-muted-foreground">Description</th>
+                    <th className="text-center p-3 font-medium text-muted-foreground w-20">Qty</th>
+                    <th className="text-center p-3 font-medium text-muted-foreground w-24">Unit</th>
+                    <th className="text-right p-3 font-medium text-muted-foreground w-28">Unit Price</th>
+                    <th className="text-right p-3 font-medium text-muted-foreground w-28">Total</th>
+                    <th className="w-10"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {section.list.map(item => (
+                    <tr key={item.id} className={cn('border-t', item.aiSuggested && 'bg-blue-50/60')}>
+                      <td className="p-2">
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={item.description}
+                            onChange={e => updateItem(item.id, 'description', e.target.value)}
+                            placeholder="Item description"
+                            className="border-0 bg-transparent shadow-none focus-visible:ring-1 h-10"
+                          />
+                          {item.aiSuggested && (
+                            <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">AI</span>
+                          )}
+                          {item.fromHistory && (
+                            <span className="shrink-0 text-xs text-muted-foreground italic">✓ From your history</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-2">
+                        <Input
+                          type="number"
+                          min={0}
+                          value={item.quantity || ''}
+                          onChange={e => updateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
+                          className="border-0 bg-transparent shadow-none focus-visible:ring-1 text-center h-10"
+                        />
+                      </td>
+                      <td className="p-2">
+                        <UnitCombobox
+                          value={item.unit}
+                          onChange={v => updateItem(item.id, 'unit', v)}
+                          className="border-0 bg-transparent shadow-none focus-visible:ring-1 text-center h-10"
+                        />
+                      </td>
+                      <td className="p-2">
+                        <div className="relative">
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">$</span>
+                          <Input
+                            type="number"
+                            min={0}
+                            step={0.01}
+                            value={item.unit_price || ''}
+                            onChange={e => updateItem(item.id, 'unit_price', parseFloat(e.target.value) || 0)}
+                            className="border-0 bg-transparent shadow-none focus-visible:ring-1 text-right h-10 pl-5"
+                          />
+                        </div>
+                      </td>
+                      <td className="p-2 text-right font-medium pr-3">{fmt(item.quantity * item.unit_price)}</td>
+                      <td className="p-2">
+                        <button type="button" onClick={() => removeItem(item.id)} className="text-muted-foreground hover:text-destructive p-1">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="px-3 py-3 text-xs text-muted-foreground italic">No materials added yet.</div>
+            )}
+            <div className="px-3 py-2 border-t bg-background">
+              <Button type="button" variant="ghost" size="sm" onClick={() => addItem(section.key)} className="h-8 text-xs">
+                <Plus className="h-3.5 w-3.5 mr-1" /> Add {section.key === 'material' ? 'material' : 'labor'} item
+              </Button>
             </div>
-            <div className="text-right font-medium text-sm">{fmt(item.quantity * item.unit_price)}</div>
           </div>
         ))}
       </div>
 
-      <Button type="button" variant="outline" size="sm" onClick={addItem} className="mt-3 h-11">
-        <Plus className="h-4 w-4 mr-1" /> Add Line Item
-      </Button>
+      {/* Mobile cards — split by section */}
+      <div className="md:hidden space-y-5">
+        {([
+          { key: 'material' as const, label: 'Materials', list: materialItems, sub: materialsSubtotal },
+          { key: 'labor' as const, label: 'Labor & Services', list: laborItems, sub: laborSubtotal },
+        ]).filter(s => s.list.length > 0 || s.key === 'material').map(section => (
+          <div key={section.key} className="space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{section.label}</span>
+              {section.list.length > 0 && (
+                <span className="text-xs font-medium text-muted-foreground">{fmt(section.sub)}</span>
+              )}
+            </div>
+            {section.list.map(item => (
+              <div key={item.id} className={cn('border rounded-lg p-3 space-y-2 bg-background', item.aiSuggested && 'border-blue-200 bg-blue-50/40')}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 flex-1 mr-2">
+                    <Input
+                      value={item.description}
+                      onChange={e => updateItem(item.id, 'description', e.target.value)}
+                      placeholder="Description"
+                      className="h-11"
+                    />
+                    {item.aiSuggested && (
+                      <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">AI</span>
+                    )}
+                  </div>
+                  <button type="button" onClick={() => removeItem(item.id)} className="text-muted-foreground hover:text-destructive p-2">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="text-xs text-muted-foreground">Qty</label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={item.quantity || ''}
+                      onChange={e => updateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
+                      className="h-11"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">Unit</label>
+                    <UnitCombobox
+                      value={item.unit}
+                      onChange={v => updateItem(item.id, 'unit', v)}
+                      className="h-11"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">Price</label>
+                    <div className="relative">
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">$</span>
+                      <Input
+                        type="number"
+                        min={0}
+                        step={0.01}
+                        value={item.unit_price || ''}
+                        onChange={e => updateItem(item.id, 'unit_price', parseFloat(e.target.value) || 0)}
+                        className="h-11 pl-5"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right font-medium text-sm">{fmt(item.quantity * item.unit_price)}</div>
+              </div>
+            ))}
+            <Button type="button" variant="outline" size="sm" onClick={() => addItem(section.key)} className="h-10 w-full">
+              <Plus className="h-4 w-4 mr-1" /> Add {section.key === 'material' ? 'material' : 'labor'} item
+            </Button>
+          </div>
+        ))}
+      </div>
 
       {/* Totals */}
       <div className="mt-6 border rounded-lg p-4 space-y-3 max-w-sm ml-auto">
