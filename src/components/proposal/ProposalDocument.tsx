@@ -201,29 +201,27 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
               {allowDelete && <th style={{ width: '32px' }} />}
             </tr>
           </thead>
-          <tbody>
-            {sections.map(section => (
-              <tbody key={`section-${section.key}`}>
-                <tr style={{ backgroundColor: '#f3f4f6' }}>
-                  <td colSpan={colCount} className="py-2 px-4 text-xs font-bold uppercase tracking-wider" style={{ color: '#374151' }}>
-                    {section.label}
+          {sections.map(section => (
+            <tbody key={`section-${section.key}`}>
+              <tr style={{ backgroundColor: '#f3f4f6' }}>
+                <td colSpan={colCount} className="py-2 px-4 text-xs font-bold uppercase tracking-wider" style={{ color: '#374151' }}>
+                  {section.label}
+                </td>
+              </tr>
+              {section.list.map((item, idx) => renderRow(item, idx))}
+              {showPricing && (
+                <tr style={{ backgroundColor: '#fafafa' }}>
+                  <td colSpan={colCount - 1} className="py-2 px-4 text-right text-xs font-medium" style={{ color: '#6b7280' }}>
+                    {section.label} Subtotal
                   </td>
+                  <td className="py-2 px-4 text-right text-xs font-semibold" style={{ color: '#111827' }}>
+                    ${formatCurrency(section.subtotal)}
+                  </td>
+                  {allowDelete && <td />}
                 </tr>
-                {section.list.map((item, idx) => renderRow(item, idx))}
-                {showPricing && (
-                  <tr style={{ backgroundColor: '#fafafa' }}>
-                    <td colSpan={colCount - 1} className="py-2 px-4 text-right text-xs font-medium" style={{ color: '#6b7280' }}>
-                      {section.label} Subtotal
-                    </td>
-                    <td className="py-2 px-4 text-right text-xs font-semibold" style={{ color: '#111827' }}>
-                      ${formatCurrency(section.subtotal)}
-                    </td>
-                    {allowDelete && <td />}
-                  </tr>
-                )}
-              </tbody>
-            ))}
-          </tbody>
+              )}
+            </tbody>
+          ))}
         </table>
 
         {/* Add line item button */}
