@@ -150,15 +150,42 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
     const allowDelete = !clientView && !!onDeleteLineItem;
     const allowTotalsEdit = !clientView && !!onTotalsEdit;
 
+    // Split items by classification.
+    const materialsList = lineItems.filter(i => classifyLineItem(i as any) === 'material');
+    const laborList = lineItems.filter(i => classifyLineItem(i as any) === 'labor');
+    const materialsSubtotal = materialsList.reduce((s, i) => s + Number(i.subtotal || 0), 0);
+    const laborSubtotal = laborList.reduce((s, i) => s + Number(i.subtotal || 0), 0);
+
+    // showMaterials toggle hides MATERIAL ROWS (not the description column)
+    const sections = [
+      { key: 'material' as const, label: 'Materials', list: showMaterials ? materialsList : [], subtotal: materialsSubtotal, visible: showMaterials },
+      { key: 'labor' as const, label: 'Labor & Services', list: laborList, subtotal: laborSubtotal, visible: true },
+    ].filter(s => s.visible && s.list.length > 0);
+
+    const colCount = 2 /* # + Description */ + (showQuantities ? 2 : 0) + (showPricing ? 2 : 0) + (allowDelete ? 1 : 0);
+
+    const renderRow = (item: LineItem, idx: number) => (
+      allowEdit ? (
+        <EditableLineItemRow key={item.id} item={item} index={idx + 1} onSave={onLineItemEdit!} onDelete={allowDelete ? onDeleteLineItem : undefined} />
+      ) : (
+        <tr key={item.id} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f9fafb', borderBottom: '1px solid #f0f0f0' }}>
+          <td className="py-3.5 px-4 text-center" style={{ color: '#6b7280' }}>{idx + 1}</td>
+          <td className="py-3.5 px-4" style={{ color: '#1f2937' }}>{item.description}</td>
+          {showQuantities && <td className="py-3.5 px-4 text-center" style={{ color: '#374151' }}>{item.quantity}</td>}
+          {showQuantities && <td className="py-3.5 px-4 text-right" style={{ color: '#6b7280' }}>{item.unit}</td>}
+          {showPricing && <td className="py-3.5 px-4 text-right" style={{ color: '#374151' }}>${formatCurrency(item.unit_price)}</td>}
+          {showPricing && <td className="py-3.5 px-4 text-right font-semibold" style={{ color: '#111827' }}>${formatCurrency(item.subtotal)}</td>}
+        </tr>
+      )
+    );
+
     return (
       <div className="mb-8" style={{ pageBreakInside: 'avoid' }}>
         <table className="w-full text-sm" style={{ borderCollapse: 'separate', borderSpacing: 0, borderRadius: '6px', overflow: 'hidden', border: '1px solid #e5e7eb' }}>
           <thead>
             <tr style={{ backgroundColor: trade.accentColor }}>
               <th className="py-3 px-4 text-center text-xs font-bold uppercase tracking-wider" style={{ color: '#fff', width: '40px' }}>#</th>
-              {showMaterials && (
-                <th className="py-3 px-4 text-left text-xs font-bold uppercase tracking-wider" style={{ color: '#fff' }}>Description</th>
-              )}
+              <th className="py-3 px-4 text-left text-xs font-bold uppercase tracking-wider" style={{ color: '#fff' }}>Description</th>
               {showQuantities && (
                 <th className="py-3 px-4 text-center text-xs font-bold uppercase tracking-wider" style={{ color: '#fff', width: '60px' }}>Qty</th>
               )}
@@ -175,19 +202,26 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
             </tr>
           </thead>
           <tbody>
-            {lineItems.map((item, idx) => (
-              allowEdit ? (
-                <EditableLineItemRow key={item.id} item={item} index={idx + 1} onSave={onLineItemEdit!} onDelete={allowDelete ? onDeleteLineItem : undefined} />
-              ) : (
-                <tr key={item.id} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f9fafb', borderBottom: '1px solid #f0f0f0' }}>
-                  <td className="py-3.5 px-4 text-center" style={{ color: '#6b7280' }}>{idx + 1}</td>
-                  {showMaterials && <td className="py-3.5 px-4" style={{ color: '#1f2937' }}>{item.description}</td>}
-                  {showQuantities && <td className="py-3.5 px-4 text-center" style={{ color: '#374151' }}>{item.quantity}</td>}
-                  {showQuantities && <td className="py-3.5 px-4 text-right" style={{ color: '#6b7280' }}>{item.unit}</td>}
-                  {showPricing && <td className="py-3.5 px-4 text-right" style={{ color: '#374151' }}>${formatCurrency(item.unit_price)}</td>}
-                  {showPricing && <td className="py-3.5 px-4 text-right font-semibold" style={{ color: '#111827' }}>${formatCurrency(item.subtotal)}</td>}
+            {sections.map(section => (
+              <>
+                <tr key={`hdr-${section.key}`} style={{ backgroundColor: '#f3f4f6' }}>
+                  <td colSpan={colCount} className="py-2 px-4 text-xs font-bold uppercase tracking-wider" style={{ color: '#374151' }}>
+                    {section.label}
+                  </td>
                 </tr>
-              )
+                {section.list.map((item, idx) => renderRow(item, idx))}
+                {showPricing && (
+                  <tr key={`sub-${section.key}`} style={{ backgroundColor: '#fafafa' }}>
+                    <td colSpan={colCount - 1} className="py-2 px-4 text-right text-xs font-medium" style={{ color: '#6b7280' }}>
+                      {section.label} Subtotal
+                    </td>
+                    <td className="py-2 px-4 text-right text-xs font-semibold" style={{ color: '#111827' }}>
+                      ${formatCurrency(section.subtotal)}
+                    </td>
+                    {allowDelete && <td />}
+                  </tr>
+                )}
+              </>
             ))}
           </tbody>
         </table>
@@ -229,11 +263,13 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
                     <span style={{ color: '#374151' }}>${formatCurrency(proposal.tax_amount)}</span>
                   </div>
                 )}
-                <div className="flex justify-between items-center font-bold text-base px-4 py-3 mt-1" style={{ backgroundColor: trade.accentColor, color: '#fff', borderRadius: '4px' }}>
-                  <span>GRAND TOTAL</span>
-                  <span>${formatCurrency(proposal.total)}</span>
-                </div>
-                {Number(proposal.deposit_amount) > 0 && (
+                {showPricing && (
+                  <div className="flex justify-between items-center font-bold text-base px-4 py-3 mt-1" style={{ backgroundColor: trade.accentColor, color: '#fff', borderRadius: '4px' }}>
+                    <span>GRAND TOTAL</span>
+                    <span>${formatCurrency(proposal.total)}</span>
+                  </div>
+                )}
+                {showPricing && Number(proposal.deposit_amount) > 0 && (
                   <>
                     <div className="flex justify-between text-sm py-2 px-4 mt-2">
                       <span style={{ color: '#6b7280' }}>Deposit Due Upon Signing</span>
