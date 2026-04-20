@@ -186,7 +186,8 @@ export default function LineItemsTable({
   };
 
   const removeItem = (id: string) => onChange(items.filter(i => i.id !== id));
-  const addItem = () => onChange([...items, { id: newId(), description: '', quantity: 1, unit: 'ea', unit_price: 0 }]);
+  const addItem = (kind: 'material' | 'labor' = 'material') =>
+    onChange([...items, { id: newId(), description: '', quantity: 1, unit: kind === 'material' ? 'ea' : 'hr', unit_price: 0, type: kind }]);
 
   const subtotal = useMemo(() => items.reduce((s, i) => s + i.quantity * i.unit_price, 0), [items]);
   const taxAmount = taxEnabled ? subtotal * (taxRate / 100) : 0;
@@ -200,6 +201,11 @@ export default function LineItemsTable({
   const balanceDue = grandTotal - depositAmount;
 
   const fmt = (n: number) => n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+
+  const materialItems = useMemo(() => items.filter(i => classifyLineItem(i) === 'material'), [items]);
+  const laborItems = useMemo(() => items.filter(i => classifyLineItem(i) === 'labor'), [items]);
+  const materialsSubtotal = useMemo(() => materialItems.reduce((s, i) => s + i.quantity * i.unit_price, 0), [materialItems]);
+  const laborSubtotal = useMemo(() => laborItems.reduce((s, i) => s + i.quantity * i.unit_price, 0), [laborItems]);
 
   return (
     <div>
