@@ -3,10 +3,11 @@ import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Download, Loader2 } from 'lucide-react';
+import { CheckCircle, Download, Loader2, Eye, EyeOff } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 import ProposalDocument from '@/components/proposal/ProposalDocument';
 import type { TemplateId } from '@/components/proposal/TemplateSwitcher';
+import { cn } from '@/lib/utils';
 
 interface ProposalData {
   proposal: any;
@@ -28,6 +29,10 @@ export default function ProposalSign() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDrawing = useRef(false);
   const [hasSignature, setHasSignature] = useState(false);
+  // Interactive client-view toggles — let the client choose what they want to see.
+  const [showMaterials, setShowMaterials] = useState(true);
+  const [showQuantities, setShowQuantities] = useState(true);
+  const [showPricing, setShowPricing] = useState(true);
 
   useEffect(() => {
     if (!id || !token) {
@@ -260,7 +265,12 @@ export default function ProposalSign() {
 
         {/* Full styled proposal */}
         <div className="max-w-3xl mx-auto px-6 py-8">
-          <div id="proposal-document-content" className="bg-white rounded-lg border shadow-sm overflow-hidden">
+          <ViewToggleBar
+            showMaterials={showMaterials} setShowMaterials={setShowMaterials}
+            showQuantities={showQuantities} setShowQuantities={setShowQuantities}
+            showPricing={showPricing} setShowPricing={setShowPricing}
+          />
+          <div id="proposal-document-content" className="bg-white rounded-lg border shadow-sm overflow-hidden mt-3">
             <ProposalDocument
               proposal={proposal}
               lineItems={lineItems}
@@ -268,6 +278,9 @@ export default function ProposalSign() {
               exhibits={exhibits}
               template={templateId}
               clientView
+              showMaterialsOverride={showMaterials}
+              showQuantitiesOverride={showQuantities}
+              showPricingOverride={showPricing}
             />
           </div>
 
@@ -299,7 +312,12 @@ export default function ProposalSign() {
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto px-6 py-8 space-y-8">
+      <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
+        <ViewToggleBar
+          showMaterials={showMaterials} setShowMaterials={setShowMaterials}
+          showQuantities={showQuantities} setShowQuantities={setShowQuantities}
+          showPricing={showPricing} setShowPricing={setShowPricing}
+        />
         {/* Styled proposal document */}
         <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
           <ProposalDocument
@@ -309,6 +327,9 @@ export default function ProposalSign() {
             exhibits={exhibits}
             template={templateId}
             clientView
+            showMaterialsOverride={showMaterials}
+            showQuantitiesOverride={showQuantities}
+            showPricingOverride={showPricing}
           />
         </div>
 
@@ -355,6 +376,49 @@ export default function ProposalSign() {
           Powered by <span className="font-medium">EZ-Bid</span>
         </div>
       </div>
+    </div>
+  );
+}
+
+interface ViewToggleBarProps {
+  showMaterials: boolean;
+  setShowMaterials: (v: boolean) => void;
+  showQuantities: boolean;
+  setShowQuantities: (v: boolean) => void;
+  showPricing: boolean;
+  setShowPricing: (v: boolean) => void;
+}
+
+function ViewToggleBar({
+  showMaterials, setShowMaterials,
+  showQuantities, setShowQuantities,
+  showPricing, setShowPricing,
+}: ViewToggleBarProps) {
+  const toggles = [
+    { label: 'Materials', value: showMaterials, set: setShowMaterials },
+    { label: 'Quantities', value: showQuantities, set: setShowQuantities },
+    { label: 'Pricing', value: showPricing, set: setShowPricing },
+  ];
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-background p-2">
+      <span className="text-xs text-muted-foreground px-2">View:</span>
+      {toggles.map(t => (
+        <button
+          key={t.label}
+          type="button"
+          onClick={() => t.set(!t.value)}
+          aria-pressed={t.value}
+          className={cn(
+            'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors border',
+            t.value
+              ? 'bg-foreground text-background border-foreground hover:bg-foreground/90'
+              : 'bg-background text-muted-foreground border-border hover:bg-muted'
+          )}
+        >
+          {t.value ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+          Show {t.label}
+        </button>
+      ))}
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { getTradeStyle } from './tradeStyles';
 import { Phone, Mail, MapPin } from 'lucide-react';
 import type { TemplateId } from './TemplateSwitcher';
 import type { FontStyle, HeaderStyle } from './ProposalCustomizer';
+import { classifyLineItem } from '@/lib/classifyLineItem';
 
 type Proposal = Database['public']['Tables']['proposals']['Row'];
 type LineItem = Database['public']['Tables']['proposal_line_items']['Row'];
@@ -30,6 +31,10 @@ interface Props {
   customHeaderStyle?: HeaderStyle;
   /** When true, render the client-facing view: respects show_materials, show_quantities, show_pricing on the proposal. */
   clientView?: boolean;
+  /** Optional overrides for client-side interactive toggles (take precedence over DB fields). */
+  showMaterialsOverride?: boolean;
+  showQuantitiesOverride?: boolean;
+  showPricingOverride?: boolean;
   onFieldEdit?: (field: string, value: string) => void;
   onLineItemEdit?: (id: string, updates: { description: string; quantity: number; unit: string; unit_price: number; subtotal: number }) => void;
   onDeleteLineItem?: (id: string) => void;
@@ -37,16 +42,16 @@ interface Props {
   onTotalsEdit?: (updates: { tax_rate: number; deposit_mode: string; deposit_value: number }) => void;
 }
 
-export default function ProposalDocument({ proposal, lineItems, profile, exhibits, template = 'edge', customAccentColor, fontStyle = 'modern', customHeaderStyle = 'dark', clientView = false, onFieldEdit, onLineItemEdit, onDeleteLineItem, onAddLineItem, onTotalsEdit }: Props) {
+export default function ProposalDocument({ proposal, lineItems, profile, exhibits, template = 'edge', customAccentColor, fontStyle = 'modern', customHeaderStyle = 'dark', clientView = false, showMaterialsOverride, showQuantitiesOverride, showPricingOverride, onFieldEdit, onLineItemEdit, onDeleteLineItem, onAddLineItem, onTotalsEdit }: Props) {
   const rawTrade = getTradeStyle((proposal as any).trade_type || profile?.trade_type);
   const trade = customAccentColor ? { ...rawTrade, accentColor: customAccentColor } : rawTrade;
   const fontFamily = FONT_FAMILIES[fontStyle];
   const address = [profile?.street_address, profile?.city, profile?.state, profile?.zip].filter(Boolean).join(', ');
 
-  // Granular client-view visibility — defaults true so legacy proposals show everything.
-  const showMaterials = !clientView || (proposal as any).show_materials !== false;
-  const showQuantities = !clientView || (proposal as any).show_quantities !== false;
-  const showPricing = !clientView || (proposal as any).show_pricing !== false;
+  // Granular client-view visibility — overrides take precedence; otherwise read DB fields; defaults true so legacy proposals show everything.
+  const showMaterials = showMaterialsOverride ?? (!clientView || (proposal as any).show_materials !== false);
+  const showQuantities = showQuantitiesOverride ?? (!clientView || (proposal as any).show_quantities !== false);
+  const showPricing = showPricingOverride ?? (!clientView || (proposal as any).show_pricing !== false);
 
   const editable = (field: string, value: string | null, children: React.ReactNode) => {
     if (!onFieldEdit || !value) return children;
@@ -145,15 +150,42 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
     const allowDelete = !clientView && !!onDeleteLineItem;
     const allowTotalsEdit = !clientView && !!onTotalsEdit;
 
+    // Split items by classification.
+    const materialsList = lineItems.filter(i => classifyLineItem(i as any) === 'material');
+    const laborList = lineItems.filter(i => classifyLineItem(i as any) === 'labor');
+    const materialsSubtotal = materialsList.reduce((s, i) => s + Number(i.subtotal || 0), 0);
+    const laborSubtotal = laborList.reduce((s, i) => s + Number(i.subtotal || 0), 0);
+
+    // showMaterials toggle hides MATERIAL ROWS (not the description column)
+    const sections = [
+      { key: 'material' as const, label: 'Materials', list: showMaterials ? materialsList : [], subtotal: materialsSubtotal, visible: showMaterials },
+      { key: 'labor' as const, label: 'Labor & Services', list: laborList, subtotal: laborSubtotal, visible: true },
+    ].filter(s => s.visible && s.list.length > 0);
+
+    const colCount = 2 /* # + Description */ + (showQuantities ? 2 : 0) + (showPricing ? 2 : 0) + (allowDelete ? 1 : 0);
+
+    const renderRow = (item: LineItem, idx: number) => (
+      allowEdit ? (
+        <EditableLineItemRow key={item.id} item={item} index={idx + 1} onSave={onLineItemEdit!} onDelete={allowDelete ? onDeleteLineItem : undefined} />
+      ) : (
+        <tr key={item.id} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f9fafb', borderBottom: '1px solid #f0f0f0' }}>
+          <td className="py-3.5 px-4 text-center" style={{ color: '#6b7280' }}>{idx + 1}</td>
+          <td className="py-3.5 px-4" style={{ color: '#1f2937' }}>{item.description}</td>
+          {showQuantities && <td className="py-3.5 px-4 text-center" style={{ color: '#374151' }}>{item.quantity}</td>}
+          {showQuantities && <td className="py-3.5 px-4 text-right" style={{ color: '#6b7280' }}>{item.unit}</td>}
+          {showPricing && <td className="py-3.5 px-4 text-right" style={{ color: '#374151' }}>${formatCurrency(item.unit_price)}</td>}
+          {showPricing && <td className="py-3.5 px-4 text-right font-semibold" style={{ color: '#111827' }}>${formatCurrency(item.subtotal)}</td>}
+        </tr>
+      )
+    );
+
     return (
       <div className="mb-8" style={{ pageBreakInside: 'avoid' }}>
         <table className="w-full text-sm" style={{ borderCollapse: 'separate', borderSpacing: 0, borderRadius: '6px', overflow: 'hidden', border: '1px solid #e5e7eb' }}>
           <thead>
             <tr style={{ backgroundColor: trade.accentColor }}>
               <th className="py-3 px-4 text-center text-xs font-bold uppercase tracking-wider" style={{ color: '#fff', width: '40px' }}>#</th>
-              {showMaterials && (
-                <th className="py-3 px-4 text-left text-xs font-bold uppercase tracking-wider" style={{ color: '#fff' }}>Description</th>
-              )}
+              <th className="py-3 px-4 text-left text-xs font-bold uppercase tracking-wider" style={{ color: '#fff' }}>Description</th>
               {showQuantities && (
                 <th className="py-3 px-4 text-center text-xs font-bold uppercase tracking-wider" style={{ color: '#fff', width: '60px' }}>Qty</th>
               )}
@@ -169,22 +201,27 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
               {allowDelete && <th style={{ width: '32px' }} />}
             </tr>
           </thead>
-          <tbody>
-            {lineItems.map((item, idx) => (
-              allowEdit ? (
-                <EditableLineItemRow key={item.id} item={item} index={idx + 1} onSave={onLineItemEdit!} onDelete={allowDelete ? onDeleteLineItem : undefined} />
-              ) : (
-                <tr key={item.id} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f9fafb', borderBottom: '1px solid #f0f0f0' }}>
-                  <td className="py-3.5 px-4 text-center" style={{ color: '#6b7280' }}>{idx + 1}</td>
-                  {showMaterials && <td className="py-3.5 px-4" style={{ color: '#1f2937' }}>{item.description}</td>}
-                  {showQuantities && <td className="py-3.5 px-4 text-center" style={{ color: '#374151' }}>{item.quantity}</td>}
-                  {showQuantities && <td className="py-3.5 px-4 text-right" style={{ color: '#6b7280' }}>{item.unit}</td>}
-                  {showPricing && <td className="py-3.5 px-4 text-right" style={{ color: '#374151' }}>${formatCurrency(item.unit_price)}</td>}
-                  {showPricing && <td className="py-3.5 px-4 text-right font-semibold" style={{ color: '#111827' }}>${formatCurrency(item.subtotal)}</td>}
+          {sections.map(section => (
+            <tbody key={`section-${section.key}`}>
+              <tr style={{ backgroundColor: '#f3f4f6' }}>
+                <td colSpan={colCount} className="py-2 px-4 text-xs font-bold uppercase tracking-wider" style={{ color: '#374151' }}>
+                  {section.label}
+                </td>
+              </tr>
+              {section.list.map((item, idx) => renderRow(item, idx))}
+              {showPricing && (
+                <tr style={{ backgroundColor: '#fafafa' }}>
+                  <td colSpan={colCount - 1} className="py-2 px-4 text-right text-xs font-medium" style={{ color: '#6b7280' }}>
+                    {section.label} Subtotal
+                  </td>
+                  <td className="py-2 px-4 text-right text-xs font-semibold" style={{ color: '#111827' }}>
+                    ${formatCurrency(section.subtotal)}
+                  </td>
+                  {allowDelete && <td />}
                 </tr>
-              )
-            ))}
-          </tbody>
+              )}
+            </tbody>
+          ))}
         </table>
 
         {/* Add line item button */}
@@ -224,11 +261,13 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
                     <span style={{ color: '#374151' }}>${formatCurrency(proposal.tax_amount)}</span>
                   </div>
                 )}
-                <div className="flex justify-between items-center font-bold text-base px-4 py-3 mt-1" style={{ backgroundColor: trade.accentColor, color: '#fff', borderRadius: '4px' }}>
-                  <span>GRAND TOTAL</span>
-                  <span>${formatCurrency(proposal.total)}</span>
-                </div>
-                {Number(proposal.deposit_amount) > 0 && (
+                {showPricing && (
+                  <div className="flex justify-between items-center font-bold text-base px-4 py-3 mt-1" style={{ backgroundColor: trade.accentColor, color: '#fff', borderRadius: '4px' }}>
+                    <span>GRAND TOTAL</span>
+                    <span>${formatCurrency(proposal.total)}</span>
+                  </div>
+                )}
+                {showPricing && Number(proposal.deposit_amount) > 0 && (
                   <>
                     <div className="flex justify-between text-sm py-2 px-4 mt-2">
                       <span style={{ color: '#6b7280' }}>Deposit Due Upon Signing</span>
