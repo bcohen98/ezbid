@@ -8,6 +8,7 @@ import { getTradeStyle } from './tradeStyles';
 import { Phone, Mail, MapPin } from 'lucide-react';
 import type { TemplateId } from './TemplateSwitcher';
 import type { FontStyle, HeaderStyle } from './ProposalCustomizer';
+import { classifyLineItem } from '@/lib/classifyLineItem';
 
 type Proposal = Database['public']['Tables']['proposals']['Row'];
 type LineItem = Database['public']['Tables']['proposal_line_items']['Row'];
