@@ -3,10 +3,11 @@ import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Download, Loader2 } from 'lucide-react';
+import { CheckCircle, Download, Loader2, Eye, EyeOff } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 import ProposalDocument from '@/components/proposal/ProposalDocument';
 import type { TemplateId } from '@/components/proposal/TemplateSwitcher';
+import { cn } from '@/lib/utils';
 
 interface ProposalData {
   proposal: any;
@@ -28,6 +29,10 @@ export default function ProposalSign() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDrawing = useRef(false);
   const [hasSignature, setHasSignature] = useState(false);
+  // Interactive client-view toggles — let the client choose what they want to see.
+  const [showMaterials, setShowMaterials] = useState(true);
+  const [showQuantities, setShowQuantities] = useState(true);
+  const [showPricing, setShowPricing] = useState(true);
 
   useEffect(() => {
     if (!id || !token) {
