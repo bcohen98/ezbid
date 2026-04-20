@@ -265,7 +265,12 @@ export default function ProposalSign() {
 
         {/* Full styled proposal */}
         <div className="max-w-3xl mx-auto px-6 py-8">
-          <div id="proposal-document-content" className="bg-white rounded-lg border shadow-sm overflow-hidden">
+          <ViewToggleBar
+            showMaterials={showMaterials} setShowMaterials={setShowMaterials}
+            showQuantities={showQuantities} setShowQuantities={setShowQuantities}
+            showPricing={showPricing} setShowPricing={setShowPricing}
+          />
+          <div id="proposal-document-content" className="bg-white rounded-lg border shadow-sm overflow-hidden mt-3">
             <ProposalDocument
               proposal={proposal}
               lineItems={lineItems}
@@ -273,6 +278,9 @@ export default function ProposalSign() {
               exhibits={exhibits}
               template={templateId}
               clientView
+              showMaterialsOverride={showMaterials}
+              showQuantitiesOverride={showQuantities}
+              showPricingOverride={showPricing}
             />
           </div>
 
@@ -304,7 +312,12 @@ export default function ProposalSign() {
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto px-6 py-8 space-y-8">
+      <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
+        <ViewToggleBar
+          showMaterials={showMaterials} setShowMaterials={setShowMaterials}
+          showQuantities={showQuantities} setShowQuantities={setShowQuantities}
+          showPricing={showPricing} setShowPricing={setShowPricing}
+        />
         {/* Styled proposal document */}
         <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
           <ProposalDocument
@@ -314,6 +327,9 @@ export default function ProposalSign() {
             exhibits={exhibits}
             template={templateId}
             clientView
+            showMaterialsOverride={showMaterials}
+            showQuantitiesOverride={showQuantities}
+            showPricingOverride={showPricing}
           />
         </div>
 
