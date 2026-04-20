@@ -6,6 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import UnitCombobox from './UnitCombobox';
 import type { TradeType } from './TradeSelector';
+import { classifyLineItem } from '@/lib/classifyLineItem';
 
 export interface LineItem {
   id: string;
@@ -13,6 +14,7 @@ export interface LineItem {
   quantity: number;
   unit: string;
   unit_price: number;
+  type?: 'material' | 'labor' | null;
   aiSuggested?: boolean;
   fromHistory?: boolean;
 }
