@@ -203,15 +203,15 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
           </thead>
           <tbody>
             {sections.map(section => (
-              <>
-                <tr key={`hdr-${section.key}`} style={{ backgroundColor: '#f3f4f6' }}>
+              <tbody key={`section-${section.key}`}>
+                <tr style={{ backgroundColor: '#f3f4f6' }}>
                   <td colSpan={colCount} className="py-2 px-4 text-xs font-bold uppercase tracking-wider" style={{ color: '#374151' }}>
                     {section.label}
                   </td>
                 </tr>
                 {section.list.map((item, idx) => renderRow(item, idx))}
                 {showPricing && (
-                  <tr key={`sub-${section.key}`} style={{ backgroundColor: '#fafafa' }}>
+                  <tr style={{ backgroundColor: '#fafafa' }}>
                     <td colSpan={colCount - 1} className="py-2 px-4 text-right text-xs font-medium" style={{ color: '#6b7280' }}>
                       {section.label} Subtotal
                     </td>
@@ -221,7 +221,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
                     {allowDelete && <td />}
                   </tr>
                 )}
-              </>
+              </tbody>
             ))}
           </tbody>
         </table>
