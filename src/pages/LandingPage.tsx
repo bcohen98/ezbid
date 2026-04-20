@@ -99,20 +99,12 @@ export default function LandingPage() {
 
       {/* How It Works */}
       <section className="py-12 md:py-16 bg-secondary/50">
-        <div className="container max-w-6xl mx-auto px-4">
-          <h2 className="text-2xl md:text-3xl font-bold text-center">How It Works</h2>
-          <p className="mt-2 text-center text-muted-foreground">Most contractors send their first proposal in under 5 minutes.</p>
-          <div className="mt-10 md:mt-12 grid grid-cols-1 md:grid-cols-5 gap-8 md:gap-6">
-            {steps.map((step, i) => (
-              <div key={i} className="text-center">
-                <div className="mx-auto flex items-center justify-center h-10 w-10 rounded-full bg-foreground text-background text-sm font-semibold">
-                  {i + 1}
-                </div>
-                <h3 className="mt-4 text-base font-semibold">{step.title}</h3>
-                <p className="mt-2 text-sm text-muted-foreground">{step.description}</p>
-              </div>
-            ))}
+        <div className="container max-w-3xl mx-auto px-4">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl md:text-3xl font-bold">How EZ-Bid Works</h2>
+            <p className="mt-2 text-muted-foreground">Describe the job. Get a professional proposal with live pricing in under 2 minutes.</p>
           </div>
+          <HowItWorks variant="compact" />
         </div>
       </section>
 
