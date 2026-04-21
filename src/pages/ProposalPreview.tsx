@@ -653,9 +653,9 @@ export default function ProposalPreview() {
               fontStyle={fontStyle}
               customHeaderStyle={headerStyle}
               clientView
-              showMaterialsOverride={itemize}
+              showMaterialsOverride={true}
               showQuantitiesOverride={itemize}
-              showPricingOverride={itemize}
+              showPricingOverride={true}
               lumpItems={!itemize}
               onFieldEdit={isSigned ? undefined : handleFieldEdit}
               onLineItemEdit={isSigned ? undefined : handleLineItemEdit}
