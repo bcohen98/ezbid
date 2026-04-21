@@ -6,11 +6,10 @@ async function fetchAdminSection(section: string, params?: Record<string, string
   const session = await supabase.auth.getSession();
   const token = session.data.session?.access_token;
 
-  if (!token) throw new Error('Not authenticated');
+  if (!token) return { __unauthorized: true };
 
   const qp = new URLSearchParams({ section, ...params });
   const url = `${supabaseUrl}/functions/v1/admin-data?${qp.toString()}`;
-  console.log('[AdminCheck] Fetching:', url, '| section:', section);
 
   const res = await fetch(url, {
     headers: {
@@ -20,19 +19,20 @@ async function fetchAdminSection(section: string, params?: Record<string, string
     },
   });
 
-  console.log('[AdminCheck] Response status:', res.status);
-
-  if (res.status === 403) throw new Error('Not admin');
+  if (res.status === 401 || res.status === 403) {
+    return { __unauthorized: true };
+  }
   if (!res.ok) throw new Error('Failed to fetch admin data');
-  const data = await res.json();
-  console.log('[AdminCheck] Response data:', data);
-  return data;
+  return await res.json();
 }
 
 export function useAdminCheck() {
   return useQuery({
     queryKey: ['admin-check'],
-    queryFn: () => fetchAdminSection('check'),
+    queryFn: async () => {
+      const data = await fetchAdminSection('check');
+      return { is_admin: data?.is_admin === true };
+    },
     retry: false,
     staleTime: 60_000,
   });
