@@ -13,6 +13,27 @@ const corsHeaders = {
 const PAYMENTS_FROM = "EZ-Bid Payments <payments@ezbid.pro>";
 const APP_URL = "https://ezbid.pro";
 
+function resolveStripeSecretKey() {
+  const primaryKey = Deno.env.get("STRIPE_SECRET_KEY")?.trim() ?? "";
+  const connectKey = Deno.env.get("STRIPE_SECRET_KEY_CONNECT")?.trim() ?? "";
+
+  if (primaryKey.startsWith("sk_test_") || primaryKey.startsWith("sk_live_")) {
+    return primaryKey;
+  }
+
+  if (connectKey.startsWith("sk_test_") || connectKey.startsWith("sk_live_")) {
+    return connectKey;
+  }
+
+  if (primaryKey.startsWith("rk_") || connectKey.startsWith("rk_")) {
+    throw new Error(
+      "Stripe payment secret is configured as a restricted key. Use a full secret key (sk_live_... or sk_test_...) for payment requests.",
+    );
+  }
+
+  throw new Error("Stripe payment secret is missing or invalid. Use a full Stripe secret key.");
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -20,16 +41,9 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnon = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY_CONNECT")!;
+    const stripeKey = resolveStripeSecretKey();
 
     console.log("[create-payment-link] v2 start");
-
-    if (!stripeKey) {
-      return new Response(JSON.stringify({ error: "STRIPE_SECRET_KEY_CONNECT not configured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
     const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
