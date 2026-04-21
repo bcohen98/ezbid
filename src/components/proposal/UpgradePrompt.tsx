@@ -25,8 +25,9 @@ export default function UpgradePrompt({ proposalsUsed, onContinue, source }: Pro
   const handleUpgrade = async (plan: 'monthly' | 'annual') => {
     setLoading(plan);
     try {
+      const promo_code = localStorage.getItem('ambassador_promo_code') || undefined;
       const { data, error } = await supabase.functions.invoke('create-pro-checkout', {
-        body: { plan },
+        body: { plan, promo_code },
       });
       if (error) throw error;
       if (data?.url) {
@@ -55,10 +56,10 @@ export default function UpgradePrompt({ proposalsUsed, onContinue, source }: Pro
           </p>
           <div className="space-y-3">
             <Button className="w-full gap-2" onClick={() => handleUpgrade('monthly')} disabled={!!loading}>
-              {loading === 'monthly' ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Pro Monthly · $29/mo <ArrowRight className="h-4 w-4" /></>}
+              {loading === 'monthly' ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Pro Monthly · $36/mo <ArrowRight className="h-4 w-4" /></>}
             </Button>
             <Button variant="outline" className="w-full gap-2" onClick={() => handleUpgrade('annual')} disabled={!!loading}>
-              {loading === 'annual' ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Pro Annual · $290/yr (2 months free) <ArrowRight className="h-4 w-4" /></>}
+              {loading === 'annual' ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Pro Annual · $360/yr <ArrowRight className="h-4 w-4" /></>}
             </Button>
             <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={onContinue}>
               Maybe later

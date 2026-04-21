@@ -4,27 +4,17 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
-import { FileText, Settings, LogOut, Plus, Users, Shield, HelpCircle, Menu, X, Gift, DollarSign } from 'lucide-react';
+import { FileText, Settings, LogOut, Plus, Users, Shield, HelpCircle, Menu, X, Gift, DollarSign, Award } from 'lucide-react';
 import EZBidLogo from '@/components/EZBidLogo';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, loading, signOut } = useAuth();
   const { profile } = useCompanyProfile();
-  const { data: isAdmin } = useQuery({
-    queryKey: ['is-admin', user?.id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user!.id)
-        .eq('role', 'admin')
-        .maybeSingle();
-      return !!data;
-    },
-    enabled: !!user,
-    staleTime: 60_000,
-  });
+  const { data: roles } = useUserRole();
+  const isAdmin = roles?.isAdmin;
+  const isAmbassador = roles?.isAmbassador;
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -63,6 +53,27 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     { href: '/tutorial', label: 'Tutorial', icon: HelpCircle },
   ];
 
+  const adminAndAmbassadorButtons = (extraClass = '') => (
+    <>
+      {isAmbassador && !isAdmin && (
+        <Link to="/ambassador">
+          <Button variant="outline" size="sm" className={`gap-2 text-sm ${extraClass}`}>
+            <Award className="h-4 w-4" />
+            Ambassador
+          </Button>
+        </Link>
+      )}
+      {isAdmin && (
+        <Link to="/admin">
+          <Button variant="outline" size="sm" className={`gap-2 text-sm ${extraClass}`}>
+            <Shield className="h-4 w-4" />
+            Admin
+          </Button>
+        </Link>
+      )}
+    </>
+  );
+
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
       <header className="border-b">
@@ -98,14 +109,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             </nav>
           </div>
           <div className="hidden md:flex items-center gap-2">
-            {isAdmin && (
-              <Link to="/admin">
-                <Button variant="outline" size="sm" className="gap-2 text-sm">
-                  <Shield className="h-4 w-4" />
-                  Admin
-                </Button>
-              </Link>
-            )}
+            {adminAndAmbassadorButtons()}
             <Button variant="ghost" size="sm" className="gap-2" onClick={() => signOut()}>
               <LogOut className="h-4 w-4" />
               Log out
@@ -142,14 +146,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 </Button>
               </Link>
             ))}
-            {isAdmin && (
-              <Link to="/admin" className="block">
-                <Button variant="outline" size="sm" className="w-full gap-2 text-sm justify-start">
-                  <Shield className="h-4 w-4" />
-                  Admin
-                </Button>
-              </Link>
-            )}
+            <div className="space-y-1">{adminAndAmbassadorButtons('w-full justify-start')}</div>
             <Button variant="ghost" size="sm" className="w-full gap-2 justify-start" onClick={() => signOut()}>
               <LogOut className="h-4 w-4" />
               Log out

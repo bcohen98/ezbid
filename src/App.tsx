@@ -22,6 +22,8 @@ import AdminRevenue from "./pages/admin/AdminRevenue";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminReferrals from "./pages/admin/AdminReferrals";
 import AdminSeeder from "./pages/admin/AdminSeeder";
+import AdminAmbassadors from "./pages/admin/AdminAmbassadors";
+import AmbassadorDashboard from "./pages/AmbassadorDashboard";
 import ReferAndEarn from "./pages/ReferAndEarn";
 import Tutorial from "./pages/Tutorial";
 import ReviewsPage from "./pages/ReviewsPage";
@@ -71,7 +73,9 @@ const App = () => (
             <Route path="/admin/revenue" element={<AdminRevenue />} />
             <Route path="/admin/analytics" element={<AdminAnalytics />} />
             <Route path="/admin/referrals" element={<AdminReferrals />} />
+            <Route path="/admin/ambassadors" element={<AdminAmbassadors />} />
             <Route path="/admin/seed" element={<AdminSeeder />} />
+            <Route path="/ambassador" element={<AmbassadorDashboard />} />
             <Route path="/referrals" element={<ReferAndEarn />} />
             <Route path="/earnings" element={<Earnings />} />
             <Route path="/payment-complete" element={<PaymentComplete />} />
