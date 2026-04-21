@@ -101,32 +101,39 @@ export default function ProposalPreview() {
     }
   }, [proposal?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-generate suggested personal message when send modal opens (only if empty).
-  // Prefer the AI-generated proposal intro (enhanced_scope_of_work) as the cover
-  // letter body. Fall back to suggest-personal-message if no intro exists yet.
+  // Auto-generate a professional cover-letter style personal message when the
+  // send modal opens (only if empty). Uses suggest-personal-message edge fn —
+  // falls back to a polished local template if the AI call fails.
   useEffect(() => {
     if (!showSendModal || !proposal) return;
     if (personalMessage.trim().length > 0) return;
 
-    // Try to extract the opening paragraph of the AI-generated proposal text.
-    const intro = (proposal.enhanced_scope_of_work || proposal.scope_of_work || '').trim();
-    if (intro) {
-      // Take the first paragraph (or first ~600 chars) — that's the cover-letter intro.
-      const firstPara = intro.split(/\n{2,}/)[0]?.trim() || intro.slice(0, 600);
-      const greeting = proposal.client_name ? `Hi ${proposal.client_name.split(' ')[0]},\n\n` : '';
-      setPersonalMessage(`${greeting}${firstPara}`);
-      return;
-    }
+    const firstName = (proposal.client_name || '').trim().split(/\s+/)[0] || '';
+    const greeting = firstName ? `Hello ${firstName},` : 'Hello,';
+    const jobLabel = (proposal.title || proposal.job_description || 'your project').trim();
+    const companyName = (profile as any)?.company_name || (profile as any)?.owner_name || 'our team';
+    const localFallback =
+      `${greeting}\n\n` +
+      `Thank you for the opportunity to bid on ${jobLabel}. ` +
+      `Attached you will find a detailed proposal outlining the full scope of work, materials, ` +
+      `pricing, timeline, and warranty for your review.\n\n` +
+      `Please take a moment to look it over — if anything needs to be adjusted or if you have ` +
+      `questions about any line item, just reply to this email and I'll get right back to you. ` +
+      `When you're ready to move forward, you can sign electronically using the link in the email.\n\n` +
+      `Looking forward to working with you.\n\n` +
+      `${companyName}`;
 
     let cancelled = false;
     (async () => {
       setIsGeneratingMessage(true);
       try {
-        const scopeSummary = (proposal.scope_of_work || '').slice(0, 500);
+        const scopeSummary = (proposal.enhanced_scope_of_work || proposal.scope_of_work || proposal.job_description || '').slice(0, 800);
         const { data, error } = await supabase.functions.invoke('suggest-personal-message', {
           body: {
             contractor_name: (profile as any)?.owner_name || (profile as any)?.company_name || '',
+            company_name: (profile as any)?.company_name || '',
             client_name: proposal.client_name || '',
+            job_title: proposal.title || '',
             trade: (proposal as any).trade_type || (profile as any)?.trade_type || 'general_contractor',
             scope_summary: scopeSummary,
           },
@@ -134,9 +141,10 @@ export default function ProposalPreview() {
         if (cancelled) return;
         if (error) throw error;
         const msg = (data?.message || '').trim();
-        if (msg) setPersonalMessage(msg);
+        setPersonalMessage(msg.length > 0 ? msg : localFallback);
       } catch (e) {
-        console.error('suggest-personal-message failed', e);
+        console.error('suggest-personal-message failed, using local fallback', e);
+        if (!cancelled) setPersonalMessage(localFallback);
       } finally {
         if (!cancelled) setIsGeneratingMessage(false);
       }
@@ -615,7 +623,8 @@ export default function ProposalPreview() {
               const liveDeposit = depMode === 'percentage' ? liveTotal * (depVal / 100) : depVal;
               const liveBalance = liveTotal - liveDeposit;
               const storedTotal = Number((proposal as any).total || 0);
-              const priceDrift = Math.abs(liveTotal - storedTotal) > 0.5;
+              // Threshold $5 to avoid flicker during small edits / rounding.
+              const priceDrift = storedTotal > 0 && Math.abs(liveTotal - storedTotal) > 5;
 
               const refreshedTerms = refreshPaymentTermsText((proposal as any).payment_terms, {
                 grandTotal: liveTotal,
@@ -903,7 +912,7 @@ export default function ProposalPreview() {
                           onClick={async () => {
                             setIsRequestingPayment(true);
                             try {
-                              const { error } = await supabase.functions.invoke('create-payment-link', {
+                              const { data, error } = await supabase.functions.invoke('create-payment-link', {
                                 body: {
                                   proposal_id: proposal.id,
                                   payment_type: ps === 'deposit_requested' ? 'deposit' : 'full_payment',
@@ -912,7 +921,14 @@ export default function ProposalPreview() {
                               });
                               if (error) throw error;
                               await refetch();
-                              toast({ title: 'Payment link resent', description: `Email re-sent to ${proposal.client_email}.` });
+                              const status = (data as any)?.email_status;
+                              if (status === 'sent') {
+                                toast({ title: 'Payment link resent', description: `Email re-sent to ${proposal.client_email}.` });
+                              } else if (status === 'failed') {
+                                toast({ title: 'Link refreshed but email failed', description: (data as any)?.email_error || 'Use Copy payment link to send manually.', variant: 'destructive' });
+                              } else {
+                                toast({ title: 'Link refreshed', description: 'Email delivery is not configured — use Copy payment link.' });
+                              }
                             } catch (err: any) {
                               toast({ title: 'Failed to resend', description: err.message, variant: 'destructive' });
                             } finally {
@@ -1016,19 +1032,18 @@ export default function ProposalPreview() {
               )}
 
               {/* Contractor-only: full unredacted materials & pricing list. Never visible to clients. */}
-              <div className="pt-3 mt-1 border-t border-border">
+              <div className="pt-3 mt-1 border-t border-border space-y-1.5">
                 <Button
                   type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="w-full gap-2 justify-start text-muted-foreground hover:text-foreground"
+                  variant="outline"
+                  className="w-full gap-2 border-dashed hover:border-solid hover:bg-accent"
                   onClick={handleDownloadMaterialsList}
                   disabled={isDownloadingMaterials || lineItems.length === 0}
                 >
                   {isDownloadingMaterials ? <Loader2 className="h-4 w-4 animate-spin" /> : <ClipboardList className="h-4 w-4" />}
-                  {isDownloadingMaterials ? 'Generating…' : 'Materials List (internal)'}
+                  {isDownloadingMaterials ? 'Generating…' : 'Download Materials List (internal)'}
                 </Button>
-                <p className="text-[11px] text-muted-foreground mt-1 px-1">
+                <p className="text-[11px] text-muted-foreground px-1">
                   Full itemized list with prices — for your supply runs. Not shared with the client.
                 </p>
               </div>

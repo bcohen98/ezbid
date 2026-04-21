@@ -166,10 +166,19 @@ serve(async (req) => {
       platform_fee: platformFeeCents / 100,
     });
 
-    if (clientEmail) {
+    // Send payment-request email to client. We try Resend direct first
+    // (RESEND_API_KEY alone), and fall back to the Lovable connector gateway
+    // if both LOVABLE_API_KEY + RESEND_API_KEY are present.
+    let emailStatus: "sent" | "skipped" | "failed" = "skipped";
+    let emailError: string | null = null;
+    if (!clientEmail) {
+      console.warn("[create-payment-link] no client_email — skipping email send");
+    } else {
       const resendKey = Deno.env.get("RESEND_API_KEY");
       const lovableKey = Deno.env.get("LOVABLE_API_KEY");
-      if (resendKey && lovableKey) {
+      if (!resendKey) {
+        console.warn("[create-payment-link] RESEND_API_KEY not configured — skipping email send");
+      } else {
         const companyName = profile.company_name || "your contractor";
         const messageBlock =
           personal_message && String(personal_message).trim()
@@ -199,21 +208,53 @@ serve(async (req) => {
         };
         if (profile.email) emailPayload.reply_to = profile.email;
 
-        await fetch("https://connector-gateway.lovable.dev/resend/emails", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${lovableKey}`,
-            "X-Connection-Api-Key": resendKey,
-          },
-          body: JSON.stringify(emailPayload),
-        });
+        // Decide endpoint: prefer direct Resend if no Lovable key.
+        const useGateway = !!lovableKey;
+        const endpoint = useGateway
+          ? "https://connector-gateway.lovable.dev/resend/emails"
+          : "https://api.resend.com/emails";
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+        };
+        if (useGateway) {
+          headers["Authorization"] = `Bearer ${lovableKey}`;
+          headers["X-Connection-Api-Key"] = resendKey;
+        } else {
+          headers["Authorization"] = `Bearer ${resendKey}`;
+        }
+
+        try {
+          const emailRes = await fetch(endpoint, {
+            method: "POST",
+            headers,
+            body: JSON.stringify(emailPayload),
+          });
+          const emailBody = await emailRes.text();
+          if (!emailRes.ok) {
+            emailStatus = "failed";
+            emailError = `Resend ${emailRes.status}: ${emailBody.slice(0, 300)}`;
+            console.error("[create-payment-link] email send failed", emailError);
+          } else {
+            emailStatus = "sent";
+            console.log(`[create-payment-link] payment email sent to ${clientEmail} via ${useGateway ? "gateway" : "resend-direct"}`);
+          }
+        } catch (e: any) {
+          emailStatus = "failed";
+          emailError = e?.message || String(e);
+          console.error("[create-payment-link] email send threw", e);
+        }
       }
     }
 
-    return new Response(JSON.stringify({ payment_link_url: paymentLink.url }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        payment_link_url: paymentLink.url,
+        email_status: emailStatus,
+        email_error: emailError,
+        client_email: clientEmail || null,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   } catch (err: any) {
     console.error("[create-payment-link]", err);
     return new Response(JSON.stringify({ error: err.message }), {

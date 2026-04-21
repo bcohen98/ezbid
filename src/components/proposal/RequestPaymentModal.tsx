@@ -60,7 +60,7 @@ export default function RequestPaymentModal({ open, onOpenChange, proposal, onRe
     }
     setSubmitting(true);
     try {
-      const { error } = await supabase.functions.invoke('create-payment-link', {
+      const { data, error } = await supabase.functions.invoke('create-payment-link', {
         body: {
           proposal_id: proposal.id,
           payment_type: paymentType,
@@ -71,10 +71,24 @@ export default function RequestPaymentModal({ open, onOpenChange, proposal, onRe
         },
       });
       if (error) throw error;
-      toast({
-        title: 'Payment link sent',
-        description: `${clientEmail} will receive an email with a secure payment link.`,
-      });
+      const status = (data as any)?.email_status;
+      if (status === 'sent') {
+        toast({
+          title: 'Payment link sent',
+          description: `${clientEmail} will receive an email with a secure payment link.`,
+        });
+      } else if (status === 'failed') {
+        toast({
+          title: 'Link created but email failed',
+          description: (data as any)?.email_error || 'Copy the link from the Payments panel and send it manually.',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Payment link created',
+          description: 'Email delivery is not configured. Copy the link from the Payments panel.',
+        });
+      }
       onRequested();
       onOpenChange(false);
     } catch (err: any) {

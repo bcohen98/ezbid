@@ -18,7 +18,7 @@ serve(async (req) => {
 
   // Always return 200 with a JSON body so the client can read errors.
   try {
-    const { contractor_name, client_name, trade, scope_summary } = await req.json().catch(() => ({}));
+    const { contractor_name, company_name, client_name, job_title, trade, scope_summary } = await req.json().catch(() => ({}));
     const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
     if (!apiKey) {
       console.error(`[AI ERROR] function: ${FN_NAME} | model: ${MODEL} | error: ANTHROPIC_API_KEY missing`);
@@ -28,13 +28,36 @@ serve(async (req) => {
     }
 
     const tradeLabel = String(trade || "general contractor").replace(/_/g, " ");
-    const system = `You are a friendly ${tradeLabel} writing a brief, warm note to a homeowner. Maximum 2-3 sentences. Plain text only — no markdown, no quotes. Sound like a real person, not a corporate template.`;
-    const user = `Write a short personal message (2-3 sentences max) from ${contractor_name || "the contractor"} to ${client_name || "the client"} that will go above the proposal link in an email. Reference what the proposal is for in one short phrase. Be warm, professional, confident.
+    const firstName = String(client_name || "").trim().split(/\s+/)[0] || "";
+    const greetingHint = firstName ? `"Hello ${firstName},"` : `"Hello,"`;
+    const signoff = (company_name || contractor_name || "").trim();
+    const jobLabel = (job_title || scope_summary || "your project").trim();
+
+    const system = `You are a professional ${tradeLabel} writing a polished cover-letter email to a potential customer that will accompany a formal written proposal. Tone: confident, courteous, professional but warm — like a respected tradesperson, not a marketing pitch. Plain text only — no markdown, no quotes, no emojis, no exclamation points. Write 3-4 short paragraphs. Always include greeting and signoff.`;
+
+    const user = `Write a professional cover-letter email body that will appear ABOVE the proposal link.
+
+Structure (follow exactly):
+1. Greeting line — start with ${greetingHint}.
+2. Opening — thank the customer for the opportunity to bid on the work. Reference what the project is in one short phrase (e.g. "${jobLabel}").
+3. What's included — one sentence telling them the attached proposal contains the detailed scope of work, materials, pricing, timeline, and warranty for their review.
+4. Call to action — invite them to review it and reply with any questions, and to use the link in the email when ready to sign electronically.
+5. Signoff — a short closing line followed by "${signoff || "Your contractor"}" on its own line.
+
+Constraints:
+- 90 to 160 words total.
+- Plain text only. No markdown, no bullet lists, no headings.
+- No emojis, no exclamation points, no "!", no "Cheers", no "Best!".
+- Do NOT include subject line or "Sent from..." footer.
+- Do NOT mention pricing numbers — they're in the proposal itself.
 
 Trade: ${tradeLabel}
-Scope summary: ${(scope_summary || "the work we discussed").slice(0, 400)}
+Project: ${jobLabel}
+Customer: ${client_name || "the customer"}
+Contractor / company name: ${signoff || contractor_name || "the contractor"}
+Brief scope context: ${(scope_summary || "").slice(0, 600)}
 
-Write only the message body — no subject, no signature, no quotes.`;
+Write only the email body.`;
 
     console.log(`[AI CALL] function: ${FN_NAME} | model: ${MODEL} | task: message | tokens: ${MAX_TOKENS}`);
 

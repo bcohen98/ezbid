@@ -77,14 +77,14 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
           )}
         </SectionComp>
       )}
-      {proposal.materials_included && (
+      {showMaterials && proposal.materials_included && (
         <SectionComp title="Materials Included">
           {editable('materials_included', proposal.materials_included,
             <div className="text-sm leading-relaxed" style={{ color: '#333' }} dangerouslySetInnerHTML={{ __html: renderMarkdown(proposal.materials_included) }} />
           )}
         </SectionComp>
       )}
-      {proposal.materials_excluded && (
+      {showMaterials && proposal.materials_excluded && (
         <SectionComp title="Materials Excluded">
           {editable('materials_excluded', proposal.materials_excluded,
             <div className="text-sm leading-relaxed" style={{ color: '#333' }} dangerouslySetInnerHTML={{ __html: renderMarkdown(proposal.materials_excluded) }} />
