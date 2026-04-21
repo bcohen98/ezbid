@@ -91,12 +91,10 @@ export default function ProposalPreview() {
       if ((proposal as any).custom_accent_color) setAccentColor((proposal as any).custom_accent_color);
       if ((proposal as any).font_style) setFontStyle((proposal as any).font_style as FontStyle);
       if ((proposal as any).header_style) setHeaderStyle((proposal as any).header_style as HeaderStyle);
+      // Reuse existing show_materials column to persist the itemize toggle
+      // (true = itemized, false = lumped). Defaults to true for legacy rows.
       const sm = (proposal as any).show_materials;
-      const sq = (proposal as any).show_quantities;
-      const sp = (proposal as any).show_pricing;
-      setShowMaterials(sm === undefined || sm === null ? true : !!sm);
-      setShowQuantities(sq === undefined || sq === null ? true : !!sq);
-      setShowPricing(sp === undefined || sp === null ? true : !!sp);
+      setItemize(sm === undefined || sm === null ? true : !!sm);
       setPersonalMessage((proposal as any).personal_message || '');
     }
   }, [proposal?.id]); // eslint-disable-line react-hooks/exhaustive-deps
