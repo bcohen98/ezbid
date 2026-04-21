@@ -149,10 +149,10 @@ function buildHtml(proposal: any, lineItems: any[], profile: any, exhibits: any[
           <tr style="background:${c};">
             <th style="padding:12px 12px;text-align:center;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:40px;">#</th>
             <th style="padding:12px 12px;text-align:left;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Description</th>
-            ${showQuantities ? `<th style="padding:12px 12px;text-align:center;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:60px;">Qty</th>` : ''}
-            ${showQuantities ? `<th style="padding:12px 12px;text-align:right;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:70px;">Unit</th>` : ''}
-            ${showPricing ? `<th style="padding:12px 12px;text-align:right;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:90px;">Price</th>` : ''}
-            ${showPricing ? `<th style="padding:12px 12px;text-align:right;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:100px;">Total</th>` : ''}
+            ${showQuantities && !lumpItems ? `<th style="padding:12px 12px;text-align:center;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:60px;">Qty</th>` : ''}
+            ${showQuantities && !lumpItems ? `<th style="padding:12px 12px;text-align:right;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:70px;">Unit</th>` : ''}
+            ${showPricing && !lumpItems ? `<th style="padding:12px 12px;text-align:right;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:90px;">Price</th>` : ''}
+            ${showPricing ? `<th style="padding:12px 12px;text-align:right;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:100px;">${lumpItems ? 'Amount' : 'Total'}</th>` : ''}
           </tr>
         </thead>
         <tbody>${lineItemRows}</tbody>
