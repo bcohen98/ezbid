@@ -99,6 +99,14 @@ RULES:
 9. For scope_of_work, materials_included, and materials_excluded: format each item as a markdown bullet point using "- " prefix (one item per line). Do NOT use prose paragraphs for these three sections — use a bulleted list only.
 10. For all OTHER sections (cover_letter, warranty_terms, payment_terms, disclosures, special_conditions, project_timeline): write in plain prose paragraphs. Do NOT use markdown bullet points, **bold**, or *italic* in these sections.${deposit_label ? `\n11. The payment terms section MUST include the deposit/balance breakdown: deposit of $${(deposit_amount || 0).toFixed(2)} due upon signing, balance of $${(balance_due || 0).toFixed(2)} due upon completion.` : ""}`;
 
+    const profileDirectives: string[] = [];
+    if (company?.default_warranty) profileDirectives.push(`WARRANTY: Use this exact warranty language verbatim from the contractor's profile, do not paraphrase or replace it: """${company.default_warranty}"""`);
+    if (company?.default_payment_terms) profileDirectives.push(`PAYMENT TERMS: Use this exact payment terms language verbatim from the contractor's profile as the foundation, then append the specific deposit/balance dollar amounts for this job: """${company.default_payment_terms}"""`);
+    if (company?.default_disclosures) profileDirectives.push(`DISCLOSURES: Use this exact disclosure language verbatim from the contractor's profile: """${company.default_disclosures}"""`);
+    if (company?.insurance_info) profileDirectives.push(`INSURANCE: Reference this insurance information from the contractor's profile where appropriate: """${company.insurance_info}"""`);
+    if ((company?.license_numbers || []).length) profileDirectives.push(`LICENSES: Reference these license numbers in the proposal where appropriate: ${(company.license_numbers || []).join(", ")}`);
+    if (company?.default_deposit_percentage != null && !deposit_label) profileDirectives.push(`DEPOSIT: Default deposit is ${company.default_deposit_percentage}% of grand total — use this in the payment terms.`);
+
     const systemPrompt = `You are generating a professional contractor proposal. Your job is to write a scope of work that EXACTLY matches the line items provided. Do not invent, add, or imply any work, materials, or services that are not present in the line items.
 
 STRICT RULES:
@@ -109,8 +117,9 @@ STRICT RULES:
 5. Never hallucinate materials, scope, or services not in the line items.
 6. Price totals in the proposal must match the grand total from the line item table exactly.
 7. If the user's description and line items conflict, trust the line items.
+8. CONTRACTOR PROFILE OVERRIDES: When the contractor has provided their own warranty, payment terms, or disclosures in their profile (see directives below), you MUST use that exact language verbatim — do not generate generic boilerplate. Only generate generic content for sections where no profile language was provided.
 
-Return structured proposal data using the provided tool.${user_context?.contractor_insights?.length ? ` Contractor profile insights: ${user_context.contractor_insights.join(". ")}` : ""}${user_context?.pricing_personality ? ` This contractor's pricing personality is "${user_context.pricing_personality}" with ${user_context.pricing_confidence || "medium"} consistency.` : ""}${(materials_context && Array.isArray(materials_context) && materials_context.length > 0 && job_state) ? `\n\nYou have access to current market pricing data for ${tradeLabel} contractors in ${job_state}. CURRENT MATERIALS PRICING DATA:\n${JSON.stringify(materials_context)}` : ""}`;
+${profileDirectives.length ? `CONTRACTOR PROFILE DIRECTIVES (highest priority — use verbatim):\n${profileDirectives.join("\n")}\n\n` : ""}Return structured proposal data using the provided tool.${user_context?.contractor_insights?.length ? ` Contractor profile insights: ${user_context.contractor_insights.join(". ")}` : ""}${user_context?.pricing_personality ? ` This contractor's pricing personality is "${user_context.pricing_personality}" with ${user_context.pricing_confidence || "medium"} consistency.` : ""}${(materials_context && Array.isArray(materials_context) && materials_context.length > 0 && job_state) ? `\n\nYou have access to current market pricing data for ${tradeLabel} contractors in ${job_state}. CURRENT MATERIALS PRICING DATA:\n${JSON.stringify(materials_context)}` : ""}`;
 
     console.log(`[AI CALL] function: ${FN_NAME} | model: ${MODEL} | task: proposal | tokens: ${MAX_TOKENS}`);
 

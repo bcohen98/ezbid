@@ -288,6 +288,21 @@ export default function NewProposal() {
   const [depositEnabled, setDepositEnabled] = useState(false);
   const [depositMode, setDepositMode] = useState<'flat' | 'percentage'>('percentage');
   const [depositValue, setDepositValue] = useState(50);
+  const [depositPrefilled, setDepositPrefilled] = useState(false);
+
+  // Fix 7D: pre-fill deposit from company profile default the first time profile loads
+  useEffect(() => {
+    if (depositPrefilled) return;
+    const def = Number(profile?.default_deposit_percentage);
+    if (profile && Number.isFinite(def) && def > 0) {
+      setDepositValue(def);
+      setDepositMode('percentage');
+      setDepositEnabled(true);
+      setDepositPrefilled(true);
+    } else if (profile) {
+      setDepositPrefilled(true); // mark as checked even if no default
+    }
+  }, [profile, depositPrefilled]);
 
   // AI suggestion review
   const [suggestions, setSuggestions] = useState<AiSuggestion[]>([]);
