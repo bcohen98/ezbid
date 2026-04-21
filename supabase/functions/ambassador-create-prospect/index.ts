@@ -31,7 +31,6 @@ serve(async (req) => {
 
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    // verify ambassador role
     const { data: roleRow } = await admin
       .from("user_roles")
       .select("role")
@@ -42,19 +41,19 @@ serve(async (req) => {
 
     const { data: ambProfile } = await admin
       .from("ambassador_profiles")
-      .select("initials")
+      .select("initials, total_codes_generated")
       .eq("user_id", user.id)
       .maybeSingle();
     if (!ambProfile?.initials) {
       return new Response(JSON.stringify({ error: "Ambassador profile or initials not set" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { prospect_name, prospect_phone, notes } = await req.json();
+    const body = await req.json();
+    const { prospect_name, prospect_phone, notes } = body || {};
     if (!prospect_name || typeof prospect_name !== "string") {
       return new Response(JSON.stringify({ error: "prospect_name required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // generate unique code
     let code = "";
     for (let attempt = 0; attempt < 10; attempt++) {
       const candidate = `${ambProfile.initials.toUpperCase()}-${randCode(5)}`;
@@ -76,15 +75,10 @@ serve(async (req) => {
       .single();
     if (insertErr) throw insertErr;
 
-    // bump counter
-    await admin.rpc("increment_proposals_used", { p_user_id: user.id }).catch(() => {});
     await admin
       .from("ambassador_profiles")
-      .update({ total_codes_generated: 999 }) // placeholder; actual update below
+      .update({ total_codes_generated: (ambProfile.total_codes_generated || 0) + 1 })
       .eq("user_id", user.id);
-    // Properly increment total_codes_generated
-    const { data: prof } = await admin.from("ambassador_profiles").select("total_codes_generated").eq("user_id", user.id).single();
-    await admin.from("ambassador_profiles").update({ total_codes_generated: (prof?.total_codes_generated || 1) }).eq("user_id", user.id);
 
     return new Response(JSON.stringify({ prospect: inserted }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {

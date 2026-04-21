@@ -18,14 +18,8 @@ serve(async (req) => {
     const { data: isAdmin } = await admin.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
     if (!isAdmin) return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-    const { email, initials, target_user_id, action } = await req.json();
-
-    // action: 'create' | 'update_initials' | 'approve_payout' | 'remove'
-    if (action === "approve_payout") {
-      const { prospect_id } = await req.json().catch(() => ({}));
-      // Re-parse: we already consumed body above. Workaround:
-      return new Response(JSON.stringify({ error: "Use admin-approve-payout function" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
+    const body = await req.json();
+    const { email, initials, target_user_id, action } = body || {};
 
     let targetId = target_user_id as string | undefined;
     if (!targetId && email) {
@@ -50,12 +44,10 @@ serve(async (req) => {
     const cleanInitials = String(initials || "").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 5);
     if (!cleanInitials) return new Response(JSON.stringify({ error: "Valid initials required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-    // upsert role
     const { data: existingRole } = await admin.from("user_roles").select("id").eq("user_id", targetId).eq("role", "ambassador").maybeSingle();
     if (!existingRole) {
       await admin.from("user_roles").insert({ user_id: targetId, role: "ambassador" });
     }
-    // upsert ambassador_profiles
     const { data: existingProf } = await admin.from("ambassador_profiles").select("user_id").eq("user_id", targetId).maybeSingle();
     if (existingProf) {
       await admin.from("ambassador_profiles").update({ initials: cleanInitials }).eq("user_id", targetId);
