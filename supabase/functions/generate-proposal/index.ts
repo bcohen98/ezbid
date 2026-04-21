@@ -99,7 +99,18 @@ RULES:
 9. For scope_of_work, materials_included, and materials_excluded: format each item as a markdown bullet point using "- " prefix (one item per line). Do NOT use prose paragraphs for these three sections — use a bulleted list only.
 10. For all OTHER sections (cover_letter, warranty_terms, payment_terms, disclosures, special_conditions, project_timeline): write in plain prose paragraphs. Do NOT use markdown bullet points, **bold**, or *italic* in these sections.${deposit_label ? `\n11. The payment terms section MUST include the deposit/balance breakdown: deposit of $${(deposit_amount || 0).toFixed(2)} due upon signing, balance of $${(balance_due || 0).toFixed(2)} due upon completion.` : ""}`;
 
-    const systemPrompt = `You are an expert proposal writer for trade contractors. Return structured proposal data using the provided tool.${user_context?.contractor_insights?.length ? ` Contractor profile insights: ${user_context.contractor_insights.join(". ")}` : ""}${user_context?.pricing_personality ? ` This contractor's pricing personality is "${user_context.pricing_personality}" with ${user_context.pricing_confidence || "medium"} consistency.` : ""}${(materials_context && Array.isArray(materials_context) && materials_context.length > 0 && job_state) ? `\n\nYou have access to current market pricing data for ${tradeLabel} contractors in ${job_state}. CURRENT MATERIALS PRICING DATA:\n${JSON.stringify(materials_context)}` : ""}`;
+    const systemPrompt = `You are generating a professional contractor proposal. Your job is to write a scope of work that EXACTLY matches the line items provided. Do not invent, add, or imply any work, materials, or services that are not present in the line items.
+
+STRICT RULES:
+1. The scope of work must be derived only from what the user described and the line items they entered. Nothing more.
+2. If the job is small (hedge trimming, rose bed installation, touch-up painting, one fixture swap), write a short, proportionate proposal. Do not pad it.
+3. Match the tone and scale to the job. A $400 job should read like a $400 job — professional, clear, and brief. A $25,000 job gets more detail.
+4. Use the actual line item descriptions in the scope of work. Reference specific quantities, materials, and tasks as entered by the user.
+5. Never hallucinate materials, scope, or services not in the line items.
+6. Price totals in the proposal must match the grand total from the line item table exactly.
+7. If the user's description and line items conflict, trust the line items.
+
+Return structured proposal data using the provided tool.${user_context?.contractor_insights?.length ? ` Contractor profile insights: ${user_context.contractor_insights.join(". ")}` : ""}${user_context?.pricing_personality ? ` This contractor's pricing personality is "${user_context.pricing_personality}" with ${user_context.pricing_confidence || "medium"} consistency.` : ""}${(materials_context && Array.isArray(materials_context) && materials_context.length > 0 && job_state) ? `\n\nYou have access to current market pricing data for ${tradeLabel} contractors in ${job_state}. CURRENT MATERIALS PRICING DATA:\n${JSON.stringify(materials_context)}` : ""}`;
 
     console.log(`[AI CALL] function: ${FN_NAME} | model: ${MODEL} | task: proposal | tokens: ${MAX_TOKENS}`);
 
