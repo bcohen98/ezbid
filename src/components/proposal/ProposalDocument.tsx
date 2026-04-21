@@ -222,22 +222,39 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
           </thead>
           {sections.map(section => (
             <tbody key={`section-${section.key}`}>
-              <tr style={{ backgroundColor: '#f3f4f6' }}>
-                <td colSpan={colCount} className="py-2 px-4 text-xs font-bold uppercase tracking-wider" style={{ color: '#374151' }}>
-                  {section.label}
-                </td>
-              </tr>
-              {section.list.map((item, idx) => renderRow(item, idx))}
-              {effectiveShowTotal && (
-                <tr style={{ backgroundColor: '#fafafa' }}>
-                  <td colSpan={colCount - 1} className="py-2 px-4 text-right text-xs font-medium" style={{ color: '#6b7280' }}>
-                    {section.label} Subtotal
+              {!lumpItems && (
+                <tr style={{ backgroundColor: '#f3f4f6' }}>
+                  <td colSpan={colCount} className="py-2 px-4 text-xs font-bold uppercase tracking-wider" style={{ color: '#374151' }}>
+                    {section.label}
                   </td>
-                  <td className="py-2 px-4 text-right text-xs font-semibold" style={{ color: '#111827' }}>
-                    ${formatCurrency(section.subtotal)}
-                  </td>
-                  {effectiveAllowDelete && <td />}
                 </tr>
+              )}
+              {lumpItems ? (
+                /* Lumped: one bold subtotal row per category. No item rows, no redundant subtotal row. */
+                <tr style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #f0f0f0' }}>
+                  <td className="py-3.5 px-4 text-center" style={{ color: '#6b7280' }}>—</td>
+                  <td className="py-3.5 px-4 font-semibold" style={{ color: '#111827' }}>{section.label}</td>
+                  {effectiveShowTotal && (
+                    <td className="py-3.5 px-4 text-right font-semibold" style={{ color: '#111827' }}>
+                      ${formatCurrency(section.subtotal)}
+                    </td>
+                  )}
+                </tr>
+              ) : (
+                <>
+                  {section.list.map((item, idx) => renderRow(item, idx))}
+                  {effectiveShowTotal && (
+                    <tr style={{ backgroundColor: '#fafafa' }}>
+                      <td colSpan={colCount - 1} className="py-2 px-4 text-right text-xs font-medium" style={{ color: '#6b7280' }}>
+                        {section.label} Subtotal
+                      </td>
+                      <td className="py-2 px-4 text-right text-xs font-semibold" style={{ color: '#111827' }}>
+                        ${formatCurrency(section.subtotal)}
+                      </td>
+                      {effectiveAllowDelete && <td />}
+                    </tr>
+                  )}
+                </>
               )}
             </tbody>
           ))}
