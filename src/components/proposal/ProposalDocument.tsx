@@ -380,24 +380,33 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
   // TEMPLATE: EDGE (was Modern)
   // ════════════════════════════════════════
   if (template === 'edge') {
+    // Header style: dark = solid colored bar above title; light = white with accent top border; minimal = no colored bar.
+    const edgeHeaderTopBar = customHeaderStyle === 'dark'
+      ? <div style={{ height: '8px', backgroundColor: trade.accentColor }} />
+      : customHeaderStyle === 'light'
+        ? <div style={{ borderTop: `3px solid ${trade.accentColor}` }} />
+        : <div style={{ borderTop: '1px solid #eee' }} />;
+    const edgeHeaderTextColor = customHeaderStyle === 'dark' ? '#fff' : '#111';
+    const edgeHeaderBg = customHeaderStyle === 'dark' ? trade.accentColor : 'transparent';
+    const edgeAccentText = customHeaderStyle === 'dark' ? '#fff' : trade.accentColor;
     return (
       <div className="bg-white text-sm" style={{ fontFamily, minHeight: '800px', color: '#1a1a1a' }}>
-        <div style={{ borderTop: `3px solid ${trade.accentColor}` }} />
-        <div className="px-10 pt-8 pb-0">
+        {edgeHeaderTopBar}
+        <div className="px-10 pt-8 pb-6" style={{ backgroundColor: edgeHeaderBg }}>
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
-              {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className="h-12 w-auto object-contain" />}
+              {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className={customHeaderStyle === 'dark' ? 'h-12 w-auto object-contain brightness-0 invert' : 'h-12 w-auto object-contain'} />}
               <div>
-                <div className="text-xl font-bold tracking-tight" style={{ color: '#111', letterSpacing: '-0.5px' }}>{profile?.company_name || 'Company Name'}</div>
-                {profile?.trade_type && <div className="text-xs uppercase mt-0.5" style={{ letterSpacing: '2px', color: '#999' }}>{trade.label}</div>}
+                <div className="text-xl font-bold tracking-tight" style={{ color: edgeHeaderTextColor, letterSpacing: '-0.5px' }}>{profile?.company_name || 'Company Name'}</div>
+                {profile?.trade_type && <div className="text-xs uppercase mt-0.5" style={{ letterSpacing: '2px', color: customHeaderStyle === 'dark' ? 'rgba(255,255,255,0.7)' : '#999' }}>{trade.label}</div>}
               </div>
             </div>
             <div className="text-right">
-              <div className="text-xs uppercase" style={{ letterSpacing: '3px', color: '#999' }}>Proposal</div>
-              <div className="text-lg font-semibold mt-0.5" style={{ color: trade.accentColor }}>{proposalNumber}</div>
+              <div className="text-xs uppercase" style={{ letterSpacing: '3px', color: customHeaderStyle === 'dark' ? 'rgba(255,255,255,0.7)' : '#999' }}>Proposal</div>
+              <div className="text-lg font-semibold mt-0.5" style={{ color: edgeAccentText }}>{proposalNumber}</div>
             </div>
           </div>
-          <div className="mt-6" style={{ borderBottom: `2px solid ${trade.accentColor}` }} />
+          {customHeaderStyle !== 'dark' && <div className="mt-6" style={{ borderBottom: `2px solid ${trade.accentColor}` }} />}
         </div>
         <div className="px-10 py-5" style={{ borderBottom: '1px solid #eee' }}>
           <div className="grid grid-cols-3 gap-6">
@@ -440,23 +449,28 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
   // TEMPLATE: HERITAGE (was Classic)
   // ════════════════════════════════════════
   if (template === 'heritage') {
+    const heritageBg = customHeaderStyle === 'dark' ? trade.accentColor : '#fff';
+    const heritageTitleColor = customHeaderStyle === 'dark' ? '#fff' : '#111';
+    const heritageProposalColor = customHeaderStyle === 'dark' ? '#fff' : trade.accentColor;
+    const heritageMutedColor = customHeaderStyle === 'dark' ? 'rgba(255,255,255,0.75)' : '#666';
+    const heritageSubColor = customHeaderStyle === 'dark' ? 'rgba(255,255,255,0.7)' : '#999';
     return (
       <div className="bg-white text-sm" style={{ fontFamily, minHeight: '800px', color: '#1a1a1a' }}>
-        <div className="h-1" style={{ backgroundColor: trade.accentColor }} />
-        <div className="px-10 pt-8 pb-6">
+        {customHeaderStyle !== 'minimal' && <div className="h-1" style={{ backgroundColor: trade.accentColor }} />}
+        <div className="px-10 pt-8 pb-6" style={{ backgroundColor: heritageBg }}>
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
-              {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className="h-12 w-auto object-contain" />}
+              {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className={customHeaderStyle === 'dark' ? 'h-12 w-auto object-contain brightness-0 invert' : 'h-12 w-auto object-contain'} />}
               <div>
-                <div style={{ fontFamily, fontSize: '22px', fontWeight: 700, color: '#111', letterSpacing: '-0.3px' }}>{profile?.company_name || 'Company Name'}</div>
-                {profile?.trade_type && <div className="text-xs uppercase mt-1" style={{ letterSpacing: '2px', color: '#999' }}>{trade.label}</div>}
+                <div style={{ fontFamily, fontSize: '22px', fontWeight: 700, color: heritageTitleColor, letterSpacing: '-0.3px' }}>{profile?.company_name || 'Company Name'}</div>
+                {profile?.trade_type && <div className="text-xs uppercase mt-1" style={{ letterSpacing: '2px', color: heritageSubColor }}>{trade.label}</div>}
               </div>
             </div>
             <div className="text-right">
-              <div style={{ fontFamily, fontSize: '26px', fontWeight: 700, color: trade.accentColor }}>PROPOSAL</div>
-              <div className="text-xs mt-1" style={{ color: '#666' }}>{proposalNumber}</div>
-              <div className="text-xs mt-1" style={{ color: '#666' }}>Date: {proposal.proposal_date}</div>
-              <div className="text-xs" style={{ color: '#666' }}>Valid until: {proposal.valid_until}</div>
+              <div style={{ fontFamily, fontSize: '26px', fontWeight: 700, color: heritageProposalColor }}>PROPOSAL</div>
+              <div className="text-xs mt-1" style={{ color: heritageMutedColor }}>{proposalNumber}</div>
+              <div className="text-xs mt-1" style={{ color: heritageMutedColor }}>Date: {proposal.proposal_date}</div>
+              <div className="text-xs" style={{ color: heritageMutedColor }}>Valid until: {proposal.valid_until}</div>
             </div>
           </div>
         </div>
@@ -598,19 +612,28 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
   // ════════════════════════════════════════
   // TEMPLATE: LINEN (was Minimal) — default fallback
   // ════════════════════════════════════════
+  // LINEN template — header style variants
+  const linenTopBar = customHeaderStyle === 'dark'
+    ? <div style={{ height: '6px', backgroundColor: trade.accentColor }} />
+    : customHeaderStyle === 'light'
+      ? <div style={{ height: '1px', backgroundColor: trade.accentColor }} />
+      : null;
+  const linenBg = customHeaderStyle === 'dark' ? trade.accentColor : '#fff';
+  const linenTitleColor = customHeaderStyle === 'dark' ? '#fff' : '#111';
+  const linenSubColor = customHeaderStyle === 'dark' ? 'rgba(255,255,255,0.7)' : '#bbb';
   return (
     <div className="bg-white text-sm" style={{ fontFamily, minHeight: '800px', color: '#1a1a1a' }}>
-      <div style={{ height: '1px', backgroundColor: trade.accentColor }} />
-      <div className="px-12 pt-12 pb-8">
+      {linenTopBar}
+      <div className="px-12 pt-12 pb-8" style={{ backgroundColor: linenBg }}>
         <div className="flex items-start justify-between">
           <div>
-            {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className="h-10 w-auto object-contain mb-4" />}
-            <div style={{ fontSize: '22px', fontWeight: 300, color: '#111', letterSpacing: '1px' }}>{profile?.company_name || 'Company Name'}</div>
-            {profile?.trade_type && <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '3px', color: '#bbb', marginTop: '6px' }}>{trade.label}</div>}
+            {profile?.logo_url && <img src={profile.logo_url} alt="Logo" className={customHeaderStyle === 'dark' ? 'h-10 w-auto object-contain mb-4 brightness-0 invert' : 'h-10 w-auto object-contain mb-4'} />}
+            <div style={{ fontSize: '22px', fontWeight: 300, color: linenTitleColor, letterSpacing: '1px' }}>{profile?.company_name || 'Company Name'}</div>
+            {profile?.trade_type && <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '3px', color: linenSubColor, marginTop: '6px' }}>{trade.label}</div>}
           </div>
           <div className="text-right">
-            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '4px', color: '#bbb' }}>Proposal</div>
-            <div style={{ fontSize: '16px', fontWeight: 500, color: '#111', marginTop: '4px' }}>{proposalNumber}</div>
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '4px', color: linenSubColor }}>Proposal</div>
+            <div style={{ fontSize: '16px', fontWeight: 500, color: linenTitleColor, marginTop: '4px' }}>{proposalNumber}</div>
             {proposal.proposal_date && <div style={{ fontSize: '12px', color: '#bbb', marginTop: '8px' }}>{proposal.proposal_date}</div>}
           </div>
         </div>
