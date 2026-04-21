@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import CountersignBanner from '@/components/proposal/CountersignBanner';
 import ExhibitsUpload from '@/components/proposal/ExhibitsUpload';
 import { formatCurrency } from '@/lib/formatCurrency';
+import { refreshPaymentTermsText } from '@/lib/refreshPaymentTerms';
 import { useProposalExhibits } from '@/hooks/useProposalExhibits';
 import TemplateSwitcher, { type TemplateId } from '@/components/proposal/TemplateSwitcher';
 import RequestPaymentModal from '@/components/proposal/RequestPaymentModal';
@@ -603,8 +604,46 @@ export default function ProposalPreview() {
             <div className="px-3 py-1.5 text-[11px] uppercase tracking-wider text-muted-foreground bg-muted/40 border-b">
               Client view preview — toggles below control what your client sees
             </div>
-            <ProposalDocument
-              proposal={{ ...proposal, show_materials: showMaterials, show_quantities: showQuantities, show_pricing: showPricing } as any}
+            {(() => {
+              // Live recompute from current line items
+              const liveSubtotal = lineItems.reduce((s, i) => s + Number(i.subtotal || 0), 0);
+              const taxRate = Number((proposal as any).tax_rate || 0);
+              const liveTax = liveSubtotal * (taxRate / 100);
+              const liveTotal = liveSubtotal + liveTax;
+              const depMode = (proposal as any).deposit_mode || 'percentage';
+              const depVal = Number((proposal as any).deposit_value || 0);
+              const liveDeposit = depMode === 'percentage' ? liveTotal * (depVal / 100) : depVal;
+              const liveBalance = liveTotal - liveDeposit;
+              const storedTotal = Number((proposal as any).total || 0);
+              const priceDrift = Math.abs(liveTotal - storedTotal) > 0.5;
+
+              const refreshedTerms = refreshPaymentTermsText((proposal as any).payment_terms, {
+                grandTotal: liveTotal,
+                depositAmount: liveDeposit,
+                balanceDue: liveBalance,
+              });
+
+              return (
+                <>
+                  {priceDrift && !isSigned && (
+                    <div className="px-3 py-2 text-xs flex items-center justify-between gap-3 bg-amber-50 border-b border-amber-200 text-amber-900">
+                      <span>Pricing has changed since this proposal text was generated.</span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs gap-1"
+                        disabled={isRevising}
+                        onClick={() => {
+                          setRevisionNote('Pricing has changed — please regenerate the proposal narrative, scope of work, and payment terms to reflect the current grand total and deposit. Use the latest line items.');
+                          setTimeout(() => handleRevise(), 0);
+                        }}
+                      >
+                        <Sparkles className="h-3 w-3" /> Regenerate proposal text
+                      </Button>
+                    </div>
+                  )}
+                  <ProposalDocument
+                    proposal={{ ...proposal, show_materials: showMaterials, show_quantities: showQuantities, show_pricing: showPricing, payment_terms: refreshedTerms } as any}
               lineItems={lineItems}
               profile={profile}
               exhibits={exhibits}
