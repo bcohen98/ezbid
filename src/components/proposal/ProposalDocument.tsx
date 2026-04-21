@@ -35,6 +35,8 @@ interface Props {
   showMaterialsOverride?: boolean;
   showQuantitiesOverride?: boolean;
   showPricingOverride?: boolean;
+  /** When true, collapse line items into a single Materials subtotal row + single Labor subtotal row (no itemization). */
+  lumpItems?: boolean;
   onFieldEdit?: (field: string, value: string) => void;
   onLineItemEdit?: (id: string, updates: { description: string; quantity: number; unit: string; unit_price: number; subtotal: number }) => void;
   onDeleteLineItem?: (id: string) => void;
@@ -42,7 +44,7 @@ interface Props {
   onTotalsEdit?: (updates: { tax_rate: number; deposit_mode: string; deposit_value: number }) => void;
 }
 
-export default function ProposalDocument({ proposal, lineItems, profile, exhibits, template = 'edge', customAccentColor, fontStyle = 'modern', customHeaderStyle = 'dark', clientView = false, showMaterialsOverride, showQuantitiesOverride, showPricingOverride, onFieldEdit, onLineItemEdit, onDeleteLineItem, onAddLineItem, onTotalsEdit }: Props) {
+export default function ProposalDocument({ proposal, lineItems, profile, exhibits, template = 'edge', customAccentColor, fontStyle = 'modern', customHeaderStyle = 'dark', clientView = false, showMaterialsOverride, showQuantitiesOverride, showPricingOverride, lumpItems = false, onFieldEdit, onLineItemEdit, onDeleteLineItem, onAddLineItem, onTotalsEdit }: Props) {
   const rawTrade = getTradeStyle((proposal as any).trade_type || profile?.trade_type);
   const trade = customAccentColor ? { ...rawTrade, accentColor: customAccentColor } : rawTrade;
   const fontFamily = FONT_FAMILIES[fontStyle];
@@ -144,11 +146,13 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
   const lineItemsTable = () => {
     if (lineItems.length === 0) return null;
 
-    // Editing only allowed on contractor view (not client view).
-    const allowEdit = !clientView && !!onLineItemEdit;
-    const allowAdd = !clientView && !!onAddLineItem;
-    const allowDelete = !clientView && !!onDeleteLineItem;
-    const allowTotalsEdit = !clientView && !!onTotalsEdit;
+    // Editing is gated by the presence of handlers, NOT by clientView.
+    // The preview renders in clientView mode but contractors must still be
+    // able to click rows to edit until the proposal is signed.
+    const allowEdit = !!onLineItemEdit;
+    const allowAdd = !!onAddLineItem;
+    const allowDelete = !!onDeleteLineItem;
+    const allowTotalsEdit = !!onTotalsEdit;
 
     // Split items by classification.
     const materialsList = lineItems.filter(i => classifyLineItem(i as any) === 'material');
@@ -156,25 +160,40 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
     const materialsSubtotal = materialsList.reduce((s, i) => s + Number(i.subtotal || 0), 0);
     const laborSubtotal = laborList.reduce((s, i) => s + Number(i.subtotal || 0), 0);
 
-    // showMaterials toggle hides MATERIAL ROWS (not the description column)
-    const sections = [
-      { key: 'material' as const, label: 'Materials', list: showMaterials ? materialsList : [], subtotal: materialsSubtotal, visible: showMaterials },
-      { key: 'labor' as const, label: 'Labor & Services', list: laborList, subtotal: laborSubtotal, visible: true },
-    ].filter(s => s.visible && s.list.length > 0);
+    // Lumped mode: replace each section's items with a single summary row
+    // ("Materials" / "Labor & Services") so the client sees only the two
+    // subtotals + grand total. Editing is suppressed in lumped view because
+    // there are no individual rows to interact with.
+    const sections = lumpItems
+      ? [
+          { key: 'material' as const, label: 'Materials', list: materialsList.length > 0 ? [{ id: '__lumped_material__', description: 'Materials', quantity: 1, unit: 'lot', unit_price: materialsSubtotal, subtotal: materialsSubtotal } as any as LineItem] : [], subtotal: materialsSubtotal, visible: materialsList.length > 0 },
+          { key: 'labor' as const, label: 'Labor & Services', list: laborList.length > 0 ? [{ id: '__lumped_labor__', description: 'Labor & Services', quantity: 1, unit: 'lot', unit_price: laborSubtotal, subtotal: laborSubtotal } as any as LineItem] : [], subtotal: laborSubtotal, visible: laborList.length > 0 },
+        ].filter(s => s.visible)
+      : [
+          { key: 'material' as const, label: 'Materials', list: showMaterials ? materialsList : [], subtotal: materialsSubtotal, visible: showMaterials },
+          { key: 'labor' as const, label: 'Labor & Services', list: laborList, subtotal: laborSubtotal, visible: true },
+        ].filter(s => s.visible && s.list.length > 0);
 
-    const colCount = 2 /* # + Description */ + (showQuantities ? 2 : 0) + (showPricing ? 2 : 0) + (allowDelete ? 1 : 0);
+    // In lumped mode, hide qty/unit-price columns — only show description + total.
+    const effectiveShowQuantities = showQuantities && !lumpItems;
+    const effectiveShowUnitPrice = showPricing && !lumpItems;
+    const effectiveShowTotal = showPricing;
+    const effectiveAllowEdit = allowEdit && !lumpItems;
+    const effectiveAllowDelete = allowDelete && !lumpItems;
+
+    const colCount = 2 /* # + Description */ + (effectiveShowQuantities ? 2 : 0) + (effectiveShowUnitPrice ? 1 : 0) + (effectiveShowTotal ? 1 : 0) + (effectiveAllowDelete ? 1 : 0);
 
     const renderRow = (item: LineItem, idx: number) => (
-      allowEdit ? (
-        <EditableLineItemRow key={item.id} item={item} index={idx + 1} onSave={onLineItemEdit!} onDelete={allowDelete ? onDeleteLineItem : undefined} />
+      effectiveAllowEdit ? (
+        <EditableLineItemRow key={item.id} item={item} index={idx + 1} onSave={onLineItemEdit!} onDelete={effectiveAllowDelete ? onDeleteLineItem : undefined} />
       ) : (
         <tr key={item.id} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f9fafb', borderBottom: '1px solid #f0f0f0' }}>
           <td className="py-3.5 px-4 text-center" style={{ color: '#6b7280' }}>{idx + 1}</td>
           <td className="py-3.5 px-4" style={{ color: '#1f2937' }}>{item.description}</td>
-          {showQuantities && <td className="py-3.5 px-4 text-center" style={{ color: '#374151' }}>{item.quantity}</td>}
-          {showQuantities && <td className="py-3.5 px-4 text-right" style={{ color: '#6b7280' }}>{item.unit}</td>}
-          {showPricing && <td className="py-3.5 px-4 text-right" style={{ color: '#374151' }}>${formatCurrency(item.unit_price)}</td>}
-          {showPricing && <td className="py-3.5 px-4 text-right font-semibold" style={{ color: '#111827' }}>${formatCurrency(item.subtotal)}</td>}
+          {effectiveShowQuantities && <td className="py-3.5 px-4 text-center" style={{ color: '#374151' }}>{item.quantity}</td>}
+          {effectiveShowQuantities && <td className="py-3.5 px-4 text-right" style={{ color: '#6b7280' }}>{item.unit}</td>}
+          {effectiveShowUnitPrice && <td className="py-3.5 px-4 text-right" style={{ color: '#374151' }}>${formatCurrency(item.unit_price)}</td>}
+          {effectiveShowTotal && <td className="py-3.5 px-4 text-right font-semibold" style={{ color: '#111827' }}>${formatCurrency(item.subtotal)}</td>}
         </tr>
       )
     );
@@ -186,19 +205,19 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
             <tr style={{ backgroundColor: trade.accentColor }}>
               <th className="py-3 px-4 text-center text-xs font-bold uppercase tracking-wider" style={{ color: '#fff', width: '40px' }}>#</th>
               <th className="py-3 px-4 text-left text-xs font-bold uppercase tracking-wider" style={{ color: '#fff' }}>Description</th>
-              {showQuantities && (
+              {effectiveShowQuantities && (
                 <th className="py-3 px-4 text-center text-xs font-bold uppercase tracking-wider" style={{ color: '#fff', width: '60px' }}>Qty</th>
               )}
-              {showQuantities && (
+              {effectiveShowQuantities && (
                 <th className="py-3 px-4 text-right text-xs font-bold uppercase tracking-wider" style={{ color: '#fff', width: '70px' }}>Unit</th>
               )}
-              {showPricing && (
+              {effectiveShowUnitPrice && (
                 <th className="py-3 px-4 text-right text-xs font-bold uppercase tracking-wider" style={{ color: '#fff', width: '90px' }}>Price</th>
               )}
-              {showPricing && (
+              {effectiveShowTotal && (
                 <th className="py-3 px-4 text-right text-xs font-bold uppercase tracking-wider" style={{ color: '#fff', width: '100px' }}>Total</th>
               )}
-              {allowDelete && <th style={{ width: '32px' }} />}
+              {effectiveAllowDelete && <th style={{ width: '32px' }} />}
             </tr>
           </thead>
           {sections.map(section => (
@@ -209,7 +228,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
                 </td>
               </tr>
               {section.list.map((item, idx) => renderRow(item, idx))}
-              {showPricing && (
+              {effectiveShowTotal && (
                 <tr style={{ backgroundColor: '#fafafa' }}>
                   <td colSpan={colCount - 1} className="py-2 px-4 text-right text-xs font-medium" style={{ color: '#6b7280' }}>
                     {section.label} Subtotal
@@ -217,7 +236,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
                   <td className="py-2 px-4 text-right text-xs font-semibold" style={{ color: '#111827' }}>
                     ${formatCurrency(section.subtotal)}
                   </td>
-                  {allowDelete && <td />}
+                  {effectiveAllowDelete && <td />}
                 </tr>
               )}
             </tbody>
@@ -225,7 +244,7 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
         </table>
 
         {/* Add line item button */}
-        {allowAdd && (
+        {allowAdd && !lumpItems && (
           <button
             type="button"
             onClick={onAddLineItem}

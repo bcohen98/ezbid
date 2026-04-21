@@ -55,10 +55,10 @@ export default function ProposalPreview() {
   const [showSendModal, setShowSendModal] = useState(false);
   const [personalMessage, setPersonalMessage] = useState('');
   const [isGeneratingMessage, setIsGeneratingMessage] = useState(false);
-  // Granular client-view toggles — default true; optimistic local state with background sync.
-  const [showMaterials, setShowMaterials] = useState(true);
-  const [showQuantities, setShowQuantities] = useState(true);
-  const [showPricing, setShowPricing] = useState(true);
+  // Single client-view toggle: "Itemize Materials".
+  // ON = show every line item, every quantity, every price (full itemization).
+  // OFF = lump all materials into one "Materials" subtotal row and all labor into one "Labor" subtotal row, hide individual qty/unit/unit-price columns; grand total stays visible.
+  const [itemize, setItemize] = useState(true);
   const [isDownloadingMaterials, setIsDownloadingMaterials] = useState(false);
 
   // Template switching
@@ -91,12 +91,10 @@ export default function ProposalPreview() {
       if ((proposal as any).custom_accent_color) setAccentColor((proposal as any).custom_accent_color);
       if ((proposal as any).font_style) setFontStyle((proposal as any).font_style as FontStyle);
       if ((proposal as any).header_style) setHeaderStyle((proposal as any).header_style as HeaderStyle);
+      // Reuse existing show_materials column to persist the itemize toggle
+      // (true = itemized, false = lumped). Defaults to true for legacy rows.
       const sm = (proposal as any).show_materials;
-      const sq = (proposal as any).show_quantities;
-      const sp = (proposal as any).show_pricing;
-      setShowMaterials(sm === undefined || sm === null ? true : !!sm);
-      setShowQuantities(sq === undefined || sq === null ? true : !!sq);
-      setShowPricing(sp === undefined || sp === null ? true : !!sp);
+      setItemize(sm === undefined || sm === null ? true : !!sm);
       setPersonalMessage((proposal as any).personal_message || '');
     }
   }, [proposal?.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -152,21 +150,15 @@ export default function ProposalPreview() {
     return () => { cancelled = true; };
   }, [showSendModal, proposal?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Optimistic toggle handlers — update local state immediately, sync in background.
-  const makeToggleHandler = (
-    field: 'show_materials' | 'show_quantities' | 'show_pricing',
-    setter: (v: boolean) => void,
-  ) => (checked: boolean) => {
-    setter(checked);
+  // Single itemize toggle — persisted via the existing `show_materials` column.
+  const handleItemizeToggle = (checked: boolean) => {
+    setItemize(checked);
     if (proposal) {
-      updateProposal({ id: proposal.id, [field]: checked } as any).catch((err) => {
-        console.error(`[${field} sync failed]`, err);
+      updateProposal({ id: proposal.id, show_materials: checked } as any).catch((err) => {
+        console.error('[itemize sync failed]', err);
       });
     }
   };
-  const handleShowMaterialsToggle = makeToggleHandler('show_materials', setShowMaterials);
-  const handleShowQuantitiesToggle = makeToggleHandler('show_quantities', setShowQuantities);
-  const handleShowPricingToggle = makeToggleHandler('show_pricing', setShowPricing);
 
   const handleAccentChange = async (color: string) => {
     setAccentColor(color);
@@ -443,9 +435,9 @@ export default function ProposalPreview() {
           accent_color: accentColor || undefined,
           font_style: fontStyle,
           header_style: headerStyle,
-          show_materials: showMaterials,
-          show_quantities: showQuantities,
-          show_pricing: showPricing,
+          show_materials: itemize,
+          show_quantities: itemize,
+          show_pricing: itemize,
         },
       });
       if (error) throw error;
@@ -652,7 +644,7 @@ export default function ProposalPreview() {
                     </div>
                   )}
                   <ProposalDocument
-                    proposal={{ ...proposal, show_materials: showMaterials, show_quantities: showQuantities, show_pricing: showPricing, payment_terms: refreshedTerms } as any}
+                    proposal={{ ...proposal, show_materials: itemize, show_quantities: itemize, show_pricing: itemize, payment_terms: refreshedTerms } as any}
               lineItems={lineItems}
               profile={profile}
               exhibits={exhibits}
@@ -661,9 +653,10 @@ export default function ProposalPreview() {
               fontStyle={fontStyle}
               customHeaderStyle={headerStyle}
               clientView
-              showMaterialsOverride={showMaterials}
-              showQuantitiesOverride={showQuantities}
-              showPricingOverride={showPricing}
+              showMaterialsOverride={itemize}
+              showQuantitiesOverride={itemize}
+              showPricingOverride={itemize}
+              lumpItems={!itemize}
               onFieldEdit={isSigned ? undefined : handleFieldEdit}
               onLineItemEdit={isSigned ? undefined : handleLineItemEdit}
               onDeleteLineItem={isSigned ? undefined : handleDeleteLineItem}
@@ -964,22 +957,12 @@ export default function ProposalPreview() {
                 </h3>
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-0.5">
-                    <Label htmlFor="show-materials-toggle" className="text-sm">Show materials</Label>
+                    <Label htmlFor="itemize-toggle" className="text-sm">Itemize materials</Label>
+                    <p className="text-xs text-muted-foreground">
+                      On: every line item, qty &amp; price shown. Off: lump everything into one Materials subtotal and one Labor subtotal.
+                    </p>
                   </div>
-                  <Switch id="show-materials-toggle" checked={showMaterials} onCheckedChange={handleShowMaterialsToggle} />
-                </div>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="show-quantities-toggle" className="text-sm">Show quantities</Label>
-                  </div>
-                  <Switch id="show-quantities-toggle" checked={showQuantities} onCheckedChange={handleShowQuantitiesToggle} />
-                </div>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="show-pricing-toggle" className="text-sm">Show pricing</Label>
-                    <p className="text-xs text-muted-foreground">Grand total always remains visible.</p>
-                  </div>
-                  <Switch id="show-pricing-toggle" checked={showPricing} onCheckedChange={handleShowPricingToggle} />
+                  <Switch id="itemize-toggle" checked={itemize} onCheckedChange={handleItemizeToggle} />
                 </div>
               </div>
             )}
