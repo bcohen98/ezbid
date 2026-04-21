@@ -12,20 +12,9 @@ import EZBidLogo from '@/components/EZBidLogo';
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, loading, signOut } = useAuth();
   const { profile } = useCompanyProfile();
-  const { data: isAdmin } = useQuery({
-    queryKey: ['is-admin', user?.id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user!.id)
-        .eq('role', 'admin')
-        .maybeSingle();
-      return !!data;
-    },
-    enabled: !!user,
-    staleTime: 60_000,
-  });
+  const { data: roles } = useUserRole();
+  const isAdmin = roles?.isAdmin;
+  const isAmbassador = roles?.isAmbassador;
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -63,6 +52,27 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     { href: '/company-profile', label: companyLabel, icon: Settings },
     { href: '/tutorial', label: 'Tutorial', icon: HelpCircle },
   ];
+
+  const adminAndAmbassadorButtons = (extraClass = '') => (
+    <>
+      {isAmbassador && !isAdmin && (
+        <Link to="/ambassador">
+          <Button variant="outline" size="sm" className={`gap-2 text-sm ${extraClass}`}>
+            <Award className="h-4 w-4" />
+            Ambassador
+          </Button>
+        </Link>
+      )}
+      {isAdmin && (
+        <Link to="/admin">
+          <Button variant="outline" size="sm" className={`gap-2 text-sm ${extraClass}`}>
+            <Shield className="h-4 w-4" />
+            Admin
+          </Button>
+        </Link>
+      )}
+    </>
+  );
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
