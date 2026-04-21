@@ -957,22 +957,12 @@ export default function ProposalPreview() {
                 </h3>
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-0.5">
-                    <Label htmlFor="show-materials-toggle" className="text-sm">Show materials</Label>
+                    <Label htmlFor="itemize-toggle" className="text-sm">Itemize materials</Label>
+                    <p className="text-xs text-muted-foreground">
+                      On: every line item, qty &amp; price shown. Off: lump everything into one Materials subtotal and one Labor subtotal.
+                    </p>
                   </div>
-                  <Switch id="show-materials-toggle" checked={showMaterials} onCheckedChange={handleShowMaterialsToggle} />
-                </div>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="show-quantities-toggle" className="text-sm">Show quantities</Label>
-                  </div>
-                  <Switch id="show-quantities-toggle" checked={showQuantities} onCheckedChange={handleShowQuantitiesToggle} />
-                </div>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="show-pricing-toggle" className="text-sm">Show pricing</Label>
-                    <p className="text-xs text-muted-foreground">Grand total always remains visible.</p>
-                  </div>
-                  <Switch id="show-pricing-toggle" checked={showPricing} onCheckedChange={handleShowPricingToggle} />
+                  <Switch id="itemize-toggle" checked={itemize} onCheckedChange={handleItemizeToggle} />
                 </div>
               </div>
             )}
