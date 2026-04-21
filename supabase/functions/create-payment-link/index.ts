@@ -207,20 +207,15 @@ serve(async (req) => {
         };
         if (profile.email) emailPayload.reply_to = profile.email;
 
-        // Decide endpoint: prefer direct Resend if no Lovable key.
-        const useGateway = !!lovableKey;
-        const endpoint = useGateway
-          ? "https://connector-gateway.lovable.dev/resend/emails"
-          : "https://api.resend.com/emails";
+        // Always send via direct Resend API. The connector gateway path is
+        // unreliable here because no Resend connection is registered for this
+        // workspace — using RESEND_API_KEY directly is the supported route.
+        const endpoint = "https://api.resend.com/emails";
         const headers: Record<string, string> = {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${resendKey}`,
         };
-        if (useGateway) {
-          headers["Authorization"] = `Bearer ${lovableKey}`;
-          headers["X-Connection-Api-Key"] = resendKey;
-        } else {
-          headers["Authorization"] = `Bearer ${resendKey}`;
-        }
+        const useGateway = false;
 
         try {
           const emailRes = await fetch(endpoint, {
