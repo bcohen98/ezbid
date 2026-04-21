@@ -109,14 +109,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             </nav>
           </div>
           <div className="hidden md:flex items-center gap-2">
-            {isAdmin && (
-              <Link to="/admin">
-                <Button variant="outline" size="sm" className="gap-2 text-sm">
-                  <Shield className="h-4 w-4" />
-                  Admin
-                </Button>
-              </Link>
-            )}
+            {adminAndAmbassadorButtons()}
             <Button variant="ghost" size="sm" className="gap-2" onClick={() => signOut()}>
               <LogOut className="h-4 w-4" />
               Log out
@@ -153,14 +146,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 </Button>
               </Link>
             ))}
-            {isAdmin && (
-              <Link to="/admin" className="block">
-                <Button variant="outline" size="sm" className="w-full gap-2 text-sm justify-start">
-                  <Shield className="h-4 w-4" />
-                  Admin
-                </Button>
-              </Link>
-            )}
+            <div className="space-y-1">{adminAndAmbassadorButtons('w-full justify-start')}</div>
             <Button variant="ghost" size="sm" className="w-full gap-2 justify-start" onClick={() => signOut()}>
               <LogOut className="h-4 w-4" />
               Log out
