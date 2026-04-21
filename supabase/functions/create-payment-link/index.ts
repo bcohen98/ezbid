@@ -104,24 +104,31 @@ serve(async (req) => {
     const redirectUrl = `${APP_URL}/payment-complete?proposal=${proposal_id}`;
     console.log("[create-payment-link] redirect url:", redirectUrl);
 
-    const price = await stripe.prices.create({
-      unit_amount: amountCents,
-      currency: "usd",
-      product_data: { name: description },
-    });
-
-    const paymentLink = await stripe.paymentLinks.create({
-      line_items: [{ price: price.id, quantity: 1 }],
-      application_fee_amount: platformFeeCents,
-      transfer_data: { destination: profile.stripe_connect_account_id },
-      after_completion: {
-        type: "redirect",
-        redirect: { url: redirectUrl },
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            unit_amount: amountCents,
+            product_data: { name: description },
+          },
+          quantity: 1,
+        },
+      ],
+      payment_intent_data: {
+        application_fee_amount: platformFeeCents,
+        transfer_data: { destination: profile.stripe_connect_account_id },
+        metadata: { proposal_id, user_id: user.id, payment_type },
       },
+      customer_email: clientEmail || undefined,
+      success_url: redirectUrl,
+      cancel_url: redirectUrl,
       metadata: { proposal_id, user_id: user.id, payment_type },
     });
 
-    console.log("[create-payment-link] payment link created:", paymentLink.url);
+    const paymentLink = { url: session.url! };
+    console.log("[create-payment-link] checkout session created:", paymentLink.url);
 
     const update: Record<string, any> = {
       payment_requested_at: new Date().toISOString(),
