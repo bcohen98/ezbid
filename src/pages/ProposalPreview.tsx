@@ -661,6 +661,9 @@ export default function ProposalPreview() {
               onAddLineItem={isSigned ? undefined : handleAddLineItem}
               onTotalsEdit={isSigned ? undefined : handleTotalsEdit}
             />
+                </>
+              );
+            })()}
           </div>
 
           {/* Side panel */}
