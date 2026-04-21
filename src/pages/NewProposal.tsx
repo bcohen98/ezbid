@@ -80,39 +80,91 @@ function formatPhoneDisplay(value: string): string {
   return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
 }
 
-// Speech recognition hook
+// Speech recognition hook with auto-restart for long dictations.
+// Browsers (especially Chrome) silently end recognition after ~60s or on a
+// pause even when continuous=true. We auto-restart unless the user clicked Stop.
 function useSpeechRecognition() {
   const recognitionRef = useRef<any>(null);
+  const userStoppedRef = useRef<boolean>(true);
+  const accumulatedFinalRef = useRef<string>('');
+  const onResultRef = useRef<((text: string) => void) | null>(null);
+  const onEndRef = useRef<(() => void) | null>(null);
   const [isRecording, setIsRecording] = useState(false);
 
-  const start = useCallback((onResult: (text: string) => void, onEnd?: () => void) => {
+  const buildRecognition = useCallback(() => {
     const SR = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-    if (!SR) return;
-    stop();
+    if (!SR) return null;
     const recognition = new SR();
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = 'en-US';
-    let finalTranscript = '';
+
     recognition.onresult = (e: any) => {
       let interim = '';
+      // Append any newly finalized chunks to the persistent accumulator.
       for (let i = e.resultIndex; i < e.results.length; i++) {
         if (e.results[i].isFinal) {
-          finalTranscript += e.results[i][0].transcript + ' ';
+          accumulatedFinalRef.current += e.results[i][0].transcript + ' ';
         } else {
           interim += e.results[i][0].transcript;
         }
       }
-      onResult(finalTranscript + interim);
+      onResultRef.current?.(accumulatedFinalRef.current + interim);
     };
-    recognition.onend = () => { setIsRecording(false); onEnd?.(); };
-    recognition.onerror = () => { setIsRecording(false); };
+
+    recognition.onend = () => {
+      // If the user did not click Stop, restart immediately to keep capturing.
+      if (!userStoppedRef.current) {
+        try {
+          const next = buildRecognition();
+          if (next) {
+            recognitionRef.current = next;
+            next.start();
+            return;
+          }
+        } catch (err) {
+          console.warn('[speech] auto-restart failed', err);
+        }
+      }
+      setIsRecording(false);
+      onEndRef.current?.();
+    };
+
+    recognition.onerror = (e: any) => {
+      // Do not auto-restart on permission/no-mic errors.
+      const fatal = e?.error === 'not-allowed' || e?.error === 'service-not-allowed' || e?.error === 'audio-capture';
+      if (fatal) {
+        userStoppedRef.current = true;
+        setIsRecording(false);
+      }
+      // Other errors (e.g. 'no-speech', 'network') will fire onend and we'll restart.
+    };
+
+    return recognition;
+  }, []);
+
+  const start = useCallback((onResult: (text: string) => void, onEnd?: () => void) => {
+    const SR = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+    if (!SR) return;
+    // Stop any existing session.
+    if (recognitionRef.current) {
+      try { recognitionRef.current.onend = null; recognitionRef.current.stop(); } catch {}
+      recognitionRef.current = null;
+    }
+    accumulatedFinalRef.current = '';
+    userStoppedRef.current = false;
+    onResultRef.current = onResult;
+    onEndRef.current = onEnd || null;
+
+    const recognition = buildRecognition();
+    if (!recognition) return;
     recognitionRef.current = recognition;
     recognition.start();
     setIsRecording(true);
-  }, []);
+  }, [buildRecognition]);
 
   const stop = useCallback(() => {
+    userStoppedRef.current = true;
     if (recognitionRef.current) {
       try { recognitionRef.current.stop(); } catch {}
       recognitionRef.current = null;
