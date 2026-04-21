@@ -58,6 +58,7 @@ export default function ProposalPreview() {
   const [showMaterials, setShowMaterials] = useState(true);
   const [showQuantities, setShowQuantities] = useState(true);
   const [showPricing, setShowPricing] = useState(true);
+  const [isDownloadingMaterials, setIsDownloadingMaterials] = useState(false);
 
   // Template switching
   const getDefaultTemplate = (): TemplateId => {
