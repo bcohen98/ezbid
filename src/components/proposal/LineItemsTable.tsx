@@ -30,12 +30,11 @@ const tradeDefaults: Record<TradeType, { description: string; unit: string }[]> 
     { description: 'Dump Fee', unit: 'ea' },
   ],
   landscaping: [
-    { description: 'Sod', unit: 'sq ft' },
-    { description: 'Mulch', unit: 'cu yd' },
-    { description: 'Plants', unit: 'ea' },
-    { description: 'Irrigation', unit: 'ea' },
-    { description: 'Labor', unit: 'hr' },
-    { description: 'Cleanup', unit: 'ea' },
+    { description: 'Hedge/shrub trimming', unit: 'hr' },
+    { description: 'Rose bed installation', unit: 'ea' },
+    { description: 'Soil/amendment', unit: 'bag' },
+    { description: 'Mulch', unit: 'bag' },
+    { description: 'Debris cleanup & haul', unit: 'ls' },
   ],
   hvac: [
     { description: 'Equipment', unit: 'ea' },
