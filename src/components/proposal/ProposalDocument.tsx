@@ -258,6 +258,19 @@ export default function ProposalDocument({ proposal, lineItems, profile, exhibit
               )}
             </tbody>
           ))}
+          {lumpItems && effectiveShowTotal && sections.length > 0 && (
+            <tbody>
+              <tr style={{ backgroundColor: '#fafafa', borderTop: '2px solid #e5e7eb' }}>
+                <td className="py-3 px-4" />
+                <td className="py-3 px-4 text-right text-sm font-semibold" style={{ color: '#374151' }}>
+                  Subtotal
+                </td>
+                <td className="py-3 px-4 text-right text-sm font-bold" style={{ color: '#111827' }}>
+                  ${formatCurrency(sections.reduce((s, sec) => s + sec.subtotal, 0))}
+                </td>
+              </tr>
+            </tbody>
+          )}
         </table>
 
         {/* Add line item button */}
