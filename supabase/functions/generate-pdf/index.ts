@@ -116,7 +116,22 @@ function buildHtml(proposal: any, lineItems: any[], profile: any, exhibits: any[
     return `<div style="margin-bottom:20px;page-break-inside:avoid;"><h3 style="font-size:13px;font-weight:700;margin-bottom:6px;color:#1a1a1a;">${esc(title)}</h3><div style="font-size:13px;line-height:1.7;color:#333;margin:0;">${mdToHtml(content)}</div></div>`;
   };
 
-  const lineItemRows = lineItems.map((item: any, idx: number) => `
+  let lineItemRows = '';
+  if (lumpItems && lineItems.length > 0) {
+    const materialsList = lineItems.filter((i: any) => classifyItem(i) === 'material');
+    const laborList = lineItems.filter((i: any) => classifyItem(i) === 'labor');
+    const materialsSubtotal = materialsList.reduce((s: number, i: any) => s + Number(i.subtotal || 0), 0);
+    const laborSubtotal = laborList.reduce((s: number, i: any) => s + Number(i.subtotal || 0), 0);
+    const lumpedRow = (label: string, amount: number) => `
+      <tr style="background:#ffffff;border-bottom:1px solid #f0f0f0;">
+        <td style="padding:14px 12px;text-align:center;color:#6b7280;">—</td>
+        <td style="padding:14px 12px;color:#111827;font-weight:600;">${esc(label)}</td>
+        ${showPricing ? `<td style="padding:14px 12px;text-align:right;color:#111827;font-weight:600;">$${fmt(amount)}</td>` : ''}
+      </tr>`;
+    if (materialsList.length > 0) lineItemRows += lumpedRow('Materials', materialsSubtotal);
+    if (laborList.length > 0) lineItemRows += lumpedRow('Labor & Services', laborSubtotal);
+  } else {
+    lineItemRows = lineItems.map((item: any, idx: number) => `
     <tr style="background:${idx % 2 === 0 ? '#ffffff' : '#f9fafb'};">
       <td style="padding:12px 12px;text-align:center;color:#6b7280;border-bottom:1px solid #f0f0f0;">${idx + 1}</td>
       <td style="padding:12px 12px;color:#1f2937;border-bottom:1px solid #f0f0f0;">${esc(item.description)}</td>
@@ -125,6 +140,7 @@ function buildHtml(proposal: any, lineItems: any[], profile: any, exhibits: any[
       ${showPricing ? `<td style="padding:12px 12px;text-align:right;color:#374151;border-bottom:1px solid #f0f0f0;">$${fmt(item.unit_price)}</td>` : ''}
       ${showPricing ? `<td style="padding:12px 12px;text-align:right;font-weight:600;color:#111827;border-bottom:1px solid #f0f0f0;">$${fmt(item.subtotal)}</td>` : ''}
     </tr>`).join('');
+  }
 
   const lineItemsHtml = lineItems.length > 0 ? `
     <div style="margin-bottom:28px;page-break-inside:avoid;">
