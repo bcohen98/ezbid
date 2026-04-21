@@ -479,10 +479,15 @@ serve(async (req) => {
       .from('proposal-pdfs')
       .createSignedUrl(filePath, 3600);
 
+    const padded = String(proposal.proposal_number).padStart(4, '0');
+    const downloadName = materials_only
+      ? `Proposal-PRO-${padded}-Materials.pdf`
+      : `Proposal-PRO-${padded}.pdf`;
+
     return new Response(JSON.stringify({
       html,
       url: signedUrl?.signedUrl,
-      fileName: `Proposal-PRO-${String(proposal.proposal_number).padStart(4, '0')}.pdf`
+      fileName: downloadName
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
