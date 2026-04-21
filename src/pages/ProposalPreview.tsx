@@ -100,14 +100,27 @@ export default function ProposalPreview() {
   }, [proposal?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-generate suggested personal message when send modal opens (only if empty).
+  // Prefer the AI-generated proposal intro (enhanced_scope_of_work) as the cover
+  // letter body. Fall back to suggest-personal-message if no intro exists yet.
   useEffect(() => {
     if (!showSendModal || !proposal) return;
     if (personalMessage.trim().length > 0) return;
+
+    // Try to extract the opening paragraph of the AI-generated proposal text.
+    const intro = (proposal.enhanced_scope_of_work || proposal.scope_of_work || '').trim();
+    if (intro) {
+      // Take the first paragraph (or first ~600 chars) — that's the cover-letter intro.
+      const firstPara = intro.split(/\n{2,}/)[0]?.trim() || intro.slice(0, 600);
+      const greeting = proposal.client_name ? `Hi ${proposal.client_name.split(' ')[0]},\n\n` : '';
+      setPersonalMessage(`${greeting}${firstPara}`);
+      return;
+    }
+
     let cancelled = false;
     (async () => {
       setIsGeneratingMessage(true);
       try {
-        const scopeSummary = (proposal.scope_of_work || proposal.job_description || '').slice(0, 500);
+        const scopeSummary = (proposal.scope_of_work || '').slice(0, 500);
         const { data, error } = await supabase.functions.invoke('suggest-personal-message', {
           body: {
             contractor_name: (profile as any)?.owner_name || (profile as any)?.company_name || '',
@@ -420,6 +433,9 @@ export default function ProposalPreview() {
           accent_color: accentColor || undefined,
           font_style: fontStyle,
           header_style: headerStyle,
+          show_materials: showMaterials,
+          show_quantities: showQuantities,
+          show_pricing: showPricing,
         },
       });
       if (error) throw error;
@@ -527,9 +543,30 @@ export default function ProposalPreview() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
-          {/* Preview */}
+          {/* Preview — rendered as the CLIENT will see it (toggles applied live) */}
           <div className="border rounded-lg overflow-x-auto bg-background shadow-sm">
-            <ProposalDocument proposal={{ ...proposal, show_materials: showMaterials, show_quantities: showQuantities, show_pricing: showPricing } as any} lineItems={lineItems} profile={profile} exhibits={exhibits} template={activeTemplate} customAccentColor={accentColor || undefined} fontStyle={fontStyle} customHeaderStyle={headerStyle} onFieldEdit={isSigned ? undefined : handleFieldEdit} onLineItemEdit={isSigned ? undefined : handleLineItemEdit} onDeleteLineItem={isSigned ? undefined : handleDeleteLineItem} onAddLineItem={isSigned ? undefined : handleAddLineItem} onTotalsEdit={isSigned ? undefined : handleTotalsEdit} />
+            <div className="px-3 py-1.5 text-[11px] uppercase tracking-wider text-muted-foreground bg-muted/40 border-b">
+              Client view preview — toggles below control what your client sees
+            </div>
+            <ProposalDocument
+              proposal={{ ...proposal, show_materials: showMaterials, show_quantities: showQuantities, show_pricing: showPricing } as any}
+              lineItems={lineItems}
+              profile={profile}
+              exhibits={exhibits}
+              template={activeTemplate}
+              customAccentColor={accentColor || undefined}
+              fontStyle={fontStyle}
+              customHeaderStyle={headerStyle}
+              clientView
+              showMaterialsOverride={showMaterials}
+              showQuantitiesOverride={showQuantities}
+              showPricingOverride={showPricing}
+              onFieldEdit={isSigned ? undefined : handleFieldEdit}
+              onLineItemEdit={isSigned ? undefined : handleLineItemEdit}
+              onDeleteLineItem={isSigned ? undefined : handleDeleteLineItem}
+              onAddLineItem={isSigned ? undefined : handleAddLineItem}
+              onTotalsEdit={isSigned ? undefined : handleTotalsEdit}
+            />
           </div>
 
           {/* Side panel */}
