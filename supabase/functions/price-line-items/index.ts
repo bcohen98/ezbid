@@ -448,19 +448,44 @@ serve(async (req) => {
     claudeItems = dedupeLineItems(claudeItems, dedupeLog);
     routing.dedupe_removed = beforeCount - claudeItems.length;
 
-    // CATALOG FETCH — live Home Depot pricing via get_materials_context
-    const LABOR_KEYWORDS = ["labor","installation","install","prep","preparation","priming","laying","pouring","framing","wiring","running","pulling","masking","cleanup","touch-up","touchup","protection","moving","haul","disposal","demolition","demo","excavation","grading","leveling","trenching","inspection","permit","mobilization","teardown","removal","rental","diagnostic","commissioning","testing","balancing","startup","service call","painting walls","painting ceilings","paint walls","paint ceilings","seal coat","pressure wash","power wash"];
-    const MATERIAL_UNITS = new Set(["gal","gallon","roll","ea","each","sheet","piece","bag","box","lb","ft","lf","bundle","square","ton","yard","lot","pallet"]);
-    function isMaterialItem(item: ClaudeLineItem): boolean {
-      const unitNorm = normalizeUnit(item.unit);
-      const unitOk = MATERIAL_UNITS.has(item.unit?.toLowerCase?.() ?? "") || MATERIAL_UNITS.has(unitNorm ?? "");
-      const nameLower = item.name.toLowerCase();
-      const nameOk = !LABOR_KEYWORDS.some(kw => nameLower.includes(kw));
-      return unitOk && nameOk;
+    // CLASSIFICATION — single Claude Haiku call to semantically classify each item as material or labor.
+    // Replaces all prior keyword/unit-based filtering. Material items go to HD search; labor items go to Claude estimation.
+    const classificationMap = new Map<string, "material" | "labor">();
+    try {
+      const classifySystem = `You are a construction line item classifier. Classify each item as "material" (a physical product purchased from a supplier) or "labor" (a service, action, or task performed by a person).
+
+Rules:
+- material = shingles, pipe, paint, mulch, plants, fixtures, lumber, concrete bags, wiring, etc.
+- labor = trimming, installation, hauling, watering, prep, cleanup, removal, grading, inspection, commissioning, balancing, testing, service call, etc.
+- When ambiguous, classify as "labor" — safer to estimate via Claude than search HD for something unsearchable.
+- Respond ONLY with valid JSON array, no explanation, no markdown: [{"id": "item_id", "type": "material|labor"}, ...]`;
+      const classifyPayload = claudeItems.map((it, idx) => ({ id: String(idx), description: it.name }));
+      const classifyUser = `Classify these line items: ${JSON.stringify(classifyPayload)}`;
+      const cls = await callAnthropic(STEP2_MODEL, classifySystem, classifyUser, 1024, "classify_items");
+      routing.tokens_in += cls.in;
+      routing.tokens_out += cls.out;
+      if (!routing.models.includes(STEP2_MODEL)) routing.models.push(STEP2_MODEL);
+      const parsedCls = extractJson<Array<{ id: string; type: string }>>(cls.text);
+      if (Array.isArray(parsedCls)) {
+        for (const c of parsedCls) {
+          const t = String(c?.type || "").toLowerCase();
+          if (c?.id != null && (t === "material" || t === "labor")) {
+            classificationMap.set(String(c.id), t);
+          }
+        }
+      }
+    } catch (e) {
+      console.error(`[${FN_NAME}] classifier failed, defaulting all to labor:`, e);
     }
-    const materialItemsForHD = claudeItems.filter(isMaterialItem);
-    const laborItems = claudeItems.filter(i => !isMaterialItem(i));
-    console.log(`[HD FILTER] total: ${claudeItems.length} | sending to HD: ${materialItemsForHD.length} | labor/service (skip HD): ${laborItems.length}`);
+    // Apply classification to items + log decisions. Default to "labor" when classifier is silent (safer).
+    for (let i = 0; i < claudeItems.length; i++) {
+      const cls = classificationMap.get(String(i)) || "labor";
+      claudeItems[i].type = cls;
+      console.log(`[CLASSIFY] item: ${claudeItems[i].name} | type: ${cls}`);
+    }
+    const materialItemsForHD = claudeItems.filter(i => i.type === "material");
+    const laborItems = claudeItems.filter(i => i.type === "labor");
+    console.log(`[CLASSIFY SUMMARY] total: ${claudeItems.length} | materials → HD: ${materialItemsForHD.length} | labor → Claude: ${laborItems.length}`);
 
     let catalog: CatalogRow[] = [];
     try {

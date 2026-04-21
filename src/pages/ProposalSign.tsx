@@ -29,7 +29,8 @@ export default function ProposalSign() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDrawing = useRef(false);
   const [hasSignature, setHasSignature] = useState(false);
-  // Interactive client-view toggles — let the client choose what they want to see.
+  // Interactive client-view toggles — initialized from contractor's saved DB flags so contractor's
+  // "hide materials/quantities/pricing" choices drive the default client view. Clients can still toggle to preview.
   const [showMaterials, setShowMaterials] = useState(true);
   const [showQuantities, setShowQuantities] = useState(true);
   const [showPricing, setShowPricing] = useState(true);
@@ -55,7 +56,13 @@ export default function ProposalSign() {
         }
 
         const parsed = typeof result === 'string' ? JSON.parse(result) : result;
-        
+
+        // Initialize toggles from contractor's saved DB flags (defaults true if absent / null).
+        const p = parsed?.proposal || {};
+        if (p.show_materials === false) setShowMaterials(false);
+        if (p.show_quantities === false) setShowQuantities(false);
+        if (p.show_pricing === false) setShowPricing(false);
+
         if (parsed.proposal.status === 'signed' || parsed.proposal.client_signature_url) {
           setData(parsed);
           setSigned(true);
