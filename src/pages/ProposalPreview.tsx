@@ -486,7 +486,60 @@ export default function ProposalPreview() {
     }
   };
 
-  const handleSendSelf = async () => {
+  // Contractor-only: download the full unredacted materials & pricing list,
+  // regardless of client-view toggles. Never shown to clients.
+  const handleDownloadMaterialsList = async () => {
+    setIsDownloadingMaterials(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-pdf', {
+        body: {
+          proposal_id: proposal.id,
+          template: activeTemplate,
+          accent_color: accentColor || undefined,
+          font_style: fontStyle,
+          header_style: headerStyle,
+          materials_only: true,
+        },
+      });
+      if (error) throw error;
+      if (data?.html) {
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'absolute';
+        iframe.style.left = '-9999px';
+        iframe.style.top = '0';
+        iframe.style.width = '816px';
+        iframe.style.height = '1056px';
+        iframe.style.border = 'none';
+        document.body.appendChild(iframe);
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (!iframeDoc) throw new Error('Could not access iframe document');
+        iframeDoc.open();
+        iframeDoc.write(data.html);
+        iframeDoc.close();
+        await new Promise(resolve => setTimeout(resolve, 600));
+        const html2pdf = (await import('html2pdf.js')).default;
+        const fileName = data.fileName || `Proposal-PRO-${String(proposal.proposal_number).padStart(4, '0')}-Materials.pdf`;
+        await html2pdf()
+          .set({
+            margin: [0.4, 0.4, 0.6, 0.4],
+            filename: fileName,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, letterRendering: true, windowWidth: 816 },
+            jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+          })
+          .from(iframeDoc.body)
+          .save();
+        document.body.removeChild(iframe);
+        toast({ title: 'Materials list downloaded', description: fileName });
+      }
+    } catch (err: any) {
+      toast({ title: 'Download failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsDownloadingMaterials(false);
+    }
+  };
+
     setIsSendingSelf(true);
     try {
       const { data, error } = await supabase.functions.invoke('send-proposal-email', {
