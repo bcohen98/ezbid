@@ -175,7 +175,6 @@ serve(async (req) => {
       console.warn("[create-payment-link] no client_email — skipping email send");
     } else {
       const resendKey = Deno.env.get("RESEND_API_KEY");
-      const lovableKey = Deno.env.get("LOVABLE_API_KEY");
       if (!resendKey) {
         console.warn("[create-payment-link] RESEND_API_KEY not configured — skipping email send");
       } else {
