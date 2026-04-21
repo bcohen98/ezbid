@@ -83,7 +83,7 @@ const FONT_FAMILIES: Record<string, string> = {
   bold: "'Impact', 'Arial Black', sans-serif",
 };
 
-function buildHtml(proposal: any, lineItems: any[], profile: any, exhibits: any[], opts: { template?: string; accent_color?: string; font_style?: string; header_style?: string }): string {
+function buildHtml(proposal: any, lineItems: any[], profile: any, exhibits: any[], opts: { template?: string; accent_color?: string; font_style?: string; header_style?: string; show_materials?: boolean; show_quantities?: boolean; show_pricing?: boolean; materials_only?: boolean }): string {
   const template = opts.template || 'modern';
   const accentColor = opts.accent_color || getColor(proposal.trade_type || profile?.trade_type);
   const c = accentColor;
@@ -92,6 +92,10 @@ function buildHtml(proposal: any, lineItems: any[], profile: any, exhibits: any[
   const addr = [profile?.street_address, profile?.city, profile?.state, profile?.zip].filter(Boolean).join(', ');
   const fontFamily = FONT_FAMILIES[opts.font_style || 'modern'] || FONT_FAMILIES.modern;
   const headerStyle = opts.header_style || 'dark';
+  const showMaterials = opts.show_materials !== false;
+  const showQuantities = opts.show_quantities !== false;
+  const showPricing = opts.show_pricing !== false;
+  const materialsOnly = !!opts.materials_only;
 
   const phoneSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
   const mailSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>`;
