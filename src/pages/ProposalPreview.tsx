@@ -540,6 +540,7 @@ export default function ProposalPreview() {
     }
   };
 
+  const handleSendSelf = async () => {
     setIsSendingSelf(true);
     try {
       const { data, error } = await supabase.functions.invoke('send-proposal-email', {
