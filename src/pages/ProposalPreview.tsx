@@ -644,7 +644,7 @@ export default function ProposalPreview() {
                     </div>
                   )}
                   <ProposalDocument
-                    proposal={{ ...proposal, show_materials: showMaterials, show_quantities: showQuantities, show_pricing: showPricing, payment_terms: refreshedTerms } as any}
+                    proposal={{ ...proposal, show_materials: itemize, show_quantities: itemize, show_pricing: itemize, payment_terms: refreshedTerms } as any}
               lineItems={lineItems}
               profile={profile}
               exhibits={exhibits}
@@ -653,9 +653,10 @@ export default function ProposalPreview() {
               fontStyle={fontStyle}
               customHeaderStyle={headerStyle}
               clientView
-              showMaterialsOverride={showMaterials}
-              showQuantitiesOverride={showQuantities}
-              showPricingOverride={showPricing}
+              showMaterialsOverride={itemize}
+              showQuantitiesOverride={itemize}
+              showPricingOverride={itemize}
+              lumpItems={!itemize}
               onFieldEdit={isSigned ? undefined : handleFieldEdit}
               onLineItemEdit={isSigned ? undefined : handleLineItemEdit}
               onDeleteLineItem={isSigned ? undefined : handleDeleteLineItem}
