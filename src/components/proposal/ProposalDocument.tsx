@@ -35,6 +35,8 @@ interface Props {
   showMaterialsOverride?: boolean;
   showQuantitiesOverride?: boolean;
   showPricingOverride?: boolean;
+  /** When true, collapse line items into a single Materials subtotal row + single Labor subtotal row (no itemization). */
+  lumpItems?: boolean;
   onFieldEdit?: (field: string, value: string) => void;
   onLineItemEdit?: (id: string, updates: { description: string; quantity: number; unit: string; unit_price: number; subtotal: number }) => void;
   onDeleteLineItem?: (id: string) => void;
@@ -42,7 +44,7 @@ interface Props {
   onTotalsEdit?: (updates: { tax_rate: number; deposit_mode: string; deposit_value: number }) => void;
 }
 
-export default function ProposalDocument({ proposal, lineItems, profile, exhibits, template = 'edge', customAccentColor, fontStyle = 'modern', customHeaderStyle = 'dark', clientView = false, showMaterialsOverride, showQuantitiesOverride, showPricingOverride, onFieldEdit, onLineItemEdit, onDeleteLineItem, onAddLineItem, onTotalsEdit }: Props) {
+export default function ProposalDocument({ proposal, lineItems, profile, exhibits, template = 'edge', customAccentColor, fontStyle = 'modern', customHeaderStyle = 'dark', clientView = false, showMaterialsOverride, showQuantitiesOverride, showPricingOverride, lumpItems = false, onFieldEdit, onLineItemEdit, onDeleteLineItem, onAddLineItem, onTotalsEdit }: Props) {
   const rawTrade = getTradeStyle((proposal as any).trade_type || profile?.trade_type);
   const trade = customAccentColor ? { ...rawTrade, accentColor: customAccentColor } : rawTrade;
   const fontFamily = FONT_FAMILIES[fontStyle];
