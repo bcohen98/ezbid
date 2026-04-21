@@ -246,9 +246,15 @@ serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ payment_link_url: paymentLink.url }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        payment_link_url: paymentLink.url,
+        email_status: emailStatus,
+        email_error: emailError,
+        client_email: clientEmail || null,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   } catch (err: any) {
     console.error("[create-payment-link]", err);
     return new Response(JSON.stringify({ error: err.message }), {
