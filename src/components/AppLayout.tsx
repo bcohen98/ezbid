@@ -4,8 +4,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
-import { FileText, Settings, LogOut, Plus, Users, Shield, HelpCircle, Menu, X, Gift, DollarSign } from 'lucide-react';
+import { FileText, Settings, LogOut, Plus, Users, Shield, HelpCircle, Menu, X, Gift, DollarSign, Award } from 'lucide-react';
 import EZBidLogo from '@/components/EZBidLogo';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
