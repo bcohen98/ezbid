@@ -1016,19 +1016,18 @@ export default function ProposalPreview() {
               )}
 
               {/* Contractor-only: full unredacted materials & pricing list. Never visible to clients. */}
-              <div className="pt-3 mt-1 border-t border-border">
+              <div className="pt-3 mt-1 border-t border-border space-y-1.5">
                 <Button
                   type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="w-full gap-2 justify-start text-muted-foreground hover:text-foreground"
+                  variant="outline"
+                  className="w-full gap-2 border-dashed hover:border-solid hover:bg-accent"
                   onClick={handleDownloadMaterialsList}
                   disabled={isDownloadingMaterials || lineItems.length === 0}
                 >
                   {isDownloadingMaterials ? <Loader2 className="h-4 w-4 animate-spin" /> : <ClipboardList className="h-4 w-4" />}
-                  {isDownloadingMaterials ? 'Generating…' : 'Materials List (internal)'}
+                  {isDownloadingMaterials ? 'Generating…' : 'Download Materials List (internal)'}
                 </Button>
-                <p className="text-[11px] text-muted-foreground mt-1 px-1">
+                <p className="text-[11px] text-muted-foreground px-1">
                   Full itemized list with prices — for your supply runs. Not shared with the client.
                 </p>
               </div>
