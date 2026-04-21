@@ -178,74 +178,7 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing */}
-      <section className="py-12 md:py-16">
-        <div className="container max-w-4xl mx-auto px-4">
-          <h2 className="text-2xl md:text-3xl font-bold text-center">Simple, honest pricing</h2>
-          <p className="mt-2 text-center text-muted-foreground">Start free. Upgrade when you're winning enough jobs to justify it.</p>
-
-          <div className="mt-8 md:mt-10 grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6 max-w-4xl mx-auto">
-            {/* Free */}
-            <div className="rounded-lg border bg-card p-5 md:p-6">
-              <h3 className="text-lg font-semibold">Free</h3>
-              <p className="mt-1 text-3xl font-bold">$0</p>
-              <p className="text-xs text-muted-foreground">3 proposals, no credit card</p>
-              <ul className="mt-5 space-y-2">
-                {["3 professional proposals", "All 10 templates", "AI-written scope & terms", "PDF export", "E-signatures"].map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm">
-                    <CheckCircle className="h-4 w-4 text-foreground shrink-0 mt-0.5" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <Link to="/guest/new-proposal" className="block mt-6">
-                <Button variant="outline" className="w-full">Create My First Proposal — Free</Button>
-              </Link>
-            </div>
-
-            {/* Pro Monthly */}
-            <div className="rounded-lg border-2 border-foreground bg-card p-5 md:p-6 relative">
-              <span className="absolute -top-3 left-4 bg-foreground text-background text-xs font-medium px-2.5 py-0.5 rounded-full">
-                Most popular
-              </span>
-              <h3 className="text-lg font-semibold">Pro Monthly</h3>
-              <p className="mt-1 text-3xl font-bold">$29<span className="text-sm font-normal text-muted-foreground">/mo</span></p>
-              <p className="text-xs text-muted-foreground">Unlimited proposals</p>
-              <ul className="mt-5 space-y-2">
-                {["Unlimited proposals", "All 10 templates", "AI-written scope & terms", "PDF export", "E-signatures", "Email delivery to clients", "Priority support"].map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm">
-                    <CheckCircle className="h-4 w-4 text-foreground shrink-0 mt-0.5" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <Link to="/auth" className="block mt-6">
-                <Button className="w-full">Start free trial</Button>
-              </Link>
-            </div>
-
-            {/* Pro Annual */}
-            <div className="rounded-lg border bg-card p-5 md:p-6 relative">
-              <span className="absolute -top-3 left-4 bg-primary text-primary-foreground text-xs font-medium px-2.5 py-0.5 rounded-full">
-                2 months free
-              </span>
-              <h3 className="text-lg font-semibold">Pro Annual</h3>
-              <p className="mt-1 text-3xl font-bold">$290<span className="text-sm font-normal text-muted-foreground">/yr</span></p>
-              <p className="text-xs text-muted-foreground">~$24/mo · Unlimited proposals</p>
-              <ul className="mt-5 space-y-2">
-                {["Everything in Pro Monthly", "2 months free", "Locked-in pricing", "Priority support"].map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm">
-                    <CheckCircle className="h-4 w-4 text-foreground shrink-0 mt-0.5" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <Link to="/auth" className="block mt-6">
-                <Button className="w-full">Start free trial</Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
+      <PricingSection />
 
       {/* CTA */}
       <section className="py-12 md:py-16 bg-secondary/50">
