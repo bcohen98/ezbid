@@ -7,6 +7,7 @@ import heroBg from '@/assets/hero-bg.jpg';
 import { FileText, Sparkles, Send, CheckCircle, ArrowRight, Menu, X, Mic, PenTool, Shield } from 'lucide-react';
 import { useState } from 'react';
 import HowItWorks from '@/components/HowItWorks';
+import PricingSection from '@/components/PricingSection';
 
 const testimonials = [
   { id: 1, name: "Marcus D.", trade: "Roofing", market: "Houston, TX", quote: "I used to spend two hours putting together a proposal in Word. Now I do it in ten minutes and it looks better than anything my competitors are sending. Won three jobs in my first week using it." },

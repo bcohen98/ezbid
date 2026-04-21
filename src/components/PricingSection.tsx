@@ -69,7 +69,7 @@ export default function PricingSection() {
             </Button>
           </div>
           {validCode && (
-            <p className="text-xs text-center text-green-600 mt-2 flex items-center justify-center gap-1">
+            <p className="text-xs text-center text-foreground mt-2 flex items-center justify-center gap-1">
               <Check className="h-3 w-3" /> Code <strong>{validCode}</strong> applied — saves $7/mo or $70/yr
             </p>
           )}
