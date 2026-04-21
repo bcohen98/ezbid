@@ -110,10 +110,10 @@ function buildHtml(proposal: any, lineItems: any[], profile: any, exhibits: any[
     <tr style="background:${idx % 2 === 0 ? '#ffffff' : '#f9fafb'};">
       <td style="padding:12px 12px;text-align:center;color:#6b7280;border-bottom:1px solid #f0f0f0;">${idx + 1}</td>
       <td style="padding:12px 12px;color:#1f2937;border-bottom:1px solid #f0f0f0;">${esc(item.description)}</td>
-      <td style="padding:12px 12px;text-align:center;color:#374151;border-bottom:1px solid #f0f0f0;">${item.quantity}</td>
-      <td style="padding:12px 12px;text-align:right;color:#6b7280;border-bottom:1px solid #f0f0f0;">${esc(item.unit)}</td>
-      <td style="padding:12px 12px;text-align:right;color:#374151;border-bottom:1px solid #f0f0f0;">$${fmt(item.unit_price)}</td>
-      <td style="padding:12px 12px;text-align:right;font-weight:600;color:#111827;border-bottom:1px solid #f0f0f0;">$${fmt(item.subtotal)}</td>
+      ${showQuantities ? `<td style="padding:12px 12px;text-align:center;color:#374151;border-bottom:1px solid #f0f0f0;">${item.quantity}</td>` : ''}
+      ${showQuantities ? `<td style="padding:12px 12px;text-align:right;color:#6b7280;border-bottom:1px solid #f0f0f0;">${esc(item.unit)}</td>` : ''}
+      ${showPricing ? `<td style="padding:12px 12px;text-align:right;color:#374151;border-bottom:1px solid #f0f0f0;">$${fmt(item.unit_price)}</td>` : ''}
+      ${showPricing ? `<td style="padding:12px 12px;text-align:right;font-weight:600;color:#111827;border-bottom:1px solid #f0f0f0;">$${fmt(item.subtotal)}</td>` : ''}
     </tr>`).join('');
 
   const lineItemsHtml = lineItems.length > 0 ? `
@@ -123,10 +123,10 @@ function buildHtml(proposal: any, lineItems: any[], profile: any, exhibits: any[
           <tr style="background:${c};">
             <th style="padding:12px 12px;text-align:center;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:40px;">#</th>
             <th style="padding:12px 12px;text-align:left;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Description</th>
-            <th style="padding:12px 12px;text-align:center;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:60px;">Qty</th>
-            <th style="padding:12px 12px;text-align:right;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:70px;">Unit</th>
-            <th style="padding:12px 12px;text-align:right;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:90px;">Price</th>
-            <th style="padding:12px 12px;text-align:right;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:100px;">Total</th>
+            ${showQuantities ? `<th style="padding:12px 12px;text-align:center;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:60px;">Qty</th>` : ''}
+            ${showQuantities ? `<th style="padding:12px 12px;text-align:right;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:70px;">Unit</th>` : ''}
+            ${showPricing ? `<th style="padding:12px 12px;text-align:right;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:90px;">Price</th>` : ''}
+            ${showPricing ? `<th style="padding:12px 12px;text-align:right;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:100px;">Total</th>` : ''}
           </tr>
         </thead>
         <tbody>${lineItemRows}</tbody>
@@ -135,8 +135,8 @@ function buildHtml(proposal: any, lineItems: any[], profile: any, exhibits: any[
       <div style="margin-top:12px;">
         <table style="width:100%;border-collapse:collapse;">
           <tr><td style="width:60%;"></td><td style="border-top:2px solid #e5e7eb;"></td><td style="border-top:2px solid #e5e7eb;"></td></tr>
-          <tr><td style="width:60%;"></td><td style="text-align:right;padding:8px 12px;font-weight:600;font-size:13px;color:#374151;">Subtotal</td><td style="text-align:right;padding:8px 12px;font-weight:600;font-size:13px;color:#111827;">$${fmt(proposal.subtotal)}</td></tr>
-          ${Number(proposal.tax_rate) > 0 ? `<tr><td></td><td style="text-align:right;padding:6px 12px;font-size:13px;color:#6b7280;">Tax (${proposal.tax_rate}%)</td><td style="text-align:right;padding:6px 12px;font-size:13px;color:#374151;">$${fmt(proposal.tax_amount)}</td></tr>` : ''}
+          ${showPricing ? `<tr><td style="width:60%;"></td><td style="text-align:right;padding:8px 12px;font-weight:600;font-size:13px;color:#374151;">Subtotal</td><td style="text-align:right;padding:8px 12px;font-weight:600;font-size:13px;color:#111827;">$${fmt(proposal.subtotal)}</td></tr>` : ''}
+          ${showPricing && Number(proposal.tax_rate) > 0 ? `<tr><td></td><td style="text-align:right;padding:6px 12px;font-size:13px;color:#6b7280;">Tax (${proposal.tax_rate}%)</td><td style="text-align:right;padding:6px 12px;font-size:13px;color:#374151;">$${fmt(proposal.tax_amount)}</td></tr>` : ''}
           <tr><td colspan="3" style="padding:6px 0 0;">
             <table style="width:100%;border-collapse:collapse;">
               <tr style="background:${c};color:#fff;">
@@ -145,7 +145,7 @@ function buildHtml(proposal: any, lineItems: any[], profile: any, exhibits: any[
               </tr>
             </table>
           </td></tr>
-          ${Number(proposal.deposit_amount) > 0 ? `
+          ${showPricing && Number(proposal.deposit_amount) > 0 ? `
             <tr><td></td><td style="text-align:right;padding:8px 12px 2px;font-size:12px;color:#6b7280;">Deposit Due Upon Signing</td><td style="text-align:right;padding:8px 12px 2px;font-size:12px;font-weight:600;color:#374151;">$${fmt(proposal.deposit_amount)}</td></tr>
             <tr><td></td><td style="text-align:right;padding:2px 12px;font-size:12px;color:#6b7280;">Balance Due Upon Completion</td><td style="text-align:right;padding:2px 12px;font-size:12px;font-weight:600;color:#374151;">$${fmt(proposal.balance_due)}</td></tr>
           ` : ''}
@@ -381,29 +381,38 @@ ${headerHtml}
 
 <!-- Content -->
 <div style="padding:0 ${padding};">
-  ${proposal.title ? `<h2 style="font-size:17px;font-weight:700;margin-bottom:20px;color:#1a1a1a;">${esc(proposal.title)}</h2>` : ''}
-  ${section('Job Description', proposal.enhanced_job_description || proposal.job_description)}
-  ${section('Scope of Work', proposal.enhanced_scope_of_work || proposal.scope_of_work)}
-  ${section('Materials Included', proposal.materials_included)}
-  ${section('Materials Excluded', proposal.materials_excluded)}
-  ${proposal.estimated_start_date || proposal.estimated_duration ? `
-    <div style="margin-bottom:20px;">
-      <h3 style="font-size:13px;font-weight:700;margin-bottom:6px;color:#1a1a1a;">Timeline</h3>
-      <div style="font-size:13px;color:#333;">
-        ${proposal.estimated_start_date ? `<div>Start date: ${esc(proposal.estimated_start_date)}</div>` : ''}
-        ${proposal.estimated_duration ? `<div>Duration: ${esc(proposal.estimated_duration)}</div>` : ''}
-      </div>
-    </div>` : ''}
-  ${lineItemsHtml}
-  ${section('Payment Terms', proposal.payment_terms)}
-  ${proposal.accepted_payment_methods?.length ? `<p style="font-size:11px;color:#888;margin-top:-16px;margin-bottom:20px;">Accepted: ${esc(proposal.accepted_payment_methods.join(', '))}</p>` : ''}
-  ${section('Warranty', proposal.warranty_terms)}
-  ${section('Disclosures', proposal.disclosures)}
-  ${section('Special Conditions', proposal.special_conditions)}
+  ${materialsOnly ? `
+    <h2 style="font-size:17px;font-weight:700;margin:0 0 6px;color:#1a1a1a;">${esc(proposal.title || 'Proposal')} — Materials &amp; Pricing Detail</h2>
+    <p style="font-size:11px;color:#888;margin:0 0 20px;">Internal contractor reference · ${esc(companyName)} · ${esc(proposal.proposal_date || '')}</p>
+    <div style="margin-bottom:20px;padding:10px 12px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:4px;font-size:11px;color:#78350f;">
+      <strong>Internal use only.</strong> This document shows the full unredacted line item table regardless of client view settings. Do not send to clients.
+    </div>
+    ${lineItemsHtml}
+    ${footerHtml}
+  ` : `
+    ${proposal.title ? `<h2 style="font-size:17px;font-weight:700;margin-bottom:20px;color:#1a1a1a;">${esc(proposal.title)}</h2>` : ''}
+    ${section('Scope of Work', proposal.enhanced_scope_of_work || proposal.scope_of_work)}
+    ${showMaterials ? section('Materials Included', proposal.materials_included) : ''}
+    ${showMaterials ? section('Materials Excluded', proposal.materials_excluded) : ''}
+    ${proposal.estimated_start_date || proposal.estimated_duration ? `
+      <div style="margin-bottom:20px;">
+        <h3 style="font-size:13px;font-weight:700;margin-bottom:6px;color:#1a1a1a;">Timeline</h3>
+        <div style="font-size:13px;color:#333;">
+          ${proposal.estimated_start_date ? `<div>Start date: ${esc(proposal.estimated_start_date)}</div>` : ''}
+          ${proposal.estimated_duration ? `<div>Duration: ${esc(proposal.estimated_duration)}</div>` : ''}
+        </div>
+      </div>` : ''}
+    ${lineItemsHtml}
+    ${section('Payment Terms', proposal.payment_terms)}
+    ${proposal.accepted_payment_methods?.length ? `<p style="font-size:11px;color:#888;margin-top:-16px;margin-bottom:20px;">Accepted: ${esc(proposal.accepted_payment_methods.join(', '))}</p>` : ''}
+    ${section('Warranty', proposal.warranty_terms)}
+    ${section('Disclosures', proposal.disclosures)}
+    ${section('Special Conditions', proposal.special_conditions)}
 
-  ${sigHtml}
-  ${footerHtml}
-  ${exhibitsHtml}
+    ${sigHtml}
+    ${footerHtml}
+    ${exhibitsHtml}
+  `}
 </div>
 </body></html>`;
 }
@@ -426,7 +435,7 @@ serve(async (req) => {
     if (authError || !user) throw new Error("Unauthorized");
 
     const body = await req.json();
-    const { proposal_id, template, accent_color, font_style, header_style } = body;
+    const { proposal_id, template, accent_color, font_style, header_style, show_materials, show_quantities, show_pricing, materials_only } = body;
     if (!proposal_id) throw new Error("Missing proposal_id");
 
     const supabaseAdmin = createClient(supabaseUrl, serviceKey);
@@ -446,11 +455,17 @@ serve(async (req) => {
       accent_color: accent_color || proposal.custom_accent_color || undefined,
       font_style: font_style || proposal.font_style || 'modern',
       header_style: header_style || proposal.header_style || 'dark',
+      // Default to DB values; explicit booleans from caller take precedence.
+      show_materials: typeof show_materials === 'boolean' ? show_materials : (proposal.show_materials !== false),
+      show_quantities: typeof show_quantities === 'boolean' ? show_quantities : (proposal.show_quantities !== false),
+      show_pricing: typeof show_pricing === 'boolean' ? show_pricing : (proposal.show_pricing !== false),
+      materials_only: !!materials_only,
     };
 
     const html = buildHtml(proposal, lineItemsRes.data || [], profileRes.data, exhibitsRes.data || [], opts);
 
-    const fileName = `proposal-${proposal.proposal_number}.html`;
+    const fileNameSuffix = materials_only ? '-materials' : '';
+    const fileName = `proposal-${proposal.proposal_number}${fileNameSuffix}.html`;
     const filePath = `${user.id}/${fileName}`;
 
     const htmlBlob = new Blob([html], { type: 'text/html' });
