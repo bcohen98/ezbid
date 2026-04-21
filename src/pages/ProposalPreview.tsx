@@ -55,10 +55,10 @@ export default function ProposalPreview() {
   const [showSendModal, setShowSendModal] = useState(false);
   const [personalMessage, setPersonalMessage] = useState('');
   const [isGeneratingMessage, setIsGeneratingMessage] = useState(false);
-  // Granular client-view toggles — default true; optimistic local state with background sync.
-  const [showMaterials, setShowMaterials] = useState(true);
-  const [showQuantities, setShowQuantities] = useState(true);
-  const [showPricing, setShowPricing] = useState(true);
+  // Single client-view toggle: "Itemize Materials".
+  // ON = show every line item, every quantity, every price (full itemization).
+  // OFF = lump all materials into one "Materials" subtotal row and all labor into one "Labor" subtotal row, hide individual qty/unit/unit-price columns; grand total stays visible.
+  const [itemize, setItemize] = useState(true);
   const [isDownloadingMaterials, setIsDownloadingMaterials] = useState(false);
 
   // Template switching
