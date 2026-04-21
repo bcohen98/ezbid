@@ -912,7 +912,7 @@ export default function ProposalPreview() {
                           onClick={async () => {
                             setIsRequestingPayment(true);
                             try {
-                              const { error } = await supabase.functions.invoke('create-payment-link', {
+                              const { data, error } = await supabase.functions.invoke('create-payment-link', {
                                 body: {
                                   proposal_id: proposal.id,
                                   payment_type: ps === 'deposit_requested' ? 'deposit' : 'full_payment',
@@ -921,7 +921,14 @@ export default function ProposalPreview() {
                               });
                               if (error) throw error;
                               await refetch();
-                              toast({ title: 'Payment link resent', description: `Email re-sent to ${proposal.client_email}.` });
+                              const status = (data as any)?.email_status;
+                              if (status === 'sent') {
+                                toast({ title: 'Payment link resent', description: `Email re-sent to ${proposal.client_email}.` });
+                              } else if (status === 'failed') {
+                                toast({ title: 'Link refreshed but email failed', description: (data as any)?.email_error || 'Use Copy payment link to send manually.', variant: 'destructive' });
+                              } else {
+                                toast({ title: 'Link refreshed', description: 'Email delivery is not configured — use Copy payment link.' });
+                              }
                             } catch (err: any) {
                               toast({ title: 'Failed to resend', description: err.message, variant: 'destructive' });
                             } finally {
