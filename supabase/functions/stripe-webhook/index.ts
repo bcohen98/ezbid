@@ -90,6 +90,30 @@ serve(async (req) => {
               .eq("user_id", userId);
             console.log(`[STRIPE-WEBHOOK] Activated subscription for user ${userId}`);
 
+            // ── Ambassador prospect conversion ──
+            const ambassadorProspectId = session.metadata?.ambassador_prospect_id;
+            if (ambassadorProspectId) {
+              try {
+                const { data: prospect } = await supabase
+                  .from("ambassador_prospects")
+                  .update({ used: true, used_at: new Date().toISOString(), converted_user_id: userId })
+                  .eq("id", ambassadorProspectId)
+                  .eq("used", false)
+                  .select()
+                  .single();
+                if (prospect) {
+                  if (prospect.prospect_phone) {
+                    await supabase.from("company_profiles").update({ prospect_phone: prospect.prospect_phone }).eq("user_id", userId);
+                  }
+                  const { data: ambProf } = await supabase.from("ambassador_profiles").select("total_conversions").eq("user_id", prospect.ambassador_id).single();
+                  await supabase.from("ambassador_profiles").update({ total_conversions: (ambProf?.total_conversions || 0) + 1 }).eq("user_id", prospect.ambassador_id);
+                  console.log(`[STRIPE-WEBHOOK] Marked ambassador prospect ${ambassadorProspectId} converted`);
+                }
+              } catch (e) {
+                console.error("[STRIPE-WEBHOOK] Ambassador conversion error:", e);
+              }
+            }
+
             if (lookupEmail) {
               await processReferralConversion(supabase, stripe, lookupEmail, subscriptionId);
             }
