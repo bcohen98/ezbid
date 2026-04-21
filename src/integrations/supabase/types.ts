@@ -14,6 +14,105 @@ export type Database = {
   }
   public: {
     Tables: {
+      ambassador_grants: {
+        Row: {
+          ambassador_id: string
+          amount: number
+          created_at: string
+          id: string
+          recipient_user_id: string
+        }
+        Insert: {
+          ambassador_id: string
+          amount: number
+          created_at?: string
+          id?: string
+          recipient_user_id: string
+        }
+        Update: {
+          ambassador_id?: string
+          amount?: number
+          created_at?: string
+          id?: string
+          recipient_user_id?: string
+        }
+        Relationships: []
+      }
+      ambassador_profiles: {
+        Row: {
+          created_at: string
+          initials: string
+          total_approved_payouts: number
+          total_codes_generated: number
+          total_conversions: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          initials: string
+          total_approved_payouts?: number
+          total_codes_generated?: number
+          total_conversions?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          initials?: string
+          total_approved_payouts?: number
+          total_codes_generated?: number
+          total_conversions?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ambassador_prospects: {
+        Row: {
+          ambassador_id: string
+          code: string
+          converted_user_id: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          notes: string | null
+          payout_approved: boolean
+          prospect_name: string
+          prospect_phone: string | null
+          used: boolean
+          used_at: string | null
+        }
+        Insert: {
+          ambassador_id: string
+          code: string
+          converted_user_id?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          notes?: string | null
+          payout_approved?: boolean
+          prospect_name: string
+          prospect_phone?: string | null
+          used?: boolean
+          used_at?: string | null
+        }
+        Update: {
+          ambassador_id?: string
+          code?: string
+          converted_user_id?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          notes?: string | null
+          payout_approved?: boolean
+          prospect_name?: string
+          prospect_phone?: string | null
+          used?: boolean
+          used_at?: string | null
+        }
+        Relationships: []
+      }
       app_errors: {
         Row: {
           created_at: string
@@ -92,6 +191,7 @@ export type Database = {
           logo_url: string | null
           owner_name: string | null
           phone: string | null
+          prospect_phone: string | null
           state: string | null
           street_address: string | null
           stripe_account_id: string | null
@@ -123,6 +223,7 @@ export type Database = {
           logo_url?: string | null
           owner_name?: string | null
           phone?: string | null
+          prospect_phone?: string | null
           state?: string | null
           street_address?: string | null
           stripe_account_id?: string | null
@@ -154,6 +255,7 @@ export type Database = {
           logo_url?: string | null
           owner_name?: string | null
           phone?: string | null
+          prospect_phone?: string | null
           state?: string | null
           street_address?: string | null
           stripe_account_id?: string | null
