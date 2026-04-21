@@ -6,7 +6,7 @@ import ProposalDocument from '@/components/proposal/ProposalDocument';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Send, Mail, Sparkles, Loader2, Download, FileText, Undo2, DollarSign, EyeOff } from 'lucide-react';
+import { ArrowLeft, Send, Mail, Sparkles, Loader2, Download, FileText, Undo2, DollarSign, EyeOff, ClipboardList } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -58,6 +58,7 @@ export default function ProposalPreview() {
   const [showMaterials, setShowMaterials] = useState(true);
   const [showQuantities, setShowQuantities] = useState(true);
   const [showPricing, setShowPricing] = useState(true);
+  const [isDownloadingMaterials, setIsDownloadingMaterials] = useState(false);
 
   // Template switching
   const getDefaultTemplate = (): TemplateId => {
@@ -100,14 +101,27 @@ export default function ProposalPreview() {
   }, [proposal?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-generate suggested personal message when send modal opens (only if empty).
+  // Prefer the AI-generated proposal intro (enhanced_scope_of_work) as the cover
+  // letter body. Fall back to suggest-personal-message if no intro exists yet.
   useEffect(() => {
     if (!showSendModal || !proposal) return;
     if (personalMessage.trim().length > 0) return;
+
+    // Try to extract the opening paragraph of the AI-generated proposal text.
+    const intro = (proposal.enhanced_scope_of_work || proposal.scope_of_work || '').trim();
+    if (intro) {
+      // Take the first paragraph (or first ~600 chars) — that's the cover-letter intro.
+      const firstPara = intro.split(/\n{2,}/)[0]?.trim() || intro.slice(0, 600);
+      const greeting = proposal.client_name ? `Hi ${proposal.client_name.split(' ')[0]},\n\n` : '';
+      setPersonalMessage(`${greeting}${firstPara}`);
+      return;
+    }
+
     let cancelled = false;
     (async () => {
       setIsGeneratingMessage(true);
       try {
-        const scopeSummary = (proposal.scope_of_work || proposal.job_description || '').slice(0, 500);
+        const scopeSummary = (proposal.scope_of_work || '').slice(0, 500);
         const { data, error } = await supabase.functions.invoke('suggest-personal-message', {
           body: {
             contractor_name: (profile as any)?.owner_name || (profile as any)?.company_name || '',
@@ -420,6 +434,9 @@ export default function ProposalPreview() {
           accent_color: accentColor || undefined,
           font_style: fontStyle,
           header_style: headerStyle,
+          show_materials: showMaterials,
+          show_quantities: showQuantities,
+          show_pricing: showPricing,
         },
       });
       if (error) throw error;
@@ -466,6 +483,60 @@ export default function ProposalPreview() {
     } finally {
       trackEvent('proposal_downloaded', { proposal_id: proposal.id });
       setIsGeneratingPdf(false);
+    }
+  };
+
+  // Contractor-only: download the full unredacted materials & pricing list,
+  // regardless of client-view toggles. Never shown to clients.
+  const handleDownloadMaterialsList = async () => {
+    setIsDownloadingMaterials(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-pdf', {
+        body: {
+          proposal_id: proposal.id,
+          template: activeTemplate,
+          accent_color: accentColor || undefined,
+          font_style: fontStyle,
+          header_style: headerStyle,
+          materials_only: true,
+        },
+      });
+      if (error) throw error;
+      if (data?.html) {
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'absolute';
+        iframe.style.left = '-9999px';
+        iframe.style.top = '0';
+        iframe.style.width = '816px';
+        iframe.style.height = '1056px';
+        iframe.style.border = 'none';
+        document.body.appendChild(iframe);
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (!iframeDoc) throw new Error('Could not access iframe document');
+        iframeDoc.open();
+        iframeDoc.write(data.html);
+        iframeDoc.close();
+        await new Promise(resolve => setTimeout(resolve, 600));
+        const html2pdf = (await import('html2pdf.js')).default;
+        const fileName = data.fileName || `Proposal-PRO-${String(proposal.proposal_number).padStart(4, '0')}-Materials.pdf`;
+        await html2pdf()
+          .set({
+            margin: [0.4, 0.4, 0.6, 0.4],
+            filename: fileName,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, letterRendering: true, windowWidth: 816 },
+            jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+          })
+          .from(iframeDoc.body)
+          .save();
+        document.body.removeChild(iframe);
+        toast({ title: 'Materials list downloaded', description: fileName });
+      }
+    } catch (err: any) {
+      toast({ title: 'Download failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsDownloadingMaterials(false);
     }
   };
 
@@ -527,9 +598,30 @@ export default function ProposalPreview() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
-          {/* Preview */}
+          {/* Preview — rendered as the CLIENT will see it (toggles applied live) */}
           <div className="border rounded-lg overflow-x-auto bg-background shadow-sm">
-            <ProposalDocument proposal={{ ...proposal, show_materials: showMaterials, show_quantities: showQuantities, show_pricing: showPricing } as any} lineItems={lineItems} profile={profile} exhibits={exhibits} template={activeTemplate} customAccentColor={accentColor || undefined} fontStyle={fontStyle} customHeaderStyle={headerStyle} onFieldEdit={isSigned ? undefined : handleFieldEdit} onLineItemEdit={isSigned ? undefined : handleLineItemEdit} onDeleteLineItem={isSigned ? undefined : handleDeleteLineItem} onAddLineItem={isSigned ? undefined : handleAddLineItem} onTotalsEdit={isSigned ? undefined : handleTotalsEdit} />
+            <div className="px-3 py-1.5 text-[11px] uppercase tracking-wider text-muted-foreground bg-muted/40 border-b">
+              Client view preview — toggles below control what your client sees
+            </div>
+            <ProposalDocument
+              proposal={{ ...proposal, show_materials: showMaterials, show_quantities: showQuantities, show_pricing: showPricing } as any}
+              lineItems={lineItems}
+              profile={profile}
+              exhibits={exhibits}
+              template={activeTemplate}
+              customAccentColor={accentColor || undefined}
+              fontStyle={fontStyle}
+              customHeaderStyle={headerStyle}
+              clientView
+              showMaterialsOverride={showMaterials}
+              showQuantitiesOverride={showQuantities}
+              showPricingOverride={showPricing}
+              onFieldEdit={isSigned ? undefined : handleFieldEdit}
+              onLineItemEdit={isSigned ? undefined : handleLineItemEdit}
+              onDeleteLineItem={isSigned ? undefined : handleDeleteLineItem}
+              onAddLineItem={isSigned ? undefined : handleAddLineItem}
+              onTotalsEdit={isSigned ? undefined : handleTotalsEdit}
+            />
           </div>
 
           {/* Side panel */}
@@ -880,6 +972,24 @@ export default function ProposalPreview() {
               {!proposal.client_email && (
                 <p className="text-xs text-muted-foreground">Add a client email in the proposal form to enable sending.</p>
               )}
+
+              {/* Contractor-only: full unredacted materials & pricing list. Never visible to clients. */}
+              <div className="pt-3 mt-1 border-t border-border">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="w-full gap-2 justify-start text-muted-foreground hover:text-foreground"
+                  onClick={handleDownloadMaterialsList}
+                  disabled={isDownloadingMaterials || lineItems.length === 0}
+                >
+                  {isDownloadingMaterials ? <Loader2 className="h-4 w-4 animate-spin" /> : <ClipboardList className="h-4 w-4" />}
+                  {isDownloadingMaterials ? 'Generating…' : 'Materials List (internal)'}
+                </Button>
+                <p className="text-[11px] text-muted-foreground mt-1 px-1">
+                  Full itemized list with prices — for your supply runs. Not shared with the client.
+                </p>
+              </div>
             </div>
           </div>
         </div>
