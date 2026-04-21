@@ -972,6 +972,24 @@ export default function ProposalPreview() {
               {!proposal.client_email && (
                 <p className="text-xs text-muted-foreground">Add a client email in the proposal form to enable sending.</p>
               )}
+
+              {/* Contractor-only: full unredacted materials & pricing list. Never visible to clients. */}
+              <div className="pt-3 mt-1 border-t border-border">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="w-full gap-2 justify-start text-muted-foreground hover:text-foreground"
+                  onClick={handleDownloadMaterialsList}
+                  disabled={isDownloadingMaterials || lineItems.length === 0}
+                >
+                  {isDownloadingMaterials ? <Loader2 className="h-4 w-4 animate-spin" /> : <ClipboardList className="h-4 w-4" />}
+                  {isDownloadingMaterials ? 'Generating…' : 'Materials List (internal)'}
+                </Button>
+                <p className="text-[11px] text-muted-foreground mt-1 px-1">
+                  Full itemized list with prices — for your supply runs. Not shared with the client.
+                </p>
+              </div>
             </div>
           </div>
         </div>
