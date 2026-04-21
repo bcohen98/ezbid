@@ -435,9 +435,9 @@ export default function ProposalPreview() {
           accent_color: accentColor || undefined,
           font_style: fontStyle,
           header_style: headerStyle,
-          show_materials: showMaterials,
-          show_quantities: showQuantities,
-          show_pricing: showPricing,
+          show_materials: itemize,
+          show_quantities: itemize,
+          show_pricing: itemize,
         },
       });
       if (error) throw error;
