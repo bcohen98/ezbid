@@ -150,21 +150,15 @@ export default function ProposalPreview() {
     return () => { cancelled = true; };
   }, [showSendModal, proposal?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Optimistic toggle handlers — update local state immediately, sync in background.
-  const makeToggleHandler = (
-    field: 'show_materials' | 'show_quantities' | 'show_pricing',
-    setter: (v: boolean) => void,
-  ) => (checked: boolean) => {
-    setter(checked);
+  // Single itemize toggle — persisted via the existing `show_materials` column.
+  const handleItemizeToggle = (checked: boolean) => {
+    setItemize(checked);
     if (proposal) {
-      updateProposal({ id: proposal.id, [field]: checked } as any).catch((err) => {
-        console.error(`[${field} sync failed]`, err);
+      updateProposal({ id: proposal.id, show_materials: checked } as any).catch((err) => {
+        console.error('[itemize sync failed]', err);
       });
     }
   };
-  const handleShowMaterialsToggle = makeToggleHandler('show_materials', setShowMaterials);
-  const handleShowQuantitiesToggle = makeToggleHandler('show_quantities', setShowQuantities);
-  const handleShowPricingToggle = makeToggleHandler('show_pricing', setShowPricing);
 
   const handleAccentChange = async (color: string) => {
     setAccentColor(color);
