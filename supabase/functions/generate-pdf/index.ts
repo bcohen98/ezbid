@@ -461,7 +461,7 @@ serve(async (req) => {
     if (authError || !user) throw new Error("Unauthorized");
 
     const body = await req.json();
-    const { proposal_id, template, accent_color, font_style, header_style, show_materials, show_quantities, show_pricing, materials_only } = body;
+    const { proposal_id, template, accent_color, font_style, header_style, show_materials, show_quantities, show_pricing, materials_only, lump_items } = body;
     if (!proposal_id) throw new Error("Missing proposal_id");
 
     const supabaseAdmin = createClient(supabaseUrl, serviceKey);
@@ -486,6 +486,7 @@ serve(async (req) => {
       show_quantities: typeof show_quantities === 'boolean' ? show_quantities : (proposal.show_quantities !== false),
       show_pricing: typeof show_pricing === 'boolean' ? show_pricing : (proposal.show_pricing !== false),
       materials_only: !!materials_only,
+      lump_items: !!lump_items,
     };
 
     const html = buildHtml(proposal, lineItemsRes.data || [], profileRes.data, exhibitsRes.data || [], opts);
