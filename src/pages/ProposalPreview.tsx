@@ -435,9 +435,10 @@ export default function ProposalPreview() {
           accent_color: accentColor || undefined,
           font_style: fontStyle,
           header_style: headerStyle,
-          show_materials: itemize,
+          show_materials: true,
           show_quantities: itemize,
-          show_pricing: itemize,
+          show_pricing: true,
+          lump_items: !itemize,
         },
       });
       if (error) throw error;
@@ -653,9 +654,9 @@ export default function ProposalPreview() {
               fontStyle={fontStyle}
               customHeaderStyle={headerStyle}
               clientView
-              showMaterialsOverride={itemize}
+              showMaterialsOverride={true}
               showQuantitiesOverride={itemize}
-              showPricingOverride={itemize}
+              showPricingOverride={true}
               lumpItems={!itemize}
               onFieldEdit={isSigned ? undefined : handleFieldEdit}
               onLineItemEdit={isSigned ? undefined : handleLineItemEdit}

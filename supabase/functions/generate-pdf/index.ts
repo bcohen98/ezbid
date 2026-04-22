@@ -83,7 +83,16 @@ const FONT_FAMILIES: Record<string, string> = {
   bold: "'Impact', 'Arial Black', sans-serif",
 };
 
-function buildHtml(proposal: any, lineItems: any[], profile: any, exhibits: any[], opts: { template?: string; accent_color?: string; font_style?: string; header_style?: string; show_materials?: boolean; show_quantities?: boolean; show_pricing?: boolean; materials_only?: boolean }): string {
+function classifyItem(item: any): 'material' | 'labor' {
+  const t = String(item?.type || '').toLowerCase().trim();
+  if (t === 'material') return 'material';
+  if (t === 'labor') return 'labor';
+  const MATERIAL_UNITS = new Set(['gal','gallon','gallons','roll','rolls','ea','each','sheet','sheets','piece','pieces','pc','pcs','bag','bags','box','boxes','lb','lbs','ft','lf','linear ft','linear feet','bundle','bundles','square','sq','ton','tons','yard','yards','yd','lot','pallet','pallets']);
+  const u = String(item?.unit || '').toLowerCase().trim();
+  return MATERIAL_UNITS.has(u) ? 'material' : 'labor';
+}
+
+function buildHtml(proposal: any, lineItems: any[], profile: any, exhibits: any[], opts: { template?: string; accent_color?: string; font_style?: string; header_style?: string; show_materials?: boolean; show_quantities?: boolean; show_pricing?: boolean; materials_only?: boolean; lump_items?: boolean }): string {
   const template = opts.template || 'modern';
   const accentColor = opts.accent_color || getColor(proposal.trade_type || profile?.trade_type);
   const c = accentColor;
@@ -96,6 +105,7 @@ function buildHtml(proposal: any, lineItems: any[], profile: any, exhibits: any[
   const showQuantities = opts.show_quantities !== false;
   const showPricing = opts.show_pricing !== false;
   const materialsOnly = !!opts.materials_only;
+  const lumpItems = !!opts.lump_items;
 
   const phoneSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
   const mailSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>`;
@@ -106,7 +116,22 @@ function buildHtml(proposal: any, lineItems: any[], profile: any, exhibits: any[
     return `<div style="margin-bottom:20px;page-break-inside:avoid;"><h3 style="font-size:13px;font-weight:700;margin-bottom:6px;color:#1a1a1a;">${esc(title)}</h3><div style="font-size:13px;line-height:1.7;color:#333;margin:0;">${mdToHtml(content)}</div></div>`;
   };
 
-  const lineItemRows = lineItems.map((item: any, idx: number) => `
+  let lineItemRows = '';
+  if (lumpItems && lineItems.length > 0) {
+    const materialsList = lineItems.filter((i: any) => classifyItem(i) === 'material');
+    const laborList = lineItems.filter((i: any) => classifyItem(i) === 'labor');
+    const materialsSubtotal = materialsList.reduce((s: number, i: any) => s + Number(i.subtotal || 0), 0);
+    const laborSubtotal = laborList.reduce((s: number, i: any) => s + Number(i.subtotal || 0), 0);
+    const lumpedRow = (label: string, amount: number) => `
+      <tr style="background:#ffffff;border-bottom:1px solid #f0f0f0;">
+        <td style="padding:14px 12px;text-align:center;color:#6b7280;">—</td>
+        <td style="padding:14px 12px;color:#111827;font-weight:600;">${esc(label)}</td>
+        ${showPricing ? `<td style="padding:14px 12px;text-align:right;color:#111827;font-weight:600;">$${fmt(amount)}</td>` : ''}
+      </tr>`;
+    if (materialsList.length > 0) lineItemRows += lumpedRow('Materials', materialsSubtotal);
+    if (laborList.length > 0) lineItemRows += lumpedRow('Labor & Services', laborSubtotal);
+  } else {
+    lineItemRows = lineItems.map((item: any, idx: number) => `
     <tr style="background:${idx % 2 === 0 ? '#ffffff' : '#f9fafb'};">
       <td style="padding:12px 12px;text-align:center;color:#6b7280;border-bottom:1px solid #f0f0f0;">${idx + 1}</td>
       <td style="padding:12px 12px;color:#1f2937;border-bottom:1px solid #f0f0f0;">${esc(item.description)}</td>
@@ -115,6 +140,7 @@ function buildHtml(proposal: any, lineItems: any[], profile: any, exhibits: any[
       ${showPricing ? `<td style="padding:12px 12px;text-align:right;color:#374151;border-bottom:1px solid #f0f0f0;">$${fmt(item.unit_price)}</td>` : ''}
       ${showPricing ? `<td style="padding:12px 12px;text-align:right;font-weight:600;color:#111827;border-bottom:1px solid #f0f0f0;">$${fmt(item.subtotal)}</td>` : ''}
     </tr>`).join('');
+  }
 
   const lineItemsHtml = lineItems.length > 0 ? `
     <div style="margin-bottom:28px;page-break-inside:avoid;">
@@ -123,10 +149,10 @@ function buildHtml(proposal: any, lineItems: any[], profile: any, exhibits: any[
           <tr style="background:${c};">
             <th style="padding:12px 12px;text-align:center;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:40px;">#</th>
             <th style="padding:12px 12px;text-align:left;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Description</th>
-            ${showQuantities ? `<th style="padding:12px 12px;text-align:center;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:60px;">Qty</th>` : ''}
-            ${showQuantities ? `<th style="padding:12px 12px;text-align:right;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:70px;">Unit</th>` : ''}
-            ${showPricing ? `<th style="padding:12px 12px;text-align:right;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:90px;">Price</th>` : ''}
-            ${showPricing ? `<th style="padding:12px 12px;text-align:right;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:100px;">Total</th>` : ''}
+            ${showQuantities && !lumpItems ? `<th style="padding:12px 12px;text-align:center;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:60px;">Qty</th>` : ''}
+            ${showQuantities && !lumpItems ? `<th style="padding:12px 12px;text-align:right;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:70px;">Unit</th>` : ''}
+            ${showPricing && !lumpItems ? `<th style="padding:12px 12px;text-align:right;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:90px;">Price</th>` : ''}
+            ${showPricing ? `<th style="padding:12px 12px;text-align:right;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;width:100px;">${lumpItems ? 'Amount' : 'Total'}</th>` : ''}
           </tr>
         </thead>
         <tbody>${lineItemRows}</tbody>
@@ -435,7 +461,7 @@ serve(async (req) => {
     if (authError || !user) throw new Error("Unauthorized");
 
     const body = await req.json();
-    const { proposal_id, template, accent_color, font_style, header_style, show_materials, show_quantities, show_pricing, materials_only } = body;
+    const { proposal_id, template, accent_color, font_style, header_style, show_materials, show_quantities, show_pricing, materials_only, lump_items } = body;
     if (!proposal_id) throw new Error("Missing proposal_id");
 
     const supabaseAdmin = createClient(supabaseUrl, serviceKey);
@@ -460,6 +486,7 @@ serve(async (req) => {
       show_quantities: typeof show_quantities === 'boolean' ? show_quantities : (proposal.show_quantities !== false),
       show_pricing: typeof show_pricing === 'boolean' ? show_pricing : (proposal.show_pricing !== false),
       materials_only: !!materials_only,
+      lump_items: !!lump_items,
     };
 
     const html = buildHtml(proposal, lineItemsRes.data || [], profileRes.data, exhibitsRes.data || [], opts);
