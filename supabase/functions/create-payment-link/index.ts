@@ -113,7 +113,6 @@ serve(async (req) => {
       (descriptionOverride && String(descriptionOverride).trim()) || `${proposal.title || "Proposal"} — ${typeLabel}`;
 
     const amountCents = Math.round(amount * 100);
-    const platformFeeCents = Math.round(amountCents * 0.01);
 
     const redirectUrl = `${APP_URL}/payment-complete?proposal=${proposal_id}`;
     console.log("[create-payment-link] redirect url:", redirectUrl);
