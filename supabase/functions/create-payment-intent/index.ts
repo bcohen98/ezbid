@@ -95,14 +95,14 @@ serve(async (req) => {
       status: "pending",
       client_name: proposal.client_name,
       client_email: proposal.client_email,
-      platform_fee: platformFeeCents / 100,
+      platform_fee: 0,
     });
 
     return new Response(JSON.stringify({
       client_secret: paymentIntent.client_secret,
       payment_intent_id: paymentIntent.id,
       amount,
-      platform_fee: platformFeeCents / 100,
+      platform_fee: 0,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
