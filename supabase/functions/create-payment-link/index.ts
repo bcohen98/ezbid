@@ -130,7 +130,6 @@ serve(async (req) => {
         },
       ],
       payment_intent_data: {
-        application_fee_amount: platformFeeCents,
         transfer_data: { destination: profile.stripe_connect_account_id },
         metadata: { proposal_id, user_id: user.id, payment_type },
       },
