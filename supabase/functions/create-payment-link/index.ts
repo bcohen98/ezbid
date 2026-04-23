@@ -113,7 +113,6 @@ serve(async (req) => {
       (descriptionOverride && String(descriptionOverride).trim()) || `${proposal.title || "Proposal"} — ${typeLabel}`;
 
     const amountCents = Math.round(amount * 100);
-    const platformFeeCents = Math.round(amountCents * 0.01);
 
     const redirectUrl = `${APP_URL}/payment-complete?proposal=${proposal_id}`;
     console.log("[create-payment-link] redirect url:", redirectUrl);
@@ -131,7 +130,6 @@ serve(async (req) => {
         },
       ],
       payment_intent_data: {
-        application_fee_amount: platformFeeCents,
         transfer_data: { destination: profile.stripe_connect_account_id },
         metadata: { proposal_id, user_id: user.id, payment_type },
       },
@@ -163,7 +161,7 @@ serve(async (req) => {
       status: "pending",
       client_name: proposal.client_name,
       client_email: clientEmail,
-      platform_fee: platformFeeCents / 100,
+      platform_fee: 0,
     });
 
     // Send payment-request email to client. We try Resend direct first
