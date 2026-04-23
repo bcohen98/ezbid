@@ -161,7 +161,7 @@ serve(async (req) => {
       status: "pending",
       client_name: proposal.client_name,
       client_email: clientEmail,
-      platform_fee: platformFeeCents / 100,
+      platform_fee: 0,
     });
 
     // Send payment-request email to client. We try Resend direct first
