@@ -266,6 +266,7 @@ export default function NewProposal() {
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
   const [activeQMic, setActiveQMic] = useState<number | null>(null);
   const activeRecognition = useRef<any>(null);
+  const speechSupported = typeof window !== 'undefined' && !!((window as any).webkitSpeechRecognition || (window as any).SpeechRecognition);
 
   // Pricing toggle
   const [aiPricing, setAiPricing] = useState(true);
@@ -449,7 +450,7 @@ export default function NewProposal() {
   const startQMic = (idx: number) => {
     // Stop any existing
     if (activeRecognition.current) {
-      try { activeRecognition.current.stop(); } catch {}
+      try { activeRecognition.current.onend = null; activeRecognition.current.stop(); } catch {}
       activeRecognition.current = null;
     }
     setActiveQMic(null);
@@ -457,20 +458,28 @@ export default function NewProposal() {
     const SR = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
     if (!SR) return;
     const recognition = new SR();
-    recognition.continuous = false;
+    recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = 'en-US';
+
+    // Snapshot the existing typed answer so we append rather than overwrite.
+    const baseText = (answers[idx] || '').trim();
+    let finalChunk = '';
+
     recognition.onresult = (e: any) => {
-      let transcript = '';
-      for (let i = 0; i < e.results.length; i++) {
-        transcript += e.results[i][0].transcript;
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) finalChunk += t + ' ';
+        else interim += t;
       }
-      setAnswers(prev => { const n = [...prev]; n[idx] = transcript; return n; });
+      const combined = [baseText, (finalChunk + interim).trim()].filter(Boolean).join(' ');
+      setAnswers(prev => { const n = [...prev]; n[idx] = combined; return n; });
     };
     recognition.onend = () => { activeRecognition.current = null; setActiveQMic(null); };
     recognition.onerror = () => { activeRecognition.current = null; setActiveQMic(null); };
     activeRecognition.current = recognition;
-    recognition.start();
+    try { recognition.start(); } catch {}
     setActiveQMic(idx);
   };
 
@@ -984,18 +993,21 @@ export default function NewProposal() {
                         placeholder="Type your answer..."
                         className="h-10 flex-1"
                       />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className={`shrink-0 ${activeQMic === idx ? 'text-red-500' : ''}`}
-                        onClick={() => {
-                          if (activeQMic === idx) stopQMic();
-                          else startQMic(idx);
-                        }}
-                      >
-                        <Mic className={`h-4 w-4 ${activeQMic === idx ? 'animate-pulse' : ''}`} />
-                      </Button>
+                      {speechSupported && (
+                        <Button
+                          type="button"
+                          variant={activeQMic === idx ? 'default' : 'ghost'}
+                          size="icon"
+                          aria-label={activeQMic === idx ? 'Stop recording' : 'Start voice input'}
+                          className={`shrink-0 ${activeQMic === idx ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse' : ''}`}
+                          onClick={() => {
+                            if (activeQMic === idx) stopQMic();
+                            else startQMic(idx);
+                          }}
+                        >
+                          <Mic className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ))}

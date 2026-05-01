@@ -272,11 +272,6 @@ export default function ProposalSign() {
 
         {/* Full styled proposal */}
         <div className="max-w-3xl mx-auto px-6 py-8">
-          <ViewToggleBar
-            showMaterials={showMaterials} setShowMaterials={setShowMaterials}
-            showQuantities={showQuantities} setShowQuantities={setShowQuantities}
-            showPricing={showPricing} setShowPricing={setShowPricing}
-          />
           <div id="proposal-document-content" className="bg-white rounded-lg border shadow-sm overflow-hidden mt-3">
             <ProposalDocument
               proposal={proposal}
@@ -320,11 +315,6 @@ export default function ProposalSign() {
       </div>
 
       <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
-        <ViewToggleBar
-          showMaterials={showMaterials} setShowMaterials={setShowMaterials}
-          showQuantities={showQuantities} setShowQuantities={setShowQuantities}
-          showPricing={showPricing} setShowPricing={setShowPricing}
-        />
         {/* Styled proposal document */}
         <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
           <ProposalDocument

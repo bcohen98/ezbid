@@ -75,6 +75,22 @@ export default function ProposalDetail() {
         title: `${proposal.title} (Copy)`,
         status: 'draft',
       });
+
+      // Copy all line items (descriptions, quantities, prices, units, totals, sort order)
+      if (lineItems && lineItems.length > 0) {
+        const itemsToInsert = lineItems.map((li) => ({
+          proposal_id: newProposal.id,
+          description: li.description,
+          quantity: li.quantity,
+          unit: li.unit,
+          unit_price: li.unit_price,
+          subtotal: li.subtotal,
+          sort_order: li.sort_order,
+        }));
+        const { error: liError } = await supabase.from('proposal_line_items').insert(itemsToInsert);
+        if (liError) throw liError;
+      }
+
       toast({ title: 'Proposal duplicated' });
       navigate(`/proposals/${newProposal.id}/preview`);
     } catch (err: any) {
