@@ -270,9 +270,6 @@ export default function ProposalSign() {
               exhibits={exhibits}
               template={templateId}
               clientView
-              showMaterialsOverride={showMaterials}
-              showQuantitiesOverride={showQuantities}
-              showPricingOverride={showPricing}
             />
           </div>
 
