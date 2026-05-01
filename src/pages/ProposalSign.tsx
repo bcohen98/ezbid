@@ -28,11 +28,6 @@ export default function ProposalSign() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDrawing = useRef(false);
   const [hasSignature, setHasSignature] = useState(false);
-  // Interactive client-view toggles — initialized from contractor's saved DB flags so contractor's
-  // "hide materials/quantities/pricing" choices drive the default client view. Clients can still toggle to preview.
-  const [showMaterials, setShowMaterials] = useState(true);
-  const [showQuantities, setShowQuantities] = useState(true);
-  const [showPricing, setShowPricing] = useState(true);
 
   useEffect(() => {
     if (!id || !token) {
