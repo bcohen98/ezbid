@@ -3,11 +3,10 @@ import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCurrency } from '@/lib/formatCurrency';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Download, Loader2, Eye, EyeOff } from 'lucide-react';
+import { CheckCircle, Download, Loader2 } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 import ProposalDocument from '@/components/proposal/ProposalDocument';
 import type { TemplateId } from '@/components/proposal/TemplateSwitcher';
-import { cn } from '@/lib/utils';
 
 interface ProposalData {
   proposal: any;
@@ -29,11 +28,6 @@ export default function ProposalSign() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDrawing = useRef(false);
   const [hasSignature, setHasSignature] = useState(false);
-  // Interactive client-view toggles — initialized from contractor's saved DB flags so contractor's
-  // "hide materials/quantities/pricing" choices drive the default client view. Clients can still toggle to preview.
-  const [showMaterials, setShowMaterials] = useState(true);
-  const [showQuantities, setShowQuantities] = useState(true);
-  const [showPricing, setShowPricing] = useState(true);
 
   useEffect(() => {
     if (!id || !token) {
@@ -57,11 +51,7 @@ export default function ProposalSign() {
 
         const parsed = typeof result === 'string' ? JSON.parse(result) : result;
 
-        // Initialize toggles from contractor's saved DB flags (defaults true if absent / null).
-        const p = parsed?.proposal || {};
-        if (p.show_materials === false) setShowMaterials(false);
-        if (p.show_quantities === false) setShowQuantities(false);
-        if (p.show_pricing === false) setShowPricing(false);
+
 
         if (parsed.proposal.status === 'signed' || parsed.proposal.client_signature_url) {
           setData(parsed);
@@ -280,9 +270,6 @@ export default function ProposalSign() {
               exhibits={exhibits}
               template={templateId}
               clientView
-              showMaterialsOverride={showMaterials}
-              showQuantitiesOverride={showQuantities}
-              showPricingOverride={showPricing}
             />
           </div>
 
@@ -324,9 +311,6 @@ export default function ProposalSign() {
             exhibits={exhibits}
             template={templateId}
             clientView
-            showMaterialsOverride={showMaterials}
-            showQuantitiesOverride={showQuantities}
-            showPricingOverride={showPricing}
           />
         </div>
 
@@ -377,45 +361,4 @@ export default function ProposalSign() {
   );
 }
 
-interface ViewToggleBarProps {
-  showMaterials: boolean;
-  setShowMaterials: (v: boolean) => void;
-  showQuantities: boolean;
-  setShowQuantities: (v: boolean) => void;
-  showPricing: boolean;
-  setShowPricing: (v: boolean) => void;
-}
 
-function ViewToggleBar({
-  showMaterials, setShowMaterials,
-  showQuantities, setShowQuantities,
-  showPricing, setShowPricing,
-}: ViewToggleBarProps) {
-  const toggles = [
-    { label: 'Materials', value: showMaterials, set: setShowMaterials },
-    { label: 'Quantities', value: showQuantities, set: setShowQuantities },
-    { label: 'Pricing', value: showPricing, set: setShowPricing },
-  ];
-  return (
-    <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-background p-2">
-      <span className="text-xs text-muted-foreground px-2">View:</span>
-      {toggles.map(t => (
-        <button
-          key={t.label}
-          type="button"
-          onClick={() => t.set(!t.value)}
-          aria-pressed={t.value}
-          className={cn(
-            'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors border',
-            t.value
-              ? 'bg-foreground text-background border-foreground hover:bg-foreground/90'
-              : 'bg-background text-muted-foreground border-border hover:bg-muted'
-          )}
-        >
-          {t.value ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-          Show {t.label}
-        </button>
-      ))}
-    </div>
-  );
-}
