@@ -993,18 +993,21 @@ export default function NewProposal() {
                         placeholder="Type your answer..."
                         className="h-10 flex-1"
                       />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className={`shrink-0 ${activeQMic === idx ? 'text-red-500' : ''}`}
-                        onClick={() => {
-                          if (activeQMic === idx) stopQMic();
-                          else startQMic(idx);
-                        }}
-                      >
-                        <Mic className={`h-4 w-4 ${activeQMic === idx ? 'animate-pulse' : ''}`} />
-                      </Button>
+                      {speechSupported && (
+                        <Button
+                          type="button"
+                          variant={activeQMic === idx ? 'default' : 'ghost'}
+                          size="icon"
+                          aria-label={activeQMic === idx ? 'Stop recording' : 'Start voice input'}
+                          className={`shrink-0 ${activeQMic === idx ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse' : ''}`}
+                          onClick={() => {
+                            if (activeQMic === idx) stopQMic();
+                            else startQMic(idx);
+                          }}
+                        >
+                          <Mic className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ))}
