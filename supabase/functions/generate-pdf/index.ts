@@ -399,8 +399,13 @@ function buildHtml(proposal: any, lineItems: any[], profile: any, exhibits: any[
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family:${fontFamily}; font-size:13px; color:#1a1a1a; background:#fff; padding-bottom:40px; }
   @page { size:letter; margin:0.5in 0 0.6in 0; }
-  tr { page-break-inside:avoid; }
-  div { orphans:3; widows:3; }
+  tr, td, th { page-break-inside:avoid; break-inside:avoid; }
+  thead { display:table-header-group; }
+  tfoot { display:table-footer-group; }
+  p, li, div { orphans:3; widows:3; overflow-wrap:break-word; word-wrap:break-word; }
+  p, li { page-break-inside:avoid; break-inside:avoid; }
+  h1, h2, h3, h4, h5, h6 { page-break-after:avoid; break-after:avoid; page-break-inside:avoid; break-inside:avoid; }
+  section, .section, .block, .avoid-break { page-break-inside:avoid; break-inside:avoid; }
 </style></head><body>
 
 ${headerHtml}
