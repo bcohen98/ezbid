@@ -361,45 +361,4 @@ export default function ProposalSign() {
   );
 }
 
-interface ViewToggleBarProps {
-  showMaterials: boolean;
-  setShowMaterials: (v: boolean) => void;
-  showQuantities: boolean;
-  setShowQuantities: (v: boolean) => void;
-  showPricing: boolean;
-  setShowPricing: (v: boolean) => void;
-}
 
-function ViewToggleBar({
-  showMaterials, setShowMaterials,
-  showQuantities, setShowQuantities,
-  showPricing, setShowPricing,
-}: ViewToggleBarProps) {
-  const toggles = [
-    { label: 'Materials', value: showMaterials, set: setShowMaterials },
-    { label: 'Quantities', value: showQuantities, set: setShowQuantities },
-    { label: 'Pricing', value: showPricing, set: setShowPricing },
-  ];
-  return (
-    <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-background p-2">
-      <span className="text-xs text-muted-foreground px-2">View:</span>
-      {toggles.map(t => (
-        <button
-          key={t.label}
-          type="button"
-          onClick={() => t.set(!t.value)}
-          aria-pressed={t.value}
-          className={cn(
-            'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors border',
-            t.value
-              ? 'bg-foreground text-background border-foreground hover:bg-foreground/90'
-              : 'bg-background text-muted-foreground border-border hover:bg-muted'
-          )}
-        >
-          {t.value ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-          Show {t.label}
-        </button>
-      ))}
-    </div>
-  );
-}
