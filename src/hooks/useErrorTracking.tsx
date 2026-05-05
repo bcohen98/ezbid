@@ -13,10 +13,23 @@ function isIgnoredError(msg: string): boolean {
 
 export function useErrorTracking() {
   useEffect(() => {
+    async function logError(payload: { error_message: string; error_stack: string | null; path: string }) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return; // only authenticated users log errors
+      supabase.from('app_errors').insert(payload).then(() => {}, () => {});
+    }
+
     function handleError(event: ErrorEvent) {
       const msg = event.message || 'Unknown error';
       if (isIgnoredError(msg)) return;
-      supabase
+      logError({
+        error_message: msg.slice(0, 2000),
+        error_stack: event.error?.stack?.slice(0, 10000) || null,
+        path: window.location.pathname,
+      });
+    }
+    // legacy unused branch removed below
+    const _unused = () => supabase
         .from('app_errors')
         .insert({
           error_message: msg,
