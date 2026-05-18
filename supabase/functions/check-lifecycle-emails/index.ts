@@ -13,12 +13,26 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 
-    const results: string[] = [];
+    // Restrict invocation to internal cron / service-role callers
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const cronSecret = Deno.env.get("CRON_SECRET");
+    const presentedToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+    const isAuthorized =
+      (serviceRoleKey && presentedToken === serviceRoleKey) ||
+      (cronSecret && presentedToken === cronSecret);
+    if (!isAuthorized) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const client = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false },
+    });
 
     // ─── EMAIL 2: Day-1 nudge ───
     // Users who signed up 24–48h ago with 0 proposals and haven't received day1_nudge

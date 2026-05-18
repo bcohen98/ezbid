@@ -35,15 +35,23 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    let user = null;
-    if (authHeader?.startsWith("Bearer ")) {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-      const supabaseUser = createClient(supabaseUrl, supabaseKey, {
-        global: { headers: { Authorization: authHeader } },
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Authentication required" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-      const { data: { user: authUser } } = await supabaseUser.auth.getUser();
-      user = authUser;
+    }
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabaseUser = createClient(supabaseUrl, supabaseKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user } } = await supabaseUser.auth.getUser();
+    if (!user) {
+      return new Response(JSON.stringify({ error: "Authentication required" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const { trade, client_name, job_address, job_description, line_items, subtotal, tax_amount, discount_amount, grand_total, deposit_amount, deposit_label, balance_due, company, user_context, smart_defaults, signature_line_items, job_state, materials_context } = await req.json();
