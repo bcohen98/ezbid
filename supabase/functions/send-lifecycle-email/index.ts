@@ -108,13 +108,54 @@ serve(async (req) => {
     const resendKey = Deno.env.get("RESEND_API_KEY");
     if (!resendKey) throw new Error("RESEND_API_KEY not configured");
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
+
+    // Authentication: caller must be either an internal service-role invoker
+    // (other edge functions / cron) OR an authenticated end-user signing up.
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const presentedToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+    let callerUserId: string | null = null;
+    const isServiceRole = !!serviceRoleKey && presentedToken === serviceRoleKey;
+    if (!isServiceRole) {
+      if (!presentedToken) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const authedClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: `Bearer ${presentedToken}` } },
+      });
+      const { data: { user } } = await authedClient.auth.getUser();
+      if (!user) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      callerUserId = user.id;
+    }
 
     const body: EmailRequest = await req.json();
-    const { email_type, user_id, recipient_email, first_name, checkout_url } = body;
+    const { email_type, first_name, checkout_url } = body;
+    let { user_id, recipient_email } = body;
+
+    // For end-user callers, force user_id/recipient_email to come from the JWT
+    if (!isServiceRole && callerUserId) {
+      if (user_id && user_id !== callerUserId) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      user_id = callerUserId;
+      const { data: { user: meUser } } = await supabase.auth.admin.getUserById(callerUserId);
+      if (meUser?.email) recipient_email = meUser.email;
+    }
 
     if (!email_type || !user_id || !recipient_email) {
       return new Response(
@@ -123,14 +164,14 @@ serve(async (req) => {
       );
     }
 
-    // Check unsubscribe status
+    // Check unsubscribe status (presence of row with unsubscribed_at set)
     const { data: unsub } = await supabase
       .from("lifecycle_email_unsubs")
-      .select("id")
+      .select("id, unsubscribed_at")
       .eq("user_id", user_id)
       .maybeSingle();
 
-    if (unsub) {
+    if (unsub?.unsubscribed_at) {
       console.log(`[send-lifecycle-email] User ${user_id} unsubscribed, skipping ${email_type}`);
       return new Response(
         JSON.stringify({ skipped: true, reason: "unsubscribed" }),
@@ -154,25 +195,29 @@ serve(async (req) => {
       );
     }
 
-    // Get or create unsubscribe token
+    // Ensure an unsubscribe token row exists (random token, NOT user_id)
     let unsubToken: string;
-    const { data: existingToken } = await supabase
-      .from("lifecycle_email_unsubs")
-      .select("token")
-      .eq("user_id", user_id)
-      .maybeSingle();
-
-    // We need a token even for non-unsubscribed users. Store it in a way
-    // that doesn't mark them as unsubscribed. We'll use a simple approach:
-    // generate a deterministic-ish token from user_id for the unsub link.
-    // Actually, let's just create the row on first unsubscribe click.
-    // For the URL we'll pass user_id encoded.
-    unsubToken = user_id;
+    if (unsub) {
+      const { data: existingTokenRow } = await supabase
+        .from("lifecycle_email_unsubs")
+        .select("token")
+        .eq("user_id", user_id)
+        .maybeSingle();
+      unsubToken = existingTokenRow?.token as string;
+    } else {
+      const { data: inserted, error: insertErr } = await supabase
+        .from("lifecycle_email_unsubs")
+        .insert({ user_id, unsubscribed_at: null })
+        .select("token")
+        .single();
+      if (insertErr) throw insertErr;
+      unsubToken = inserted.token as string;
+    }
 
     const firstName = getFirstName(first_name);
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-    const unsubUrl = `${supabaseUrl}/functions/v1/handle-lifecycle-unsubscribe?uid=${user_id}`;
+    const unsubUrl = `${supabaseUrl}/functions/v1/handle-lifecycle-unsubscribe?token=${unsubToken}`;
     const email = buildEmail(email_type, firstName, unsubUrl, checkout_url);
+
 
     // Send via Resend
     const res = await fetch(RESEND_API, {
