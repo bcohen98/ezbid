@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import LandingPage from "./pages/LandingPage";
 import AuthPage from "./pages/AuthPage";
+import AuthCallback from "./pages/AuthCallback";
 import Dashboard from "./pages/Dashboard";
 import CompanyProfile from "./pages/CompanyProfile";
 import NewProposal from "./pages/NewProposal";
@@ -58,6 +59,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/guest/new-proposal" element={<GuestNewProposal />} />
             <Route path="/guest/preview" element={<GuestProposalPreview />} />
             <Route path="/dashboard" element={<Dashboard />} />
