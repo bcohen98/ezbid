@@ -57,7 +57,7 @@ export default function AuthPage() {
         if (refCode) {
           try {
             await supabase.functions.invoke('link-referral', {
-              body: { email, referralCode: refCode },
+              body: { referralCode: refCode },
             });
           } catch {
             // Non-blocking — referral linking can fail silently

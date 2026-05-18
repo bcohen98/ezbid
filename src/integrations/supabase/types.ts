@@ -481,18 +481,21 @@ export type Database = {
           created_at: string
           id: string
           token: string
+          unsubscribed_at: string | null
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           token?: string
+          unsubscribed_at?: string | null
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
           token?: string
+          unsubscribed_at?: string | null
           user_id?: string
         }
         Relationships: []
@@ -1305,19 +1308,14 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: undefined
       }
-      sign_proposal:
-        | {
-            Args: { p_proposal_id: string; p_signature_url: string }
-            Returns: undefined
-          }
-        | {
-            Args: {
-              p_proposal_id: string
-              p_signature_url: string
-              p_signing_token?: string
-            }
-            Returns: undefined
-          }
+      sign_proposal: {
+        Args: {
+          p_proposal_id: string
+          p_signature_url: string
+          p_signing_token?: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user" | "ambassador"

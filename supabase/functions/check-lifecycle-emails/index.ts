@@ -13,12 +13,29 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+
+    // Restrict invocation to internal cron / service-role callers
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const cronSecret = Deno.env.get("CRON_SECRET");
+    const presentedToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+    const isAuthorized =
+      (serviceRoleKey && presentedToken === serviceRoleKey) ||
+      (cronSecret && presentedToken === cronSecret);
+    if (!isAuthorized) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false },
+    });
 
     const results: string[] = [];
+
 
     // ─── EMAIL 2: Day-1 nudge ───
     // Users who signed up 24–48h ago with 0 proposals and haven't received day1_nudge
@@ -46,6 +63,7 @@ serve(async (req) => {
       const { data: unsubs } = await supabase
         .from("lifecycle_email_unsubs")
         .select("user_id")
+        .not("unsubscribed_at", "is", null)
         .in("user_id", nudgeCandidates.map((u) => u.user_id));
       const unsubIds = new Set((unsubs || []).map((r) => r.user_id));
 
@@ -92,6 +110,7 @@ serve(async (req) => {
       const { data: unsubsLimit } = await supabase
         .from("lifecycle_email_unsubs")
         .select("user_id")
+        .not("unsubscribed_at", "is", null)
         .in("user_id", freeLimitCandidates.map((u) => u.user_id));
       const unsubLimitIds = new Set((unsubsLimit || []).map((r) => r.user_id));
 
@@ -140,6 +159,7 @@ serve(async (req) => {
       const { data: unsubs } = await supabase
         .from("lifecycle_email_unsubs")
         .select("user_id")
+        .not("unsubscribed_at", "is", null)
         .in("user_id", paidUsers.map((u) => u.user_id));
       const unsubIds = new Set((unsubs || []).map((r) => r.user_id));
 

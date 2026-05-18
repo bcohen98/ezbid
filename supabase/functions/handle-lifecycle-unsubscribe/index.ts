@@ -19,28 +19,37 @@ serve(async (req) => {
     );
 
     const url = new URL(req.url);
-    const uid = url.searchParams.get("uid");
+    const token = url.searchParams.get("token");
 
-    if (!uid) {
+    if (!token) {
       return new Response(
-        JSON.stringify({ error: "Missing uid parameter" }),
+        JSON.stringify({ error: "Missing token parameter" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
       );
     }
 
-    // Upsert unsubscribe record
-    const { error } = await supabase
+    // Look up by random token only — never trust caller-supplied user ids
+    const { data: row, error: lookupErr } = await supabase
       .from("lifecycle_email_unsubs")
-      .upsert({ user_id: uid }, { onConflict: "user_id" });
+      .select("id")
+      .eq("token", token)
+      .maybeSingle();
 
-    if (error) {
-      console.error("[handle-lifecycle-unsubscribe] Error:", error.message);
-      throw error;
+    if (lookupErr) throw lookupErr;
+    if (!row) {
+      return new Response(
+        JSON.stringify({ error: "Invalid token" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 404 }
+      );
     }
 
-    console.log(`[handle-lifecycle-unsubscribe] User ${uid} unsubscribed`);
+    const { error } = await supabase
+      .from("lifecycle_email_unsubs")
+      .update({ unsubscribed_at: new Date().toISOString() })
+      .eq("id", row.id);
 
-    // Return a simple HTML page
+    if (error) throw error;
+
     const html = `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
