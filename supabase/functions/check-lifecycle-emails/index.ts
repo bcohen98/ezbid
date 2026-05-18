@@ -30,9 +30,12 @@ serve(async (req) => {
       });
     }
 
-    const client = createClient(supabaseUrl, serviceRoleKey, {
+    const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false },
     });
+
+    const results: string[] = [];
+
 
     // ─── EMAIL 2: Day-1 nudge ───
     // Users who signed up 24–48h ago with 0 proposals and haven't received day1_nudge
