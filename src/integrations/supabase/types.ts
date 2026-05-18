@@ -481,18 +481,21 @@ export type Database = {
           created_at: string
           id: string
           token: string
+          unsubscribed_at: string | null
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           token?: string
+          unsubscribed_at?: string | null
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
           token?: string
+          unsubscribed_at?: string | null
           user_id?: string
         }
         Relationships: []
