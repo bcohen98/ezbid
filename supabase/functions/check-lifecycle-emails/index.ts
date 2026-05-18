@@ -63,6 +63,7 @@ serve(async (req) => {
       const { data: unsubs } = await supabase
         .from("lifecycle_email_unsubs")
         .select("user_id")
+        .not("unsubscribed_at", "is", null)
         .in("user_id", nudgeCandidates.map((u) => u.user_id));
       const unsubIds = new Set((unsubs || []).map((r) => r.user_id));
 
@@ -109,6 +110,7 @@ serve(async (req) => {
       const { data: unsubsLimit } = await supabase
         .from("lifecycle_email_unsubs")
         .select("user_id")
+        .not("unsubscribed_at", "is", null)
         .in("user_id", freeLimitCandidates.map((u) => u.user_id));
       const unsubLimitIds = new Set((unsubsLimit || []).map((r) => r.user_id));
 
@@ -157,6 +159,7 @@ serve(async (req) => {
       const { data: unsubs } = await supabase
         .from("lifecycle_email_unsubs")
         .select("user_id")
+        .not("unsubscribed_at", "is", null)
         .in("user_id", paidUsers.map((u) => u.user_id));
       const unsubIds = new Set((unsubs || []).map((r) => r.user_id));
 
