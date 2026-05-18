@@ -15,6 +15,10 @@ export default function AuthPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showForgot, setShowForgot] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSent, setForgotSent] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
   const { signIn, signUp, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -161,10 +165,62 @@ export default function AuthPage() {
                 </p>
               )}
             </div>
+            {!isSignUp && (
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => { setShowForgot(!showForgot); setForgotSent(false); setForgotEmail(email); }}
+                  className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
+                >
+                  Forgot your password?
+                </button>
+              </div>
+            )}
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Please wait...' : isSignUp ? 'Create account' : 'Sign in'}
             </Button>
           </form>
+
+          {!isSignUp && showForgot && (
+            <div className="mt-4 rounded-md border border-border p-4 space-y-3">
+              {forgotSent ? (
+                <p className="text-sm text-muted-foreground">Check your email for a password reset link.</p>
+              ) : (
+                <>
+                  <Label htmlFor="forgot-email" className="text-sm">Reset password</Label>
+                  <Input
+                    id="forgot-email"
+                    type="email"
+                    placeholder="you@company.com"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                  />
+                  <Button
+                    type="button"
+                    className="w-full"
+                    disabled={forgotLoading || !forgotEmail}
+                    onClick={async () => {
+                      setForgotLoading(true);
+                      try {
+                        const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+                          redirectTo: 'https://ezbid.pro/reset-password',
+                        });
+                        if (error) throw error;
+                        setForgotSent(true);
+                        toast({ title: 'Check your email for a password reset link.' });
+                      } catch (err: any) {
+                        toast({ title: 'Error', description: err.message, variant: 'destructive' });
+                      } finally {
+                        setForgotLoading(false);
+                      }
+                    }}
+                  >
+                    {forgotLoading ? 'Sending…' : 'Send Reset Link'}
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
             {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
