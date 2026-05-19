@@ -161,7 +161,7 @@ export default function AuthPage() {
               />
               {isSignUp && (
                 <p className="text-xs text-muted-foreground">
-                  Must be at least 8 characters and include uppercase, lowercase, a number, and a special character.
+                  Must be at least 8 characters and include at least 1 number.
                 </p>
               )}
             </div>
