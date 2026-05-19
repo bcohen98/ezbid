@@ -53,6 +53,9 @@ export default function AuthPage() {
     setLoading(true);
     try {
       if (isSignUp) {
+        if (password.length < 8 || !/\d/.test(password)) {
+          throw new Error('Password must be at least 8 characters and include at least 1 number.');
+        }
         const { error } = await signUp(email, password);
         if (error) throw error;
 
@@ -161,7 +164,7 @@ export default function AuthPage() {
               />
               {isSignUp && (
                 <p className="text-xs text-muted-foreground">
-                  Must be at least 8 characters and include uppercase, lowercase, a number, and a special character.
+                  Must be at least 8 characters and include at least 1 number.
                 </p>
               )}
             </div>
